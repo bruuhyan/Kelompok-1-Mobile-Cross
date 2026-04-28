@@ -1,50 +1,120 @@
-# Welcome to your Expo app 👋
+# TrustEnd
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile app for smart employee attendance tracking with trust scoring, GPS/WiFi validation, and multi-tenant organization support.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Role-Based Access**: Employee and Supervisor dashboards
+- **Trust Score System**: Calculate employee trust based on punctuality, location consistency, and activity
+- **Security Validation**: GPS, WiFi, and IP address verification on check-in
+- **Offline Mode**: Local storage with automatic sync when online
+- **Multi-Tenant**: Organization-based data isolation
+- **Request Management**: Holiday and overtime request submission and approval
+- **Report System**: Daily/weekly report submission and review
 
+## Tech Stack
+
+- **Framework**: React Native (Expo SDK 54)
+- **Navigation**: Expo Router v6
+- **State Management**: Zustand
+- **Backend/DB**: Supabase (auth, Postgres, real-time)
+- **Location**: expo-location
+- **Network**: @react-native-community/netinfo
+- **UI**: Custom components with React Native Reanimated
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Expo CLI
+- iOS Simulator or Android Emulator (or physical device with Expo Go)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. Create `.env` file from `.env.example`:
    ```bash
-   npx expo start
+   cp .env.example .env
    ```
 
-In the output, you'll find options to open the app in a
+4. Fill in your Supabase credentials in `.env`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Running the App
 
 ```bash
-npm run reset-project
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then press:
+- `a` for Android
+- `i` for iOS
+- `w` for web
 
-## Learn more
+## Project Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+/app
+  /(auth)          - Authentication screens
+  /(employee)      - Employee dashboard tabs
+  /(supervisor)    - Supervisor dashboard tabs
+  splash.tsx       - Splash screen
+  _layout.tsx      - Root layout
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+/src
+  /screens         - Screen components
+  /components      - Reusable UI components
+  /store           - Zustand stores
+  /services        - API services
+  /hooks           - Custom hooks
+  /navigation      - Navigation types
+  /utils           - Helpers, constants, types
+  /assets          - Fonts, images
 
-## Join the community
+/constants
+  theme.ts         - Theme configuration
+  fonts.ts         - Font configuration
+```
 
-Join our community of developers creating universal apps.
+## Build Phases
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The app is built incrementally across 16 phases:
+
+1. ✅ Project setup, folder structure, navigation skeleton, theme/fonts
+2. ⏳ Auth screens – Login, Register, Create Organization, Join Organization
+3. ⏳ Waiting Approval screen + Supabase auth & profiles DB setup
+4. ⏳ Employee Dashboard shell + Bottom Tab navigation
+5. ⏳ Check-in / Check-out flow with GPS + WiFi + IP validation
+6. ⏳ Offline mode – local storage, sync queue, online/offline banner
+7. ⏳ Holiday & Overtime request submission (Employee)
+8. ⏳ Report submission (Employee)
+9. ⏳ Trust Score calculation logic + Trust Score badge component
+10. ⏳ Supervisor Dashboard shell + Bottom Tab navigation
+11. ⏳ Supervisor – Attendance log viewer
+12. ⏳ Supervisor – Request approval / disapproval flow
+13. ⏳ Supervisor – Report review flow
+14. ⏳ Supervisor – Team management (approve users, promote to supervisor)
+15. ⏳ Multi-tenant org settings (GPS radius, WiFi registration)
+16. ⏳ Polish – animations, loading states, error handling, empty states
+
+## Database Schema
+
+### Tables
+
+- `organizations` - Organization details
+- `profiles` - User profiles linked to organizations
+- `attendance_logs` - Check-in/check-out records
+- `requests` - Holiday and overtime requests
+- `reports` - Employee reports
+- `org_settings` - Organization-specific settings
+
+See `PROJECT_STRUCTURE.md` for detailed schema.
+
+## License
+
+MIT
