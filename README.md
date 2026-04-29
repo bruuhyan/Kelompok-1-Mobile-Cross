@@ -66,19 +66,14 @@ Then press:
   splash.tsx       - Splash screen
   _layout.tsx      - Root layout
 
-/src
-  /screens         - Screen components
-  /components      - Reusable UI components
-  /store           - Zustand stores
-  /services        - API services
-  /hooks           - Custom hooks
-  /navigation      - Navigation types
-  /utils           - Helpers, constants, types
-  /assets          - Fonts, images
-
-/constants
-  theme.ts         - Theme configuration
-  fonts.ts         - Font configuration
+/components       - Reusable UI components
+/hooks            - Custom hooks
+/services         - API services
+/store            - State management (Zustand)
+/navigation       - Navigation types
+/utils            - Helpers, constants, types
+/assets           - Fonts, images
+/constants         - Theme and font configuration
 ```
 
 ## Build Phases
@@ -86,7 +81,7 @@ Then press:
 The app is built incrementally across 16 phases:
 
 1. ✅ Project setup, folder structure, navigation skeleton, theme/fonts
-2. ⏳ Auth screens – Login, Register, Create Organization, Join Organization
+2. ✅ Auth screens – Login, Register, Create Organization, Join Organization
 3. ⏳ Waiting Approval screen + Supabase auth & profiles DB setup
 4. ⏳ Employee Dashboard shell + Bottom Tab navigation
 5. ⏳ Check-in / Check-out flow with GPS + WiFi + IP validation

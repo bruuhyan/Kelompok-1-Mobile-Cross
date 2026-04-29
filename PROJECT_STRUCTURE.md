@@ -89,50 +89,110 @@ All screens created with placeholder content indicating their implementation pha
 #### 5. Folder Structure
 
 ```
-/src
-  /screens
-    /auth        - Auth screens
-    /employee    - Employee screens
-    /supervisor  - Supervisor screens
-  /components    - Reusable components (to be added)
-  /store         - State management (to be added)
-  /services      - API services (to be added)
-  /hooks         - Custom hooks (to be added)
-  /navigation    - Navigation types
-  /utils         - Helpers, constants, types
-  /assets        - Fonts, images
+/app
+  /(auth)          - Authentication screens
+  /(employee)      - Employee dashboard tabs
+  /(supervisor)    - Supervisor dashboard tabs
+  splash.tsx       - Splash screen
+  _layout.tsx      - Root layout
+
+/components       - Reusable UI components
+/hooks            - Custom hooks
+/services         - API services
+/store            - State management (Zustand)
+/navigation       - Navigation types
+/utils            - Helpers, constants, types
+/assets           - Fonts, images
+/constants         - Theme and font configuration
 ```
+
+## Phase 2 Complete ✅
+
+### What Was Built
+
+#### 1. Reusable Components
+
+- **`src/components/Card.tsx`** - Card component with variants (default, elevated, outlined)
+- **`src/components/Input.tsx`** - Input component with label, error, and icon support
+- **`src/components/Button.tsx`** - Button component with variants (primary, secondary, outline, ghost) and sizes
+
+#### 2. State Management
+
+- **`src/store/authStore.ts`** - Zustand store for authentication state:
+  - User data management
+  - Authentication status
+  - Loading states
+  - Logout functionality
+
+#### 3. Supabase Service
+
+- **`src/services/supabase.ts`** - Supabase client and service functions:
+  - Authentication service (sign in, sign up, sign out, reset password)
+  - Profile service (get, create, update profiles)
+  - Organization service (get by code, create organization)
+
+#### 4. Auth Screens
+
+- **`app/(auth)/login.tsx`** - Login screen with:
+  - Email and password input
+  - Form validation
+  - Password visibility toggle
+  - Forgot password link
+  - Navigation to register, create organization, join organization
+
+- **`app/(auth)/register.tsx`** - Register screen with:
+  - Name, email, password, confirm password, organization code inputs
+  - Form validation
+  - Password visibility toggle
+  - Organization code validation
+  - Navigation to login, create organization, join organization
+
+- **`app/(auth)/create-organization.tsx`** - Create organization screen with:
+  - Auto-generated 6-character organization code
+  - Organization name and address inputs
+  - Admin email and password inputs
+  - Form validation
+  - Creates organization and admin account
+
+- **`app/(auth)/join-organization.tsx`** - Join organization screen with:
+  - Organization code verification
+  - Displays organization info after verification
+  - Name, email, password inputs
+  - Form validation
+  - Creates employee account with pending status
+
+- **`app/(auth)/waiting-approval.tsx`** - Waiting approval screen with:
+  - Pending status display
+  - User information display
+  - Auto-refresh every 10 seconds
+  - Automatic redirect when approved
+  - Logout functionality
 
 ## Next Steps
 
-### Phase 2: Auth Screens
-
-- Implement Login screen with form validation
-- Implement Register screen with org code input
-- Implement Create Organization screen
-- Implement Join Organization screen
-- Add form components (Input, Button, Card)
-
 ### Phase 3: Waiting Approval + Supabase Setup
 
-- Implement Waiting Approval screen with live status
-- Set up Supabase auth
-- Create database tables
-- Implement profiles table
+- Set up Supabase project and configure environment variables
+- Create database tables (organizations, profiles, attendance_logs, requests, reports, org_settings)
+- Implement Row Level Security (RLS) policies
+- Test authentication flow with real Supabase backend
 
-## Dependencies to Add
+### Phase 4: Employee Dashboard
 
-Before Phase 2, install:
+- Implement Employee Home screen with today's status and trust score
+- Implement Employee Profile screen
+- Add Trust Score badge component
 
+## Dependencies
+
+Already installed:
 ```bash
-npm install @supabase/supabase-js zustand expo-location @react-native-community/netinfo
-npm install -D @types/react-native
+npm install @supabase/supabase-js zustand expo-location @react-native-community/netinfo react-native-svg
 ```
 
 ## Environment Variables
 
 Create `.env` file:
-
 ```
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key

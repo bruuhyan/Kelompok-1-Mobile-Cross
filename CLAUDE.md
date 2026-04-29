@@ -82,9 +82,9 @@ When back online:
 ### Configuration
 - `constants/theme.ts` - Brand colors, typography, spacing, shadows, trust score tiers
 - `constants/fonts.ts` - Font loading with system font fallback
-- `src/utils/constants.ts` - API config, storage keys, validation rules, error/success messages
-- `src/utils/types.ts` - TypeScript interfaces for all data models
-- `src/utils/helpers.ts` - Date formatting, GPS distance calculation, validation functions
+- `utils/constants.ts` - API config, storage keys, validation rules, error/success messages
+- `utils/types.ts` - TypeScript interfaces for all data models
+- `utils/helpers.ts` - Date formatting, GPS distance calculation, validation functions
 
 ### Navigation
 - `app/_layout.tsx` - Root layout with theme provider and font loading
@@ -118,10 +118,10 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ## State Management
 
 Zustand is used for state management. Stores to be created:
-- `authStore` - User authentication state, role, organization
-- `attendanceStore` - Check-in/check-out state, today's status
-- `requestStore` - Holiday/overtime requests
-- `syncStore` - Offline sync queue and status
+- `store/authStore.ts` - User authentication state, role, organization
+- `store/attendanceStore.ts` - Check-in/check-out state, today's status
+- `store/requestStore.ts` - Holiday/overtime requests
+- `store/syncStore.ts` - Offline sync queue and status
 
 ## UI Patterns
 

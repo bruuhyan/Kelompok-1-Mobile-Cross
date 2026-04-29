@@ -1,6 +1,6 @@
 /**
- * Register Screen
- * User registration with organization code
+ * Create Organization Screen
+ * Create a new organization and become admin
  */
 
 import React, { useState } from 'react';
@@ -21,35 +21,49 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES, VALIDATION } from '@/utils/constants';
-import { isValidEmail, isValidPassword } from '@/utils/helpers';
+import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
+import { isValidEmail, isValidPassword, generateOrgCode } from '@/utils/helpers';
 
-export default function RegisterScreen() {
+export default function CreateOrganizationScreen() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
-  const [name, setName] = useState('');
+  const [orgName, setOrgName] = useState('');
+  const [orgAddress, setOrgAddress] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [orgCode, setOrgCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState('');
   const [errors, setErrors] = useState<{
-    name?: string;
+    orgName?: string;
+    orgAddress?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
-    orgCode?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Generate organization code on mount
+  React.useEffect(() => {
+    setGeneratedCode(generateOrgCode());
+  }, []);
+
+  const regenerateCode = () => {
+    setGeneratedCode(generateOrgCode());
+  };
 
   const validateForm = () => {
     const newErrors: any = {};
 
-    if (!name.trim()) {
-      newErrors.name = ERROR_MESSAGES.REQUIRED_FIELD;
+    if (!orgName.trim()) {
+      newErrors.orgName = ERROR_MESSAGES.REQUIRED_FIELD;
+    }
+
+    if (!orgAddress.trim()) {
+      newErrors.orgAddress = ERROR_MESSAGES.REQUIRED_FIELD;
     }
 
     if (!email) {
@@ -70,29 +84,23 @@ export default function RegisterScreen() {
       newErrors.confirmPassword = ERROR_MESSAGES.PASSWORDS_MISMATCH;
     }
 
-    if (!orgCode.trim()) {
-      newErrors.orgCode = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (orgCode.length !== VALIDATION.ORG_CODE_LENGTH) {
-      newErrors.orgCode = `Organization code must be ${VALIDATION.ORG_CODE_LENGTH} characters`;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = async () => {
+  const handleCreateOrganization = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     setLoading(true);
 
     try {
-      // Check if organization exists
-      const organization = await organizationService.getOrganizationByCode(orgCode);
-
-      if (!organization) {
-        throw new Error(ERROR_MESSAGES.INVALID_ORG_CODE);
-      }
+      // Create organization
+      const organization = await organizationService.createOrganization({
+        name: orgName.trim(),
+        address: orgAddress.trim(),
+        code: generatedCode,
+      });
 
       // Sign up with Supabase
       const { data: authData, error: signUpError } = await authService.signUp(email, password);
@@ -108,20 +116,24 @@ export default function RegisterScreen() {
         throw new Error('Registration failed');
       }
 
-      // Create user profile
+      // Create user profile as admin
       await profileService.createProfile({
         id: authData.user.id,
-        name: name.trim(),
+        name: orgName.trim(), // Use org name as admin name for now
         email: email.toLowerCase(),
         organization_id: organization.id,
-        role: 'employee',
-        status: 'pending',
+        role: 'admin',
+        status: 'active',
       });
 
-      // Navigate to waiting approval screen
-      router.replace('/(auth)/waiting-approval');
+      // Set user in store
+      const profile = await profileService.getProfile(authData.user.id);
+      setUser(profile);
+
+      // Navigate to supervisor dashboard
+      router.replace('/(supervisor)/home');
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Create organization error:', error);
       alert(error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
     } finally {
       setIsLoading(false);
@@ -138,24 +150,48 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join your organization on TrustEnd</Text>
+          <Text style={styles.title}>Create Organization</Text>
+          <Text style={styles.subtitle}>Set up your organization and become an admin</Text>
         </View>
 
-        {/* Register Form */}
+        {/* Organization Code Display */}
+        <Card style={styles.codeCard}>
+          <Text style={styles.codeLabel}>Your Organization Code</Text>
+          <View style={styles.codeContainer}>
+            <Text style={styles.codeText}>{generatedCode}</Text>
+            <TouchableOpacity onPress={regenerateCode} style={styles.regenerateButton}>
+              <IconSymbol name="arrow.clockwise" size={20} color={BrandColors.primary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.codeHint}>
+            Share this code with team members to let them join your organization
+          </Text>
+        </Card>
+
+        {/* Create Form */}
         <Card style={styles.formCard}>
           <Input
-            label="Full Name"
-            placeholder="Enter your full name"
-            value={name}
-            onChangeText={setName}
+            label="Organization Name"
+            placeholder="Enter organization name"
+            value={orgName}
+            onChangeText={setOrgName}
             autoCapitalize="words"
-            error={errors.name}
-            leftIcon={<IconSymbol name="person" size={20} color={BrandColors.textMuted} />}
+            error={errors.orgName}
+            leftIcon={<IconSymbol name="building.2" size={20} color={BrandColors.textMuted} />}
           />
 
           <Input
-            label="Email"
+            label="Organization Address"
+            placeholder="Enter organization address"
+            value={orgAddress}
+            onChangeText={setOrgAddress}
+            autoCapitalize="sentences"
+            error={errors.orgAddress}
+            leftIcon={<IconSymbol name="location" size={20} color={BrandColors.textMuted} />}
+          />
+
+          <Input
+            label="Admin Email"
             placeholder="Enter your email"
             value={email}
             onChangeText={setEmail}
@@ -164,17 +200,6 @@ export default function RegisterScreen() {
             autoComplete="email"
             error={errors.email}
             leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
-          />
-
-          <Input
-            label="Organization Code"
-            placeholder="Enter 6-character code"
-            value={orgCode}
-            onChangeText={(text) => setOrgCode(text.toUpperCase())}
-            autoCapitalize="characters"
-            maxLength={VALIDATION.ORG_CODE_LENGTH}
-            error={errors.orgCode}
-            leftIcon={<IconSymbol name="building.2" size={20} color={BrandColors.textMuted} />}
           />
 
           <Input
@@ -218,33 +243,18 @@ export default function RegisterScreen() {
           />
 
           <Button
-            title="Create Account"
-            onPress={handleRegister}
+            title="Create Organization"
+            onPress={handleCreateOrganization}
             loading={isLoading}
             size="large"
-            style={styles.registerButton}
+            style={styles.createButton}
           />
         </Card>
 
-        {/* Login Link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
-            <Text style={styles.linkText}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Organization Options */}
-        <View style={styles.orgOptions}>
-          <Text style={styles.orgOptionsText}>Don't have an organization code? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/create-organization')}>
-            <Text style={styles.linkText}>Create Organization</Text>
-          </TouchableOpacity>
-          <Text style={styles.orgOptionsText}> or </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/join-organization')}>
-            <Text style={styles.linkText}>Join with Code</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Cancel Link */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.cancelButton}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -260,7 +270,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing['3xl'],
   },
   header: {
-    marginBottom: Spacing['2xl'],
+    marginBottom: Spacing.lg,
   },
   title: {
     fontSize: Typography['3xl'],
@@ -272,35 +282,47 @@ const styles = StyleSheet.create({
     fontSize: Typography.base,
     color: BrandColors.textSecondary,
   },
+  codeCard: {
+    marginBottom: Spacing.lg,
+    alignItems: 'center',
+  },
+  codeLabel: {
+    fontSize: Typography.sm,
+    color: BrandColors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  codeText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: BrandColors.primary,
+    letterSpacing: 4,
+  },
+  regenerateButton: {
+    padding: Spacing.sm,
+  },
+  codeHint: {
+    fontSize: Typography.xs,
+    color: BrandColors.textMuted,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+  },
   formCard: {
     marginBottom: Spacing.lg,
   },
-  registerButton: {
+  createButton: {
     marginTop: Spacing.sm,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  cancelButton: {
     alignItems: 'center',
+    paddingVertical: Spacing.md,
   },
-  footerText: {
+  cancelText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
-  },
-  linkText: {
-    fontSize: Typography.base,
-    color: BrandColors.primary,
-    fontWeight: '600',
-  },
-  orgOptions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: Spacing.sm,
-  },
-  orgOptionsText: {
-    fontSize: Typography.sm,
     color: BrandColors.textSecondary,
   },
 });
