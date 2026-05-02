@@ -1,6 +1,7 @@
 /**
  * Join Organization Screen
  * Join an existing organization with code
+ * User must be authenticated to access this screen
  */
 
 import React, { useState } from 'react';
@@ -22,26 +23,18 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
-import { isValidEmail, isValidPassword } from '@/utils/helpers';
 
 export default function JoinOrganizationScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [orgCode, setOrgCode] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [organization, setOrganization] = useState<any>(null);
   const [errors, setErrors] = useState<{
     name?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
     orgCode?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -75,24 +68,6 @@ export default function JoinOrganizationScreen() {
       newErrors.name = ERROR_MESSAGES.REQUIRED_FIELD;
     }
 
-    if (!email) {
-      newErrors.email = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (!isValidEmail(email)) {
-      newErrors.email = ERROR_MESSAGES.INVALID_EMAIL;
-    }
-
-    if (!password) {
-      newErrors.password = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (!isValidPassword(password)) {
-      newErrors.password = ERROR_MESSAGES.INVALID_PASSWORD;
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = ERROR_MESSAGES.PASSWORDS_MISMATCH;
-    }
-
     if (!organization) {
       newErrors.orgCode = ERROR_MESSAGES.INVALID_ORG_CODE;
     }
@@ -108,29 +83,26 @@ export default function JoinOrganizationScreen() {
     setLoading(true);
 
     try {
-      // Sign up with Supabase
-      const { data: authData, error: signUpError } = await authService.signUp(email, password);
-
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          throw new Error(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
-        }
-        throw signUpError;
-      }
-
-      if (!authData.user) {
-        throw new Error('Registration failed');
+      // Check if user is authenticated
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        router.replace('/(auth)/login');
+        return;
       }
 
       // Create user profile as employee (pending approval)
       await profileService.createProfile({
-        id: authData.user.id,
+        id: currentUser.id,
         name: name.trim(),
-        email: email.toLowerCase(),
+        email: currentUser.email || user?.email || '',
         organization_id: organization.id,
         role: 'employee',
         status: 'pending',
       });
+
+      // Update user in store
+      const profile = await profileService.getProfile(currentUser.id);
+      setUser(profile);
 
       // Navigate to waiting approval screen
       router.replace('/(auth)/waiting-approval');
@@ -194,7 +166,7 @@ export default function JoinOrganizationScreen() {
           )}
         </Card>
 
-        {/* Register Form */}
+        {/* Join Form */}
         {organization && (
           <Card style={styles.formCard}>
             <Input
@@ -205,58 +177,6 @@ export default function JoinOrganizationScreen() {
               autoCapitalize="words"
               error={errors.name}
               leftIcon={<IconSymbol name="person" size={20} color={BrandColors.textMuted} />}
-            />
-
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-              error={errors.email}
-              leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
-            />
-
-            <Input
-              label="Password"
-              placeholder="Create a password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoComplete="new-password"
-              error={errors.password}
-              leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <IconSymbol
-                    name={showPassword ? 'eye.slash' : 'eye'}
-                    size={20}
-                    color={BrandColors.textMuted}
-                  />
-                </TouchableOpacity>
-              }
-            />
-
-            <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              autoComplete="new-password"
-              error={errors.confirmPassword}
-              leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <IconSymbol
-                    name={showConfirmPassword ? 'eye.slash' : 'eye'}
-                    size={20}
-                    color={BrandColors.textMuted}
-                  />
-                </TouchableOpacity>
-              }
             />
 
             <Button

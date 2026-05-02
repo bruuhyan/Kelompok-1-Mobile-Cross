@@ -2,9 +2,10 @@
  * Auth Store - User authentication state management
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { UserProfile, UserRoles, UserStatus } from '@/utils/types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { UserProfile, UserRoles, UserStatus } from "@/utils/types";
 
 interface AuthState {
   // User data
@@ -48,18 +49,21 @@ export const useAuthStore = create<AuthState>()(
         })),
     }),
     {
-      name: 'trustend-auth-storage',
+      name: "trustend-auth-storage",
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
 export const selectUser = (state: AuthState) => state.user;
-export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
+export const selectIsAuthenticated = (state: AuthState) =>
+  state.isAuthenticated;
 export const selectUserRole = (state: AuthState) => state.user?.role;
 export const selectUserStatus = (state: AuthState) => state.user?.status;
-export const selectOrganizationId = (state: AuthState) => state.user?.organization_id;
+export const selectOrganizationId = (state: AuthState) =>
+  state.user?.organization_id;

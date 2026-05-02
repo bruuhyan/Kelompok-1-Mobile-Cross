@@ -112,7 +112,7 @@ The app is built incrementally across 16 phases. Check `PROJECT_STRUCTURE.md` fo
 Required in `.env`:
 ```
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ```
 
 ## State Management

@@ -1,6 +1,7 @@
 /**
  * Register Screen
- * User registration with organization code
+ * Simple registration with email and password only
+ * User will be directed to onboarding after registration
  */
 
 import React, { useState } from 'react';
@@ -19,9 +20,9 @@ import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { authService, profileService, organizationService } from '@/services/supabase';
+import { authService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES, VALIDATION } from '@/utils/constants';
+import { ERROR_MESSAGES } from '@/utils/constants';
 import { isValidEmail, isValidPassword } from '@/utils/helpers';
 
 export default function RegisterScreen() {
@@ -29,28 +30,20 @@ export default function RegisterScreen() {
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [orgCode, setOrgCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{
-    name?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
-    orgCode?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
     const newErrors: any = {};
-
-    if (!name.trim()) {
-      newErrors.name = ERROR_MESSAGES.REQUIRED_FIELD;
-    }
 
     if (!email) {
       newErrors.email = ERROR_MESSAGES.REQUIRED_FIELD;
@@ -70,12 +63,6 @@ export default function RegisterScreen() {
       newErrors.confirmPassword = ERROR_MESSAGES.PASSWORDS_MISMATCH;
     }
 
-    if (!orgCode.trim()) {
-      newErrors.orgCode = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (orgCode.length !== VALIDATION.ORG_CODE_LENGTH) {
-      newErrors.orgCode = `Organization code must be ${VALIDATION.ORG_CODE_LENGTH} characters`;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,39 +74,28 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // Check if organization exists
-      const organization = await organizationService.getOrganizationByCode(orgCode);
-
-      if (!organization) {
-        throw new Error(ERROR_MESSAGES.INVALID_ORG_CODE);
-      }
-
       // Sign up with Supabase
-      const { data: authData, error: signUpError } = await authService.signUp(email, password);
+      const authData = await authService.signUp(email, password);
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          throw new Error(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
-        }
-        throw signUpError;
-      }
-
-      if (!authData.user) {
+      if (!authData || !authData.user) {
         throw new Error('Registration failed');
       }
 
-      // Create user profile
-      await profileService.createProfile({
+      // Set basic user info in store
+      setUser({
         id: authData.user.id,
-        name: name.trim(),
-        email: email.toLowerCase(),
-        organization_id: organization.id,
+        email: authData.user.email || email,
+        name: '',
         role: 'employee',
+        organization_id: '',
+        trust_score: 50,
         status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
 
-      // Navigate to waiting approval screen
-      router.replace('/(auth)/waiting-approval');
+      // Navigate to onboarding
+      router.replace('/(auth)/onboarding');
     } catch (error: any) {
       console.error('Registration error:', error);
       alert(error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
@@ -139,21 +115,11 @@ export default function RegisterScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join your organization on TrustEnd</Text>
+          <Text style={styles.subtitle}>Get started with TrustEnd</Text>
         </View>
 
         {/* Register Form */}
         <Card style={styles.formCard}>
-          <Input
-            label="Full Name"
-            placeholder="Enter your full name"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            error={errors.name}
-            leftIcon={<IconSymbol name="person" size={20} color={BrandColors.textMuted} />}
-          />
-
           <Input
             label="Email"
             placeholder="Enter your email"
@@ -164,17 +130,6 @@ export default function RegisterScreen() {
             autoComplete="email"
             error={errors.email}
             leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
-          />
-
-          <Input
-            label="Organization Code"
-            placeholder="Enter 6-character code"
-            value={orgCode}
-            onChangeText={(text) => setOrgCode(text.toUpperCase())}
-            autoCapitalize="characters"
-            maxLength={VALIDATION.ORG_CODE_LENGTH}
-            error={errors.orgCode}
-            leftIcon={<IconSymbol name="building.2" size={20} color={BrandColors.textMuted} />}
           />
 
           <Input
@@ -233,18 +188,6 @@ export default function RegisterScreen() {
             <Text style={styles.linkText}>Sign In</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Organization Options */}
-        <View style={styles.orgOptions}>
-          <Text style={styles.orgOptionsText}>Don't have an organization code? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/create-organization')}>
-            <Text style={styles.linkText}>Create Organization</Text>
-          </TouchableOpacity>
-          <Text style={styles.orgOptionsText}> or </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/join-organization')}>
-            <Text style={styles.linkText}>Join with Code</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -291,16 +234,5 @@ const styles = StyleSheet.create({
     fontSize: Typography.base,
     color: BrandColors.primary,
     fontWeight: '600',
-  },
-  orgOptions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: Spacing.sm,
-  },
-  orgOptionsText: {
-    fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
   },
 });

@@ -5,7 +5,7 @@
 export const API_CONFIG = {
   // Supabase Configuration (to be filled in)
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
-  supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+  supabasePublishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
 
   // API Endpoints
   endpoints: {

@@ -7,9 +7,9 @@ import { API_CONFIG } from '@/utils/constants';
 
 // Initialize Supabase client
 const supabaseUrl = API_CONFIG.supabaseUrl;
-const supabaseAnonKey = API_CONFIG.supabaseAnonKey;
+const supabasePublishableKey = API_CONFIG.supabasePublishableKey;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
 /**
  * Authentication Service

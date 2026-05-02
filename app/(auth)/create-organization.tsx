@@ -1,6 +1,7 @@
 /**
  * Create Organization Screen
  * Create a new organization and become admin
+ * User must be authenticated to access this screen
  */
 
 import React, { useState } from 'react';
@@ -21,28 +22,21 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
-import { isValidEmail, isValidPassword, generateOrgCode } from '@/utils/helpers';
+import { ERROR_MESSAGES } from '@/utils/constants';
+import { generateOrgCode } from '@/utils/helpers';
 
 export default function CreateOrganizationScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
   const [orgName, setOrgName] = useState('');
   const [orgAddress, setOrgAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [errors, setErrors] = useState<{
     orgName?: string;
     orgAddress?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,24 +60,6 @@ export default function CreateOrganizationScreen() {
       newErrors.orgAddress = ERROR_MESSAGES.REQUIRED_FIELD;
     }
 
-    if (!email) {
-      newErrors.email = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (!isValidEmail(email)) {
-      newErrors.email = ERROR_MESSAGES.INVALID_EMAIL;
-    }
-
-    if (!password) {
-      newErrors.password = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (!isValidPassword(password)) {
-      newErrors.password = ERROR_MESSAGES.INVALID_PASSWORD;
-    }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = ERROR_MESSAGES.REQUIRED_FIELD;
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = ERROR_MESSAGES.PASSWORDS_MISMATCH;
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -95,6 +71,13 @@ export default function CreateOrganizationScreen() {
     setLoading(true);
 
     try {
+      // Check if user is authenticated
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        router.replace('/(auth)/login');
+        return;
+      }
+
       // Create organization
       const organization = await organizationService.createOrganization({
         name: orgName.trim(),
@@ -102,32 +85,18 @@ export default function CreateOrganizationScreen() {
         code: generatedCode,
       });
 
-      // Sign up with Supabase
-      const { data: authData, error: signUpError } = await authService.signUp(email, password);
-
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          throw new Error(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
-        }
-        throw signUpError;
-      }
-
-      if (!authData.user) {
-        throw new Error('Registration failed');
-      }
-
       // Create user profile as admin
       await profileService.createProfile({
-        id: authData.user.id,
+        id: currentUser.id,
         name: orgName.trim(), // Use org name as admin name for now
-        email: email.toLowerCase(),
+        email: currentUser.email || user?.email || '',
         organization_id: organization.id,
         role: 'admin',
         status: 'active',
       });
 
-      // Set user in store
-      const profile = await profileService.getProfile(authData.user.id);
+      // Update user in store
+      const profile = await profileService.getProfile(currentUser.id);
       setUser(profile);
 
       // Navigate to supervisor dashboard
@@ -188,58 +157,6 @@ export default function CreateOrganizationScreen() {
             autoCapitalize="sentences"
             error={errors.orgAddress}
             leftIcon={<IconSymbol name="location" size={20} color={BrandColors.textMuted} />}
-          />
-
-          <Input
-            label="Admin Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            error={errors.email}
-            leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
-          />
-
-          <Input
-            label="Password"
-            placeholder="Create a password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoComplete="new-password"
-            error={errors.password}
-            leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
-            rightIcon={
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <IconSymbol
-                  name={showPassword ? 'eye.slash' : 'eye'}
-                  size={20}
-                  color={BrandColors.textMuted}
-                />
-              </TouchableOpacity>
-            }
-          />
-
-          <Input
-            label="Confirm Password"
-            placeholder="Confirm your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            autoComplete="new-password"
-            error={errors.confirmPassword}
-            leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
-            rightIcon={
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                <IconSymbol
-                  name={showConfirmPassword ? 'eye.slash' : 'eye'}
-                  size={20}
-                  color={BrandColors.textMuted}
-                />
-              </TouchableOpacity>
-            }
           />
 
           <Button
