@@ -2,6 +2,19 @@
  * TypeScript Type Definitions for TrustEnd
  */
 
+// Enums
+export enum UserStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+}
+
+export enum UserRole {
+  EMPLOYEE = 'employee',
+  SUPERVISOR = 'supervisor',
+  ADMIN = 'admin',
+}
+
 // User Types
 export interface User {
   id: string;

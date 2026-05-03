@@ -28,11 +28,22 @@ TrustEnd is a React Native app using Expo Router for file-based navigation with 
 
 The app uses Expo Router's file-based routing with three route groups:
 
-1. **`/(auth)`** - Authentication flow (login, register, create/join organization, waiting approval)
+1. **`/(auth)`** - Authentication flow (login, register, onboarding, create/join organization, waiting approval)
 2. **`/(employee)`** - Employee dashboard with 5 bottom tabs (Home, Attendance, Requests, Reports, Profile)
 3. **`/(supervisor)`** - Supervisor dashboard with 6 bottom tabs (Home, Attendance, Requests, Reports, Team, Profile)
 
 The root layout (`app/_layout.tsx`) handles the initial routing decision. After splash screen, users are routed to auth. After successful login, routing is determined by `user.role` in the auth store.
+
+### Auth Flow (Register-First Pattern)
+
+The app uses a register-first pattern for cleaner separation of concerns:
+
+1. **Register** → Email/password only
+2. **Onboarding** → Choose to create or join organization
+3. **Create/Join** → Complete organization setup
+4. **Waiting Approval** → For employees joining existing organizations
+
+This pattern ensures users are authenticated before any organization operations, simplifying RLS policies.
 
 ### Multi-Tenant Architecture
 
@@ -93,9 +104,21 @@ When back online:
 - `app/(employee)/_layout.tsx` - Employee bottom tab navigation
 - `app/(supervisor)/_layout.tsx` - Supervisor bottom tab navigation
 
+### Components
+- `components/Card.tsx` - Card component with variants
+- `components/Input.tsx` - Input component with label, error, and icon support
+- `components/Button.tsx` - Button component with variants and sizes
+- `components/TrustScoreBadge.tsx` - Color-coded trust score display
+
+### Services
+- `services/supabase.ts` - Supabase client and service functions (auth, profile, organization)
+
+### State Management
+- `store/authStore.ts` - User authentication state, role, organization (Zustand)
+
 ### Database Schema (Supabase)
 
-Tables to be created:
+Tables created:
 - `organizations` - Organization details (id, name, address, code)
 - `profiles` - User profiles linked to organizations (extends Supabase auth.users)
 - `attendance_logs` - Check-in/check-out records with GPS/WiFi/IP data
@@ -103,9 +126,57 @@ Tables to be created:
 - `reports` - Employee reports
 - `org_settings` - Organization-specific settings (GPS radius, WiFi, IP range)
 
+### RLS Policies
+
+Row Level Security policies use helper functions to avoid recursion:
+- `is_user_admin_or_supervisor()` - Check if user is admin or supervisor
+- `is_user_admin()` - Check if user is admin
+- `get_user_organization_id()` - Get user's organization ID
+
 ## Build Phases
 
-The app is built incrementally across 16 phases. Check `PROJECT_STRUCTURE.md` for detailed phase breakdown. Current status is tracked in README.md.
+The app is built incrementally across 16 phases. Current status:
+
+### Phase 1 Complete ✅
+- Theme & Design System
+- Navigation Structure
+- Screen Placeholders
+- Utility Files
+
+### Phase 2 Complete ✅
+- Reusable Components (Card, Input, Button)
+- State Management (authStore)
+- Supabase Service
+- Auth Screens (login, register, create-organization, join-organization, waiting-approval)
+
+### Phase 3 Complete ✅
+- Supabase Database Setup (schema.sql)
+- Row Level Security Policies (rls_policies.sql)
+- Environment Configuration
+
+### Phase 4 Complete ✅
+- Trust Score Badge Component
+- Employee Home Screen (dashboard with status, trust score, quick actions)
+- Employee Profile Screen (editable profile with organization details)
+
+### Phase 5: Attendance Tracking (Next)
+- GPS location tracking
+- WiFi network detection
+- IP address validation
+- Check-in validation modal
+- Offline sync for attendance logs
+
+### Phase 6: Requests System
+- Holiday request form
+- Overtime request form
+- Request history display
+- Request status tracking
+
+### Phase 7: Reports System
+- Report submission form
+- Photo attachment support
+- Report history display
+- Report status tracking
 
 ## Environment Variables
 
@@ -117,8 +188,10 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 
 ## State Management
 
-Zustand is used for state management. Stores to be created:
-- `store/authStore.ts` - User authentication state, role, organization
+Zustand is used for state management. Stores created:
+- `store/authStore.ts` - User authentication state, role, organization ✅
+
+Stores to be created:
 - `store/attendanceStore.ts` - Check-in/check-out state, today's status
 - `store/requestStore.ts` - Holiday/overtime requests
 - `store/syncStore.ts` - Offline sync queue and status
