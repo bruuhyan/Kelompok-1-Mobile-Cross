@@ -98,7 +98,7 @@ export const profileService = {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
