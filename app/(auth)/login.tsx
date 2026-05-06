@@ -14,15 +14,18 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BrandColors, Spacing, Typography } from '@/constants/theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/utils/constants';
+import { ERROR_MESSAGES } from '@/utils/constants';
 import { isValidEmail } from '@/utils/helpers';
+
+const MISSING_PROFILE_MESSAGE =
+  'Your login exists, but no profile is linked to this account. Please register again or contact an admin.';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -70,7 +73,7 @@ export default function LoginScreen() {
       const profile = await profileService.getProfile(user.id);
 
       if (!profile) {
-        throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        throw new Error(MISSING_PROFILE_MESSAGE);
       }
 
       // Check account status
@@ -95,7 +98,11 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Login error:', error);
       // Show error message (in real app, use toast/snackbar)
-      alert(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
+      if (error?.code === 'PGRST116') {
+        alert(MISSING_PROFILE_MESSAGE);
+      } else {
+        alert(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
+      }
     } finally {
       setIsLoading(false);
       setLoading(false);
@@ -172,7 +179,7 @@ export default function LoginScreen() {
 
         {/* Register Link */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={styles.footerText}>Do not have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
             <Text style={styles.linkText}>Sign Up</Text>
           </TouchableOpacity>
