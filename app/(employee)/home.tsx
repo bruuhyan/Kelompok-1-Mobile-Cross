@@ -105,7 +105,7 @@ export default function EmployeeHomeScreen() {
 
       {/* Today's Status Card */}
       <Card style={styles.statusCard}>
-        <Text style={styles.statusTitle}>Today's Status</Text>
+        <Text style={styles.statusTitle}>{"Today's Status"}</Text>
         <View style={styles.statusContent}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
           <Text style={[styles.statusText, { color: getStatusColor() }]}>
@@ -163,7 +163,7 @@ export default function EmployeeHomeScreen() {
 
         <TouchableOpacity
           style={styles.quickAction}
-          onPress={() => router.push('/(employee)/reports')}>
+          onPress={() => router.push('/(employee)/reports' as any)}>
           <View style={styles.quickActionIcon}>
             <IconSymbol name="doc.text" size={24} color={BrandColors.info} />
           </View>

@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS requests (
   type TEXT NOT NULL CHECK (type IN ('holiday', 'overtime')),
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
+  hours NUMERIC CHECK (hours IS NULL OR hours > 0),
   reason TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   reviewed_by UUID REFERENCES profiles(id),

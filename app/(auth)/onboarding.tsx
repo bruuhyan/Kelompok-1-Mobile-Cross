@@ -48,7 +48,7 @@ export default function OnboardingScreen() {
         </View>
         <Text style={styles.title}>Welcome to TrustEnd!</Text>
         <Text style={styles.subtitle}>
-          Your account has been created. Now let's set up your organization.
+          {"Your account has been created. Now let's set up your organization."}
         </Text>
       </View>
 

@@ -33,10 +33,10 @@ export function Input({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      <View style={[styles.inputContainer, props.multiline && styles.multilineContainer, error && styles.inputError]}>
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, props.multiline && styles.multilineInput, style]}
           placeholderTextColor={BrandColors.textMuted}
           {...props}
         />
@@ -67,6 +67,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     height: 50,
   },
+  multilineContainer: {
+    minHeight: 112,
+    height: 'auto',
+    alignItems: 'flex-start',
+    paddingVertical: Spacing.sm,
+  },
   inputError: {
     borderColor: BrandColors.error,
   },
@@ -75,6 +81,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.base,
     color: BrandColors.text,
     paddingVertical: 0,
+  },
+  multilineInput: {
+    minHeight: 92,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xs,
+    textAlignVertical: 'top',
   },
   iconLeft: {
     marginRight: Spacing.sm,

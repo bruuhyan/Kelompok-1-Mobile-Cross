@@ -93,7 +93,7 @@ export interface Request {
   end_date?: string;
   hours?: number;
   reason: string;
-  status: 'pending' | 'approved' | 'disapproved';
+  status: 'pending' | 'approved' | 'rejected' | 'disapproved';
   reviewer_id?: string;
   reviewer_note?: string;
   created_at: string;
@@ -115,9 +115,10 @@ export interface Report {
   id: string;
   user_id: string;
   organization_id: string;
+  title: string;
   content: string;
   photo_url?: string;
-  status: 'submitted' | 'reviewed';
+  status: 'pending' | 'reviewed' | 'resolved' | 'submitted';
   created_at: string;
   updated_at: string;
 }
@@ -185,6 +186,7 @@ export interface OvertimeRequestFormData {
 }
 
 export interface ReportFormData {
+  title: string;
   content: string;
   photo?: string;
 }

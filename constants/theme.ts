@@ -34,6 +34,7 @@ export const BrandColors = {
   success: '#00F5A0',
   warning: '#F59E0B',
   error: '#EF4444',
+  danger: '#EF4444',
   info: '#3B82F6',
 
   // Trust Score Colors
@@ -50,6 +51,7 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: BrandColors.primary,
+    textMuted: '#687076',
     primary: BrandColors.primary,
     secondary: BrandColors.primaryDark,
     accent: BrandColors.primaryLight,
@@ -63,6 +65,7 @@ export const Colors = {
     icon: BrandColors.textSecondary,
     tabIconDefault: BrandColors.textMuted,
     tabIconSelected: BrandColors.primary,
+    textMuted: BrandColors.textMuted,
     primary: BrandColors.primary,
     secondary: BrandColors.primaryDark,
     accent: BrandColors.primaryLight,

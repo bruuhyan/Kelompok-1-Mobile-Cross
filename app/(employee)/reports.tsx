@@ -1,0 +1,303 @@
+/**
+ * Employee Reports Screen
+ * Submit employee reports.
+ */
+
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { BrandColors, BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Input } from '@/components/Input';
+import { reportService } from '@/services/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/utils/constants';
+import type { Report } from '@/utils/types';
+
+type ReportErrors = {
+  title?: string;
+  content?: string;
+};
+
+const formatDateTime = (value: string) => {
+  if (!value) return '-';
+
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export default function EmployeeReportsScreen() {
+  const user = useAuthStore((state) => state.user);
+
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [errors, setErrors] = useState<ReportErrors>({});
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadReports = useCallback(async () => {
+    if (!user?.id) return;
+
+    setIsRefreshing(true);
+    try {
+      const data = await reportService.getUserReports(user.id);
+      setReports(data as Report[]);
+    } catch (error) {
+      console.error('Load reports error:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadReports();
+  }, [loadReports]);
+
+  const validateForm = () => {
+    const nextErrors: ReportErrors = {};
+
+    if (!title.trim()) {
+      nextErrors.title = ERROR_MESSAGES.REQUIRED_FIELD;
+    }
+
+    if (!content.trim()) {
+      nextErrors.content = ERROR_MESSAGES.REQUIRED_FIELD;
+    } else if (content.trim().length < 10) {
+      nextErrors.content = 'Report must be at least 10 characters';
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmitReport = async () => {
+    if (!validateForm()) return;
+    if (!user?.id || !user.organization_id) {
+      Alert.alert('Error', 'User profile is not ready yet');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await reportService.submitReport(user.id, user.organization_id, {
+        title,
+        content,
+      });
+
+      setTitle('');
+      setContent('');
+      Alert.alert('Success', SUCCESS_MESSAGES.REPORT_SUBMITTED);
+      await loadReports();
+    } catch (error: any) {
+      console.error('Submit report error:', error);
+      Alert.alert('Error', error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: Report['status']) => {
+    switch (status) {
+      case 'reviewed':
+      case 'resolved':
+        return BrandColors.success;
+      case 'submitted':
+        return BrandColors.info;
+      default:
+        return BrandColors.warning;
+    }
+  };
+
+  const renderReportItem = (report: Report) => (
+    <Card key={report.id} style={styles.historyItem}>
+      <View style={styles.historyHeader}>
+        <View style={styles.historyTitleWrap}>
+          <Text style={styles.historyTitle}>{report.title}</Text>
+          <Text style={styles.historyDate}>{formatDateTime(report.created_at)}</Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(report.status) }]}>
+          <Text style={styles.statusText}>{report.status}</Text>
+        </View>
+      </View>
+      <Text style={styles.historyContent} numberOfLines={3}>
+        {report.content}
+      </Text>
+    </Card>
+  );
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <Text style={styles.title}>Reports</Text>
+          <Text style={styles.subtitle}>Submit work updates and incident reports</Text>
+        </View>
+
+        <Card style={styles.formCard}>
+          <Text style={styles.formTitle}>Submit Report</Text>
+          <Input
+            label="Title"
+            placeholder="Example: Daily site update"
+            value={title}
+            onChangeText={setTitle}
+            error={errors.title}
+          />
+          <Input
+            label="Report Detail"
+            placeholder="Write your report details"
+            value={content}
+            onChangeText={setContent}
+            multiline
+            numberOfLines={6}
+            error={errors.content}
+          />
+          <Button
+            title="Submit Report"
+            onPress={handleSubmitReport}
+            loading={isLoading}
+            disabled={isLoading}
+            size="large"
+          />
+        </Card>
+
+        <View style={styles.historySectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Reports</Text>
+          <TouchableOpacity onPress={loadReports} disabled={isRefreshing}>
+            <Text style={styles.refreshText}>{isRefreshing ? 'Loading...' : 'Refresh'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {reports.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No reports yet</Text>
+            <Text style={styles.emptySubtitle}>Submitted reports will appear here.</Text>
+          </Card>
+        ) : (
+          reports.map(renderReportItem)
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BrandColors.background,
+  },
+  content: {
+    padding: Spacing.lg,
+    paddingTop: Spacing['2xl'],
+    paddingBottom: Spacing['3xl'],
+  },
+  header: {
+    marginBottom: Spacing.lg,
+  },
+  title: {
+    fontSize: Typography['3xl'],
+    fontWeight: '700',
+    color: BrandColors.text,
+  },
+  subtitle: {
+    fontSize: Typography.base,
+    color: BrandColors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  formCard: {
+    marginBottom: Spacing.xl,
+  },
+  formTitle: {
+    fontSize: Typography.xl,
+    fontWeight: '700',
+    color: BrandColors.text,
+    marginBottom: Spacing.lg,
+  },
+  historySectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.lg,
+    fontWeight: '700',
+    color: BrandColors.text,
+  },
+  refreshText: {
+    fontSize: Typography.sm,
+    fontWeight: '700',
+    color: BrandColors.primary,
+  },
+  emptyCard: {
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: Typography.base,
+    fontWeight: '700',
+    color: BrandColors.text,
+    marginBottom: Spacing.xs,
+  },
+  emptySubtitle: {
+    fontSize: Typography.sm,
+    color: BrandColors.textSecondary,
+    textAlign: 'center',
+  },
+  historyItem: {
+    marginBottom: Spacing.md,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  historyTitleWrap: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: Typography.base,
+    fontWeight: '700',
+    color: BrandColors.text,
+  },
+  historyDate: {
+    fontSize: Typography.sm,
+    color: BrandColors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  statusText: {
+    fontSize: Typography.xs,
+    fontWeight: '800',
+    color: BrandColors.background,
+    textTransform: 'capitalize',
+  },
+  historyContent: {
+    fontSize: Typography.sm,
+    color: BrandColors.textSecondary,
+    marginTop: Spacing.md,
+    lineHeight: 20,
+  },
+});

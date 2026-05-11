@@ -4,6 +4,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { API_CONFIG } from '@/utils/constants';
+import type {
+  HolidayRequestFormData,
+  OvertimeRequestFormData,
+  ReportFormData,
+} from '@/utils/types';
 
 // Initialize Supabase client
 const supabaseUrl = API_CONFIG.supabaseUrl;
@@ -175,5 +180,121 @@ export const organizationService = {
 
     if (error) throw error;
     return data;
+  },
+};
+
+/**
+ * Request Service
+ */
+export const requestService = {
+  /**
+   * Submit holiday request
+   */
+  async submitHolidayRequest(
+    userId: string,
+    organizationId: string,
+    form: HolidayRequestFormData,
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        type: 'holiday',
+        start_date: form.start_date,
+        end_date: form.end_date,
+        reason: form.reason.trim(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Submit overtime request
+   */
+  async submitOvertimeRequest(
+    userId: string,
+    organizationId: string,
+    form: OvertimeRequestFormData,
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        type: 'overtime',
+        start_date: form.date,
+        end_date: form.date,
+        hours: form.hours,
+        reason: form.reason.trim(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Get current user's requests
+   */
+  async getUserRequests(userId: string) {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+/**
+ * Report Service
+ */
+export const reportService = {
+  /**
+   * Submit employee report
+   */
+  async submitReport(
+    userId: string,
+    organizationId: string,
+    form: ReportFormData,
+  ) {
+    const { data, error } = await supabase
+      .from('reports')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        title: form.title.trim(),
+        content: form.content.trim(),
+        photo_url: form.photo?.trim() || null,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Get current user's reports
+   */
+  async getUserReports(userId: string) {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   },
 };

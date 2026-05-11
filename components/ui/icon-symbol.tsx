@@ -1,11 +1,11 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
+import { SymbolWeight } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
+type MaterialIconName = ComponentProps<typeof MaterialIcons>['name'];
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -14,11 +14,43 @@ type IconSymbolName = keyof typeof MAPPING;
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING = {
+  'arrow.clockwise': 'refresh',
+  'building.2': 'business',
+  'building.2.fill': 'business',
+  'calendar': 'calendar-today',
+  'calendar.badge.plus': 'event-available',
+  'checkmark.circle.fill': 'check-circle',
+  'checkmark.seal.fill': 'verified',
+  'chevron.left': 'chevron-left',
   'house.fill': 'home',
+  'clock': 'schedule',
+  'clock.fill': 'schedule',
+  'doc.text': 'description',
+  'doc.text.fill': 'description',
+  'doc.text.magnifyingglass': 'find-in-page',
+  'envelope': 'email',
+  'envelope.fill': 'email',
+  'eye': 'visibility',
+  'eye.slash': 'visibility-off',
+  'info.circle': 'info',
+  'info.circle.fill': 'info',
+  'list.bullet.rectangle': 'format-list-bulleted',
+  'location': 'location-on',
+  'location.fill': 'location-on',
+  'location.slash': 'location-off',
+  'lock': 'lock',
   'paperplane.fill': 'send',
+  'person': 'person',
+  'person.2.fill': 'groups',
+  'person.circle': 'account-circle',
+  'person.fill': 'person',
+  'phone': 'phone',
+  'rectangle.portrait.and.arrow.right': 'logout',
+  'shield': 'shield',
+  'shield.fill': 'shield',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-} as IconMapping;
+} satisfies Record<string, MaterialIconName>;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
