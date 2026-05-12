@@ -103,9 +103,9 @@ export default function EmployeeHomeScreen() {
         </Text>
       </Card>
 
-      {/* Today's Status Card */}
+      {/* Today Status Card */}
       <Card style={styles.statusCard}>
-        <Text style={styles.statusTitle}>Today's Status</Text>
+        <Text style={styles.statusTitle}>Today Status</Text>
         <View style={styles.statusContent}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
           <Text style={[styles.statusText, { color: getStatusColor() }]}>

@@ -34,6 +34,7 @@ export const BrandColors = {
   success: '#00F5A0',
   warning: '#F59E0B',
   error: '#EF4444',
+  danger: '#EF4444',
   info: '#3B82F6',
 
   // Trust Score Colors
@@ -58,6 +59,7 @@ export const Colors = {
   },
   dark: {
     text: BrandColors.text,
+    textMuted: BrandColors.textMuted,
     background: BrandColors.background,
     tint: BrandColors.primary,
     icon: BrandColors.textSecondary,
