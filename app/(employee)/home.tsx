@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -35,7 +36,7 @@ export default function EmployeeHomeScreen() {
   >("not_checked_in");
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = false;
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
 
   const handleLogout = async () => {
@@ -115,7 +116,7 @@ export default function EmployeeHomeScreen() {
 
          {/* Today's Status Card */}
          <Card style={styles.statusCard}>
-           <Text style={styles.statusTitle}>Today's Status</Text>
+           <Text style={styles.statusTitle}>Today&apos;s Status</Text>
            <View style={styles.statusContent}>
              <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
              <Text style={[styles.statusText, { color: getStatusColor() }]}>
@@ -206,7 +207,7 @@ export default function EmployeeHomeScreen() {
          
          {/* Trust Score Modal */}
          {showTrustScoreModal && (
-           <View style={styles.modalOverlay} onPress={() => setShowTrustScoreModal(false)}>
+           <Pressable style={styles.modalOverlay} onPress={() => setShowTrustScoreModal(false)}>
              <View style={styles.modalContainer}>
                <View style={styles.modalHeader}>
                  <Text style={styles.modalTitle}>Understanding Your Trust Score</Text>
@@ -278,7 +279,7 @@ export default function EmployeeHomeScreen() {
                  </TouchableOpacity>
                </View>
              </View>
-           </View>
+           </Pressable>
          )}
        </ScrollView>
      );
@@ -506,7 +507,7 @@ export default function EmployeeHomeScreen() {
     gap: Spacing.sm,
   },
   explanationTitle: {
-    fontSize: Typography.md,
+    fontSize: Typography.base,
     fontWeight: '600',
     color: BrandColors.text,
     marginBottom: Spacing.xs,
@@ -539,7 +540,7 @@ export default function EmployeeHomeScreen() {
     marginTop: Spacing.md,
   },
   scoreTiersTitle: {
-    fontSize: Typography.md,
+    fontSize: Typography.base,
     fontWeight: '600',
     color: BrandColors.text,
     marginBottom: Spacing.xs,

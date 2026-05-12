@@ -29,6 +29,7 @@ export default function WaitingApprovalScreen() {
   // Periodically check if account has been approved
   useEffect(() => {
     const checkApproval = async () => {
+      setIsChecking(true);
       try {
         const currentUser = await authService.getCurrentUser();
         if (!currentUser) {
@@ -53,6 +54,8 @@ export default function WaitingApprovalScreen() {
         }
       } catch (error) {
         console.error('Error checking approval status:', error);
+      } finally {
+        setIsChecking(false);
       }
     };
 
@@ -121,7 +124,7 @@ export default function WaitingApprovalScreen() {
           <Text style={styles.infoTitle}>What happens next?</Text>
         </View>
         <Text style={styles.infoText}>
-          Your organization administrator will review your account request. Once approved, you'll
+          Your organization administrator will review your account request. Once approved, you&apos;ll
           be able to access the TrustEnd app and start tracking your attendance.
         </Text>
         <Text style={styles.infoText}>
@@ -132,7 +135,9 @@ export default function WaitingApprovalScreen() {
       {/* Auto-refresh indicator */}
       <View style={styles.refreshIndicator}>
         <ActivityIndicator size="small" color={BrandColors.primary} />
-        <Text style={styles.refreshText}>Checking for approval updates...</Text>
+        <Text style={styles.refreshText}>
+          {isChecking ? 'Checking for approval updates...' : 'Waiting for approval updates...'}
+        </Text>
       </View>
 
       {/* Logout Button */}

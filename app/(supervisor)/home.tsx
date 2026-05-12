@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   logoutText: {
-    color: BrandColors.danger,
+    color: BrandColors.error,
     fontSize: 14,
     fontWeight: '600',
   },

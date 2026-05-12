@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   TouchableOpacityProps,
 } from 'react-native';
-import { BrandColors, BorderRadius, Spacing, Typography, Animation } from '@/constants/theme';
+import { BrandColors, BorderRadius, Spacing, Typography } from '@/constants/theme';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;

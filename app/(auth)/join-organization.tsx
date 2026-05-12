@@ -53,7 +53,7 @@ export default function JoinOrganizationScreen() {
     try {
       const org = await organizationService.getOrganizationByCode(orgCode);
       setOrganization(org);
-    } catch (error) {
+    } catch {
       setErrors({ orgCode: ERROR_MESSAGES.INVALID_ORG_CODE });
       setOrganization(null);
     } finally {
@@ -118,7 +118,7 @@ export default function JoinOrganizationScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">

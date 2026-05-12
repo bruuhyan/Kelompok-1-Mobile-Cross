@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
@@ -81,8 +82,9 @@ export default function EmployeeProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => (isEditing ? handleSave() : setIsEditing(true))}>
-          <Text style={styles.editButtonText}>{isEditing ? 'Save' : 'Edit'}</Text>
+          onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
+          disabled={isLoading}>
+          <Text style={styles.editButtonText}>{isLoading ? 'Saving...' : isEditing ? 'Save' : 'Edit'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -118,9 +120,13 @@ export default function EmployeeProfileScreen() {
             <Text style={styles.infoLabelText}>Name</Text>
           </View>
           {isEditing ? (
-            <TouchableOpacity style={styles.editableField}>
-              <Text style={styles.editableText}>{name}</Text>
-            </TouchableOpacity>
+            <TextInput
+              style={styles.editableField}
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter name"
+              placeholderTextColor={BrandColors.textMuted}
+            />
           ) : (
             <Text style={styles.infoValue}>{user?.name || 'Loading...'}</Text>
           )}
@@ -140,9 +146,14 @@ export default function EmployeeProfileScreen() {
             <Text style={styles.infoLabelText}>Phone</Text>
           </View>
           {isEditing ? (
-            <TouchableOpacity style={styles.editableField}>
-              <Text style={styles.editableText}>{phone || 'Add phone number'}</Text>
-            </TouchableOpacity>
+            <TextInput
+              style={styles.editableField}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Add phone number"
+              placeholderTextColor={BrandColors.textMuted}
+              keyboardType="phone-pad"
+            />
           ) : (
             <Text style={styles.infoValue}>{user?.phone || 'Not set'}</Text>
           )}
@@ -189,8 +200,8 @@ export default function EmployeeProfileScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.danger} />
-          <Text style={[styles.actionButtonText, { color: BrandColors.danger }]}>Log Out</Text>
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
+          <Text style={[styles.actionButtonText, { color: BrandColors.error }]}>Log Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -313,10 +324,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
-  },
-  editableText: {
     fontSize: Typography.base,
     color: BrandColors.text,
+    minWidth: 140,
+    textAlign: 'right',
   },
   statusBadge: {
     paddingHorizontal: Spacing.md,

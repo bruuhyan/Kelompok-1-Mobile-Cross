@@ -8,7 +8,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useCustomFonts } from "@/constants/fonts";
 import * as SplashScreen from "expo-splash-screen";
 
@@ -20,7 +19,6 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const fontsLoaded = useCustomFonts();
 
   // Hide splash screen once fonts are loaded
