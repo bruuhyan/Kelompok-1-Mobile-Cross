@@ -121,7 +121,7 @@ export default function WaitingApprovalScreen() {
           <Text style={styles.infoTitle}>What happens next?</Text>
         </View>
         <Text style={styles.infoText}>
-          Your organization administrator will review your account request. Once approved, you'll
+          Your organization administrator will review your account request. Once approved, you will
           be able to access the TrustEnd app and start tracking your attendance.
         </Text>
         <Text style={styles.infoText}>

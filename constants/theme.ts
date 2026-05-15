@@ -34,6 +34,7 @@ export const BrandColors = {
   success: '#00F5A0',
   warning: '#F59E0B',
   error: '#EF4444',
+  danger: '#EF4444',
   info: '#3B82F6',
 
   // Trust Score Colors
@@ -55,6 +56,7 @@ export const Colors = {
     accent: BrandColors.primaryLight,
     card: BrandColors.card,
     border: BrandColors.border,
+    textMuted: BrandColors.textMuted,
   },
   dark: {
     text: BrandColors.text,
@@ -68,6 +70,7 @@ export const Colors = {
     accent: BrandColors.primaryLight,
     card: BrandColors.card,
     border: BrandColors.border,
+    textMuted: BrandColors.textMuted,
   },
 };
 
@@ -166,11 +169,11 @@ export const Animation = {
   slower: 800,
 };
 
-// Trust Score Tiers
+// Trust Score Tiers (0-50)
 export const TrustScoreTiers = {
-  high: { min: 80, max: 100, color: BrandColors.trustHigh, label: 'Trusted' },
-  medium: { min: 50, max: 79, color: BrandColors.trustMedium, label: 'Moderate' },
-  low: { min: 0, max: 49, color: BrandColors.trustLow, label: 'At Risk' },
+  high: { min: 36, max: 50, color: BrandColors.trustHigh, label: 'Okay' },
+  medium: { min: 20, max: 35, color: BrandColors.trustMedium, label: 'Needs Review' },
+  low: { min: 0, max: 19, color: BrandColors.trustLow, label: 'Urgent Review' },
 };
 
 // User Roles

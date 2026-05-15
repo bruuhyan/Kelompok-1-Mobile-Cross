@@ -3,7 +3,7 @@
  * Dashboard showing today's status, trust score, and quick actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
@@ -18,17 +19,40 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { useAuthStore } from '@/store/authStore';
-import { authService, profileService } from '@/services/supabase';
+import { useAttendanceStore } from '@/store/attendanceStore';
+import { authService } from '@/services/supabase';
+import { formatTime } from '@/utils/helpers';
 
 export default function EmployeeHomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const updateUser = useAuthStore((state) => state.updateUser);
+  const {
+    status: todayStatus,
+    currentLog,
+    pendingSyncLogs,
+    validationStatus,
+    isLoading,
+    error,
+    initializeToday,
+    performCheckIn,
+    performCheckOut,
+    processSyncQueue,
+  } = useAttendanceStore();
 
-  const [todayStatus, setTodayStatus] = useState<'not_checked_in' | 'checked_in' | 'checked_out'>('not_checked_in');
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    if (user) {
+      initializeToday(user);
+      processSyncQueue();
+    }
+  }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Attendance', error);
+    }
+  }, [error]);
 
   const handleLogout = async () => {
     try {
@@ -40,16 +64,27 @@ export default function EmployeeHomeScreen() {
     }
   };
 
-  const handleCheckIn = () => {
-    // TODO: Implement check-in with GPS/WiFi validation
-    setTodayStatus('checked_in');
-    setCheckInTime(new Date().toLocaleTimeString());
+  const handleCheckIn = async () => {
+    if (!user) return;
+
+    try {
+      await performCheckIn(user);
+      if (user.trust_score > 50) updateUser({ trust_score: 50 });
+      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-in saved and will sync when online.' : 'Check-in successful.');
+    } catch {
+      // Error state is already surfaced by the attendance store.
+    }
   };
 
-  const handleCheckOut = () => {
-    // TODO: Implement check-out
-    setTodayStatus('checked_out');
-    setCheckOutTime(new Date().toLocaleTimeString());
+  const handleCheckOut = async () => {
+    if (!user) return;
+
+    try {
+      await performCheckOut(user);
+      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-out saved and will sync when online.' : 'Check-out successful.');
+    } catch {
+      // Error state is already surfaced by the attendance store.
+    }
   };
 
   const getStatusText = () => {
@@ -57,9 +92,13 @@ export default function EmployeeHomeScreen() {
       case 'not_checked_in':
         return 'Not checked in yet';
       case 'checked_in':
-        return `Checked in at ${checkInTime}`;
+        return currentLog?.check_in_time
+          ? `Checked in at ${formatTime(new Date(currentLog.check_in_time))}`
+          : 'Checked in';
       case 'checked_out':
-        return `Checked out at ${checkOutTime}`;
+        return currentLog?.check_out_time
+          ? `Checked out at ${formatTime(new Date(currentLog.check_out_time))}`
+          : 'Checked out';
     }
   };
 
@@ -99,19 +138,53 @@ export default function EmployeeHomeScreen() {
           <TrustScoreBadge score={user?.trust_score || 50} size="large" showLabel />
         </View>
         <Text style={styles.trustScoreDescription}>
-          Keep your attendance consistent to improve your score
+          50-36 okay, 35-20 needs review, 19-0 urgent review
         </Text>
       </Card>
 
-      {/* Today's Status Card */}
+      {/* Today Status Card */}
       <Card style={styles.statusCard}>
-        <Text style={styles.statusTitle}>Today's Status</Text>
+        <Text style={styles.statusTitle}>Today Status</Text>
         <View style={styles.statusContent}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
           <Text style={[styles.statusText, { color: getStatusColor() }]}>
             {getStatusText()}
           </Text>
         </View>
+
+        {pendingSyncLogs.length > 0 ? (
+          <View style={styles.offlineBanner}>
+            <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={BrandColors.warning} />
+            <Text style={styles.offlineText}>
+              {pendingSyncLogs.length} offline attendance item{pendingSyncLogs.length > 1 ? 's' : ''} pending sync
+            </Text>
+          </View>
+        ) : null}
+
+        {validationStatus.gps.status !== 'idle' ? (
+          <View style={styles.validationList}>
+            {(['gps', 'wifi', 'ip', 'spoofing'] as const).map((key) => (
+              <View key={key} style={styles.validationItem}>
+                <View
+                  style={[
+                    styles.validationDot,
+                    {
+                      backgroundColor:
+                        validationStatus[key].status === 'valid'
+                          ? BrandColors.success
+                          : validationStatus[key].status === 'invalid'
+                            ? BrandColors.danger
+                            : validationStatus[key].status === 'warning'
+                              ? BrandColors.warning
+                              : BrandColors.textMuted,
+                    },
+                  ]}
+                />
+                <Text style={styles.validationText}>{validationStatus[key].message}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {todayStatus === 'not_checked_in' ? (
           <TouchableOpacity
@@ -188,8 +261,14 @@ export default function EmployeeHomeScreen() {
             <IconSymbol name="clock" size={16} color={BrandColors.textMuted} />
           </View>
           <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>No recent activity</Text>
-            <Text style={styles.activitySubtitle}>Check in to start tracking</Text>
+            <Text style={styles.activityTitle}>
+              {currentLog ? 'Today attendance updated' : 'No recent activity'}
+            </Text>
+            <Text style={styles.activitySubtitle}>
+              {currentLog?.check_in_time
+                ? `Last check-in ${formatTime(new Date(currentLog.check_in_time))}`
+                : 'Check in to start tracking'}
+            </Text>
           </View>
         </View>
       </Card>
@@ -311,6 +390,39 @@ const styles = StyleSheet.create({
     color: BrandColors.success,
     fontSize: Typography.base,
     fontWeight: '600',
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BrandColors.backgroundLighter,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  offlineText: {
+    flex: 1,
+    color: BrandColors.warning,
+    fontSize: Typography.sm,
+  },
+  validationList: {
+    marginBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  validationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  validationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  validationText: {
+    flex: 1,
+    color: BrandColors.textSecondary,
+    fontSize: Typography.sm,
   },
   sectionTitle: {
     fontSize: Typography.lg,
