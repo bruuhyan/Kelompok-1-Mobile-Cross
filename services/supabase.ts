@@ -160,6 +160,20 @@ export const organizationService = {
   },
 
   /**
+   * Get organization by ID
+   */
+  async getOrganizationById(id: string) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Create organization
    */
   async createOrganization(org: {
@@ -175,5 +189,118 @@ export const organizationService = {
 
     if (error) throw error;
     return data;
+  },
+};
+
+/**
+ * Supervisor Service
+ */
+export const supervisorService = {
+  async getTeamMembers(organizationId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .neq('role', 'admin')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getPendingRegistrations(organizationId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateRegistrationStatus(userId: string, status: 'active' | 'suspended') {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ status })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getPendingRequests(organizationId: string) {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*, profiles:user_id(id, name, email, trust_score, status)')
+      .eq('organization_id', organizationId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async reviewRequest(
+    requestId: string,
+    reviewerId: string,
+    status: 'approved' | 'rejected',
+    reviewNotes?: string,
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .update({
+        status,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        review_notes: reviewNotes || null,
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getDashboardSummary(organizationId: string) {
+    const [pendingProfiles, activeEmployees, pendingRequests, pendingReports] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('role', 'employee')
+        .eq('status', 'active'),
+      supabase
+        .from('requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+      supabase
+        .from('reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+    ]);
+
+    const errors = [pendingProfiles.error, activeEmployees.error, pendingRequests.error, pendingReports.error]
+      .filter(Boolean);
+
+    if (errors.length > 0) throw errors[0];
+
+    return {
+      pendingRegistrations: pendingProfiles.count || 0,
+      activeEmployees: activeEmployees.count || 0,
+      pendingRequests: pendingRequests.count || 0,
+      pendingReports: pendingReports.count || 0,
+    };
   },
 };

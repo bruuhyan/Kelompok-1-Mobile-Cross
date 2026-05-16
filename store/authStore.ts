@@ -5,7 +5,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { UserProfile, UserRoles, UserStatus } from "@/utils/types";
+import { UserProfile } from "@/utils/types";
 
 interface AuthState {
   // User data
