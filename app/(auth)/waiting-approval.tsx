@@ -23,6 +23,7 @@ export default function WaitingApprovalScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const logout = useAuthStore((state) => state.logout);
 
   const [isChecking, setIsChecking] = useState(false);
 
@@ -50,6 +51,8 @@ export default function WaitingApprovalScreen() {
           }
         } else if (profile.status === UserStatus.SUSPENDED) {
           alert('Your account has been suspended. Please contact your administrator.');
+          await authService.signOut();
+          logout();
           router.replace('/(auth)/login');
         }
       } catch (error) {
@@ -66,11 +69,12 @@ export default function WaitingApprovalScreen() {
     const interval = setInterval(checkApproval, 10000);
 
     return () => clearInterval(interval);
-  }, [router, setUser]);
+  }, [logout, router, setUser]);
 
   const handleLogout = async () => {
     try {
       await authService.signOut();
+      logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);

@@ -37,6 +37,60 @@ AS $$
   SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
 $$;
 
+CREATE OR REPLACE FUNCTION create_organization_with_admin(
+  p_name TEXT,
+  p_address TEXT,
+  p_code TEXT,
+  p_admin_name TEXT,
+  p_admin_email TEXT
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  new_org_id UUID;
+  current_user_id UUID;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = current_user_id) THEN
+    RAISE EXCEPTION 'Profile already exists for this user';
+  END IF;
+
+  INSERT INTO public.organizations (name, address, code)
+  VALUES (p_name, p_address, p_code)
+  RETURNING id INTO new_org_id;
+
+  INSERT INTO public.profiles (
+    id,
+    name,
+    email,
+    organization_id,
+    role,
+    status
+  )
+  VALUES (
+    current_user_id,
+    p_admin_name,
+    p_admin_email,
+    new_org_id,
+    'admin',
+    'active'
+  );
+
+  RETURN new_org_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
+
 -- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -51,10 +105,14 @@ CREATE POLICY "Organizations are viewable by everyone"
   ON organizations FOR SELECT
   USING (true);
 
--- Allow anyone to create organizations (org codes are unique, no sensitive data)
-CREATE POLICY "Anyone can create organizations"
+DROP POLICY IF EXISTS "Anyone can create organizations" ON organizations;
+DROP POLICY IF EXISTS "Authenticated users can create organizations" ON organizations;
+
+-- Allow authenticated users to create organizations.
+-- The app uses create_organization_with_admin() so the first admin profile is created atomically.
+CREATE POLICY "Authenticated users can create organizations"
   ON organizations FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Profiles policies
 -- Users can read their own profile
@@ -62,10 +120,16 @@ CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can create own profile" ON profiles;
+
 -- Users can create their own profile (must come before admin policies to avoid recursion)
 CREATE POLICY "Users can create own profile"
   ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (
+    auth.uid() = id
+    AND role = 'employee'
+    AND status = 'pending'
+  );
 
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile"
