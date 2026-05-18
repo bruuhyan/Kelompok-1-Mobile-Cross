@@ -160,19 +160,19 @@ export default function SupervisorHomeScreen() {
           title="Review Requests"
           subtitle={`${summary.pendingRequests} waiting`}
           icon="checkmark.seal.fill"
-          onPress={() => router.push('/(supervisor)/request-review')}
+          onPress={() => router.push('/(supervisor)/request-review' as any)}
         />
         <ActionCard
           title="Manage Employees"
           subtitle={`${summary.pendingRegistrations} new accounts`}
           icon="person.crop.circle.badge.checkmark"
-          onPress={() => router.push('/(supervisor)/team')}
+          onPress={() => router.push('/(supervisor)/team' as any)}
         />
       </View>
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Pending Requests</Text>
-        <TouchableOpacity onPress={() => router.push('/(supervisor)/request-review')}>
+        <TouchableOpacity onPress={() => router.push('/(supervisor)/request-review' as any)}>
           <Text style={styles.linkText}>View all</Text>
         </TouchableOpacity>
       </View>

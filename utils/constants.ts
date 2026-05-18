@@ -59,11 +59,31 @@ export const VALIDATION = {
 
   // Trust Score
   TRUST_SCORE_MIN: 0,
-  TRUST_SCORE_MAX: 100,
+  TRUST_SCORE_MAX: 50,
+  TRUST_SCORE_START: 50,
+
+  // Attendance
+  OFFLINE_SYNC_MAX_AGE_HOURS: 24,
+  LOCATION_MONITORING_INTERVAL_MS: 30 * 60 * 1000,
+  CHECKOUT_AFTER_GEOFENCE_EXIT_MS: 5 * 60 * 1000,
+  LOCATION_SPOOFING_SPEED_MPS: 50,
+  SUSPICIOUS_ACCURACY_METERS: 5,
 
   // Pagination
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,
+};
+
+export const TRUST_SCORE = {
+  MAX: 50,
+  MIN: 0,
+  STARTING_SCORE: 50,
+  OFFENSE_PENALTIES: [3, 5, 7, 10, 15],
+  TIERS: {
+    OKAY: { min: 36, max: 50, label: 'Okay' },
+    NEEDS_REVIEW: { min: 20, max: 35, label: 'Needs Review' },
+    URGENT_REVIEW: { min: 0, max: 19, label: 'Urgent Review' },
+  },
 };
 
 export const ERROR_MESSAGES = {

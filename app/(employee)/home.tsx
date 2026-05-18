@@ -3,7 +3,7 @@
  * Dashboard showing today's status, trust score, and quick actions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,17 +18,27 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { useAuthStore } from '@/store/authStore';
-import { authService, profileService } from '@/services/supabase';
+import { useAttendanceStore } from '@/store/attendanceStore';
+import { authService } from '@/services/supabase';
+import { formatTime } from '@/utils/helpers';
 
 export default function EmployeeHomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  const [todayStatus, setTodayStatus] = useState<'not_checked_in' | 'checked_in' | 'checked_out'>('not_checked_in');
-  const [checkInTime, setCheckInTime] = useState<string | null>(null);
-  const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    currentLog,
+    hydrateTodayStatus,
+    isCheckedIn,
+    isLoading,
+    performCheckIn,
+    performCheckOut,
+  } = useAttendanceStore();
+
+  useEffect(() => {
+    if (user) hydrateTodayStatus(user.id);
+  }, [hydrateTodayStatus, user]);
 
   const handleLogout = async () => {
     try {
@@ -40,38 +50,26 @@ export default function EmployeeHomeScreen() {
     }
   };
 
-  const handleCheckIn = () => {
-    // TODO: Implement check-in with GPS/WiFi validation
-    setTodayStatus('checked_in');
-    setCheckInTime(new Date().toLocaleTimeString());
+  const handleCheckIn = async () => {
+    if (!user) return;
+    await performCheckIn(user.id, user.organization_id);
   };
 
-  const handleCheckOut = () => {
-    // TODO: Implement check-out
-    setTodayStatus('checked_out');
-    setCheckOutTime(new Date().toLocaleTimeString());
+  const handleCheckOut = async () => {
+    if (!user) return;
+    await performCheckOut(user.id);
   };
 
   const getStatusText = () => {
-    switch (todayStatus) {
-      case 'not_checked_in':
-        return 'Not checked in yet';
-      case 'checked_in':
-        return `Checked in at ${checkInTime}`;
-      case 'checked_out':
-        return `Checked out at ${checkOutTime}`;
-    }
+    if (isCheckedIn && currentLog) return `Checked in at ${formatTime(new Date(currentLog.check_in_time))}`;
+    if (currentLog?.check_out_time) return `Checked out at ${formatTime(new Date(currentLog.check_out_time))}`;
+    return 'Not checked in yet';
   };
 
   const getStatusColor = () => {
-    switch (todayStatus) {
-      case 'not_checked_in':
-        return BrandColors.textSecondary;
-      case 'checked_in':
-        return BrandColors.success;
-      case 'checked_out':
-        return BrandColors.info;
-    }
+    if (isCheckedIn) return BrandColors.success;
+    if (currentLog?.check_out_time) return BrandColors.info;
+    return BrandColors.textSecondary;
   };
 
   return (
@@ -113,7 +111,7 @@ export default function EmployeeHomeScreen() {
           </Text>
         </View>
 
-        {todayStatus === 'not_checked_in' ? (
+        {!isCheckedIn && !currentLog?.check_out_time ? (
           <TouchableOpacity
             style={styles.checkInButton}
             onPress={handleCheckIn}
@@ -127,7 +125,7 @@ export default function EmployeeHomeScreen() {
               </>
             )}
           </TouchableOpacity>
-        ) : todayStatus === 'checked_in' ? (
+        ) : isCheckedIn ? (
           <TouchableOpacity
             style={styles.checkOutButton}
             onPress={handleCheckOut}

@@ -48,9 +48,9 @@ export interface Organization {
 export interface OrganizationSettings {
   id: string;
   organization_id: string;
-  gps_lat: number;
-  gps_lng: number;
-  gps_radius_meters: number;
+  workplace_lat?: number | null;
+  workplace_lng?: number | null;
+  gps_radius?: number | null;
   wifi_ssid?: string;
   wifi_bssid?: string;
   ip_range?: string;
@@ -61,26 +61,124 @@ export interface OrganizationSettings {
 }
 
 // Attendance Types
+export interface Coordinates {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  mocked?: boolean;
+  timestamp?: number;
+}
+
+export interface WiFiInfo {
+  ssid?: string | null;
+  bssid?: string | null;
+  isConnected: boolean;
+  type?: string | null;
+}
+
+export interface AttendanceValidationFlags {
+  gps_valid: boolean;
+  wifi_valid: boolean;
+  ip_valid: boolean;
+  ip_suspicious: boolean;
+  spoofing_detected: boolean;
+  offline_submission?: boolean;
+}
+
+export type AttendanceReviewStatus = 'okay' | 'needs_review' | 'urgent_review';
+
 export interface AttendanceLog {
   id: string;
   user_id: string;
   organization_id: string;
-  type: 'check_in' | 'check_out';
-  timestamp: string;
-  gps_lat: number;
-  gps_lng: number;
-  wifi_ssid?: string;
-  wifi_bssid?: string;
-  ip_address?: string;
-  is_synced: boolean;
+  check_in_time: string;
+  check_out_time?: string | null;
+  check_in_lat?: number | null;
+  check_in_lng?: number | null;
+  check_out_lat?: number | null;
+  check_out_lng?: number | null;
+  check_in_wifi_ssid?: string | null;
+  check_in_wifi_bssid?: string | null;
+  check_out_wifi_ssid?: string | null;
+  check_out_wifi_bssid?: string | null;
+  check_in_ip?: string | null;
+  check_out_ip?: string | null;
+  validation_flags?: AttendanceValidationFlags | null;
+  offense_count?: number;
+  trust_score_impact: number;
+  review_status?: AttendanceReviewStatus;
+  is_late: boolean;
+  duration_minutes?: number | null;
+  offline_client_id?: string | null;
+  offline_sequence?: number | null;
+  notes?: string | null;
   created_at: string;
 }
 
-export interface AttendanceValidation {
-  gps_valid: boolean;
-  wifi_valid: boolean;
-  ip_valid: boolean;
-  errors: string[];
+export interface ValidationResult {
+  type: 'gps' | 'wifi' | 'ip' | 'spoofing';
+  isValid: boolean;
+  isBlocking: boolean;
+  isSuspicious?: boolean;
+  message: string;
+  distanceMeters?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface ValidationFlowResult {
+  gps: ValidationResult | null;
+  wifi: ValidationResult | null;
+  ip: ValidationResult | null;
+  spoofing: ValidationResult | null;
+  canSubmit: boolean;
+  requiresReview: boolean;
+  warnings: ValidationResult[];
+  blockingReason?: string;
+}
+
+export interface CheckInData {
+  userId: string;
+  organizationId: string;
+  location: Coordinates;
+  wifi: WiFiInfo;
+  ipAddress?: string | null;
+  validation: ValidationFlowResult;
+  offlineClientId?: string;
+  offlineSequence?: number;
+}
+
+export interface CheckOutData {
+  logId: string;
+  userId: string;
+  location?: Coordinates | null;
+  wifi?: WiFiInfo | null;
+  ipAddress?: string | null;
+  autoCheckout?: boolean;
+}
+
+export interface AttendanceHistoryStats {
+  totalLogs: number;
+  lateCheckIns: number;
+  averageDurationMinutes: number;
+  suspiciousLogs: number;
+}
+
+export interface OfflineAttendanceLog {
+  id: string;
+  type: 'check_in' | 'check_out';
+  user_id: string;
+  organization_id: string;
+  log_id?: string;
+  timestamp: number;
+  location?: Coordinates | null;
+  wifi?: WiFiInfo | null;
+  ip_address?: string | null;
+  validation?: ValidationFlowResult | null;
+  sequence_number: number;
+  nonce: string;
+  integrity_hash: string;
+  retry_count: number;
+  last_error?: string | null;
 }
 
 // Request Types

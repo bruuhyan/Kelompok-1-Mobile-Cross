@@ -157,3 +157,26 @@ export function throttle<T extends (...args: any[]) => any>(
     }
   };
 }
+
+/**
+ * Return the stacked penalty for the next attendance offense.
+ * Penalties grow for the first five offenses, then stay at the fifth-offense level.
+ */
+export function getTrustScorePenalty(offenseNumber: number): number {
+  const penalties = [3, 5, 7, 10, 15];
+  const index = Math.max(0, Math.min(offenseNumber - 1, penalties.length - 1));
+  return penalties[index];
+}
+
+/**
+ * TrustEnd Phase 5 uses a 0-50 trust score scale.
+ */
+export function clampTrustScore(score: number): number {
+  return Math.max(0, Math.min(50, Math.round(score)));
+}
+
+export function getTrustReviewStatus(score: number): 'okay' | 'needs_review' | 'urgent_review' {
+  if (score >= 36) return 'okay';
+  if (score >= 20) return 'needs_review';
+  return 'urgent_review';
+}

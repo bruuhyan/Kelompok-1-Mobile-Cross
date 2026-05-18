@@ -118,7 +118,24 @@ CREATE POLICY "Users can view own attendance"
 -- Users can create their own attendance logs
 CREATE POLICY "Users can create own attendance"
   ON attendance_logs FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (
+    user_id = auth.uid()
+    AND organization_id = get_user_organization_id()
+  );
+
+DROP POLICY IF EXISTS "Users can update own active attendance" ON attendance_logs;
+
+-- Users can check out their own active attendance log
+CREATE POLICY "Users can update own active attendance"
+  ON attendance_logs FOR UPDATE
+  USING (
+    user_id = auth.uid()
+    AND organization_id = get_user_organization_id()
+  )
+  WITH CHECK (
+    user_id = auth.uid()
+    AND organization_id = get_user_organization_id()
+  );
 
 -- Admins and supervisors can view all attendance in their organization
 CREATE POLICY "Admins and supervisors can view org attendance"

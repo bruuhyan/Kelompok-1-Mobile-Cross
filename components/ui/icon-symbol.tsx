@@ -24,6 +24,8 @@ const MAPPING = {
   'location.fill': 'location-on',
   'location.slash': 'location-off',
   'checkmark.circle.fill': 'check-circle',
+  'checkmark': 'check',
+  'exclamationmark': 'priority-high',
   'calendar': 'event',
   'doc.text': 'description',
   'person.circle': 'account-circle',
