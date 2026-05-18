@@ -2,6 +2,10 @@
  * Supabase Service - Authentication and API calls
  */
 
+import 'react-native-url-polyfill/auto';
+
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { API_CONFIG } from '@/utils/constants';
 
@@ -9,8 +13,36 @@ import { API_CONFIG } from '@/utils/constants';
 const supabaseUrl = API_CONFIG.supabaseUrl;
 const supabasePublishableKey = API_CONFIG.supabasePublishableKey;
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+// Create a custom storage that safely handles SSR (Server-Side Rendering)
+const customStorage = {
+  getItem: (key: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve(null);
+    }
+    return AsyncStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve();
+    }
+    return AsyncStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve();
+    }
+    return AsyncStorage.removeItem(key);
+  },
+};
 
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    storage: customStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 /**
  * Authentication Service
  */
@@ -186,6 +218,29 @@ export const organizationService = {
       .insert(org)
       .select()
       .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Securely create an organization and the current user's admin profile.
+   * Requires the matching SQL RPC in supabase/rls_policies.sql.
+   */
+  async createOrganizationWithAdmin(org: {
+    name: string;
+    address: string;
+    code: string;
+    adminName: string;
+    adminEmail: string;
+  }) {
+    const { data, error } = await supabase.rpc('create_organization_with_admin', {
+      p_name: org.name,
+      p_address: org.address,
+      p_code: org.code,
+      p_admin_name: org.adminName,
+      p_admin_email: org.adminEmail,
+    });
 
     if (error) throw error;
     return data;

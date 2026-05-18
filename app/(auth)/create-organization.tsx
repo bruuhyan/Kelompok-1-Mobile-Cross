@@ -78,21 +78,13 @@ export default function CreateOrganizationScreen() {
         return;
       }
 
-      // Create organization
-      const organization = await organizationService.createOrganization({
+      // Create organization and admin profile through a secure database RPC
+      await organizationService.createOrganizationWithAdmin({
         name: orgName.trim(),
         address: orgAddress.trim(),
         code: generatedCode,
-      });
-
-      // Create user profile as admin
-      await profileService.createProfile({
-        id: currentUser.id,
-        name: orgName.trim(), // Use org name as admin name for now
-        email: currentUser.email || user?.email || '',
-        organization_id: organization.id,
-        role: 'admin',
-        status: 'active',
+        adminName: orgName.trim(), // Use org name as admin name for now
+        adminEmail: currentUser.email || user?.email || '',
       });
 
       // Update user in store

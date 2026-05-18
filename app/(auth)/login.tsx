@@ -78,6 +78,7 @@ export default function LoginScreen() {
 
       // Check account status
       if (profile.status === 'pending') {
+        setUser(profile);
         router.replace('/(auth)/waiting-approval');
         return;
       }
