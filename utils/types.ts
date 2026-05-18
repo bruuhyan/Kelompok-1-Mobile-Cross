@@ -30,6 +30,7 @@ export interface User {
 
 export interface UserProfile extends User {
   avatar_url?: string;
+  image_url?: string;
   department?: string;
   position?: string;
 }
