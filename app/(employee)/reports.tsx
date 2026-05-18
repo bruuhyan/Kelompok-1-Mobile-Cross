@@ -1,11 +1,16 @@
+/**
+ * Employee Reports Screen Placeholder
+ * Will be implemented in Phase 8
+ */
+
+import { BrandColors } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
-import { BrandColors, Spacing, Typography } from '@/constants/theme';
 
 export default function EmployeeReportsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Reports</Text>
-      <Text style={styles.subtitle}>Submitted reports will appear here.</Text>
+      <Text style={styles.subtitle}>Coming in Phase 8</Text>
     </View>
   );
 }
@@ -13,20 +18,18 @@ export default function EmployeeReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: BrandColors.background,
-    padding: Spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
+    fontSize: 32,
+    fontWeight: '700',
     color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   subtitle: {
+    fontSize: 16,
     color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    textAlign: 'center',
   },
 });

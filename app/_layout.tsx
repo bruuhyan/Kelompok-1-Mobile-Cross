@@ -4,13 +4,15 @@
  */
 
 import { DarkTheme, ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useCustomFonts } from "@/constants/fonts";
+import { authService, profileService } from "@/services/supabase";
+import { useAuthStore } from "@/store/authStore";
 import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 
 // Keep the splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync();
@@ -19,8 +21,93 @@ export const unstable_settings = {
   anchor: "(tabs)",
 };
 
+function AuthGate() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const segments = useSegments();
+  const setUser = useAuthStore((state) => state.setUser);
+  const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const routeUser = async () => {
+      try {
+        const session = await authService.getSession();
+        const group = segments[0];
+        const route = segments[1];
+        const isAuthRoute = group === "(auth)";
+        const isOnboardingRoute =
+          isAuthRoute &&
+          ["onboarding", "create-organization", "join-organization"].includes(
+            route ?? "",
+          );
+
+        if (!session?.user) {
+          logout();
+
+          if (!isMounted || isAuthRoute) return;
+          router.replace("/(auth)/login");
+          return;
+        }
+
+        const profile = await profileService.getProfile(session.user.id);
+
+        if (!isMounted) return;
+
+        if (!profile) {
+          setUser(null);
+
+          if (!isOnboardingRoute) {
+            router.replace("/(auth)/onboarding");
+          }
+          return;
+        }
+
+        setUser(profile);
+
+        if (profile.status === "pending") {
+          if (pathname !== "/waiting-approval") {
+            router.replace("/(auth)/waiting-approval");
+          }
+          return;
+        }
+
+        if (profile.status === "suspended") {
+          await authService.signOut();
+          logout();
+          router.replace("/(auth)/login");
+          return;
+        }
+
+        const targetRoute =
+          profile.role === "supervisor" || profile.role === "admin"
+            ? "/(supervisor)/home"
+            : "/(employee)/home";
+        const expectedGroup =
+          profile.role === "supervisor" || profile.role === "admin"
+            ? "(supervisor)"
+            : "(employee)";
+
+        if (isAuthRoute || group === "splash" || group !== expectedGroup) {
+          router.replace(targetRoute);
+        }
+      } catch (error) {
+        console.error("Auth gate error:", error);
+      }
+    };
+
+    routeUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [logout, pathname, router, segments, setUser]);
+
+  return null;
+}
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const fontsLoaded = useCustomFonts();
 
   // Hide splash screen once fonts are loaded
@@ -54,6 +141,7 @@ export default function RootLayout() {
           options={{ presentation: "modal", title: "Modal" }}
         />
       </Stack>
+      <AuthGate />
       <StatusBar style="light" backgroundColor="#0D1B2A" />
     </ThemeProvider>
   );

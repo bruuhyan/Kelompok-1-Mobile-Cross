@@ -2,10 +2,10 @@
  * Auth Store - User authentication state management
  */
 
+import { UserProfile } from "@/utils/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { UserProfile } from "@/utils/types";
 
 interface AuthState {
   // User data

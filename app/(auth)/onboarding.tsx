@@ -20,6 +20,7 @@ import { useAuthStore } from '@/store/authStore';
 export default function OnboardingScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleCreateOrganization = () => {
     router.push('/(auth)/create-organization');
@@ -33,6 +34,7 @@ export default function OnboardingScreen() {
     const { authService } = await import('@/services/supabase');
     try {
       await authService.signOut();
+      logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -48,7 +50,7 @@ export default function OnboardingScreen() {
         </View>
         <Text style={styles.title}>Welcome to TrustEnd!</Text>
         <Text style={styles.subtitle}>
-          Your account has been created. Now let us set up your organization.
+          Your account has been created. Now let&apos;s set up your organization.
         </Text>
       </View>
 
