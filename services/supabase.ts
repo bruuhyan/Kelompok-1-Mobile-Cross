@@ -322,6 +322,84 @@ export const supervisorService = {
     return data || [];
   },
 
+  async getTeamAttendanceToday(organizationId: string) {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    const { data, error } = await supabase
+      .from('attendance_logs')
+      .select('*, profiles:user_id(id, name, email)')
+      .eq('organization_id', organizationId)
+      .gte('check_in_time', start.toISOString())
+      .lte('check_in_time', end.toISOString())
+      .order('check_in_time', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAssignableEmployees(organizationId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email, trust_score, status')
+      .eq('organization_id', organizationId)
+      .eq('role', 'employee')
+      .eq('status', 'active')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getTasks(organizationId: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*, assignee:profiles!tasks_assigned_to_fkey(id, name, email, trust_score), creator:profiles!tasks_created_by_fkey(id, name, email), reviewer:profiles!tasks_reviewed_by_fkey(id, name, email)')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createTask(task: {
+    organization_id: string;
+    assigned_to: string;
+    created_by: string;
+    title: string;
+    description: string;
+    due_date?: string | null;
+  }) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert(task)
+      .select('*, assignee:profiles!tasks_assigned_to_fkey(id, name, email, trust_score)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async reviewTask(taskId: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        status,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        review_notes: reviewNotes || null,
+      })
+      .eq('id', taskId)
+      .select('*, assignee:profiles!tasks_assigned_to_fkey(id, name, email, trust_score), reviewer:profiles!tasks_reviewed_by_fkey(id, name, email)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async reviewRequest(
     requestId: string,
     reviewerId: string,

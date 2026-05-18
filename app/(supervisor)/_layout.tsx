@@ -40,27 +40,6 @@ export default function SupervisorTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="attendance-logs"
-        options={{
-          title: 'Attendance',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="list.bullet.rectangle" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="request-review"
-        options={{
-          title: 'Requests',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.seal.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="report-review"
-        options={{
-          title: 'Reports',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.magnifyingglass" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="team"
         options={{
           title: 'Team',
@@ -68,10 +47,36 @@ export default function SupervisorTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="request-review"
+        options={{
+          title: 'Request',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.seal.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="task"
+        options={{
+          title: 'Task',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="attendance-logs"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="report-review"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

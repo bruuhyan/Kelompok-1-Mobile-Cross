@@ -71,7 +71,6 @@ export const Colors = {
     accent: BrandColors.primaryLight,
     card: BrandColors.card,
     border: BrandColors.border,
-    textMuted: BrandColors.textMuted,
   },
 };
 
