@@ -117,7 +117,7 @@ export default function SupervisorReportReviewScreen() {
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.75}
-        onPress={() => router.push(`/(supervisor)/report-detail/${item.id}`)}
+        onPress={() => router.push(`/(supervisor)/report-detail/${item.id}` as any)}
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleGroup}>

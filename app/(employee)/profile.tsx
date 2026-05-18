@@ -6,18 +6,13 @@
 import { Card } from "@/components/Card";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import {
-  BorderRadius,
-  BrandColors,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
+import { BorderRadius, BrandColors, Spacing, ThemeColors, Typography } from "@/constants/theme";
 import { storageService } from "@/services/storageService";
 import { authService, profileService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
-import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -29,14 +24,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { Card } from '@/components/Card';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { TrustScoreBadge } from '@/components/TrustScoreBadge';
-import { useAuthStore } from '@/store/authStore';
-import { authService, profileService } from '@/services/supabase';
 
 
 export default function EmployeeProfileScreen() {
@@ -324,25 +312,6 @@ export default function EmployeeProfileScreen() {
           <Text style={[styles.infoValue, styles.disabled]}>
             {user?.email || "Loading..."}
           </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoLabel}>
-            <IconSymbol name="phone" size={16} color={colors.textMuted} />
-            <Text style={styles.infoLabelText}>Phone</Text>
-          </View>
-          {isEditing ? (
-            <TextInput
-              style={styles.editableField}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Add phone number"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="phone-pad"
-            />
-          ) : (
-            <Text style={styles.infoValue}>{user?.phone || 'Not set'}</Text>
-          )}
         </View>
 
         <View style={styles.infoRow}>
