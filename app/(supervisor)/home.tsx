@@ -3,7 +3,7 @@
  * Dashboard for pending requests, registrations, and team health.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -78,9 +78,11 @@ export default function SupervisorHomeScreen() {
     }
   }, [user?.organization_id]);
 
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, [loadDashboard]),
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);

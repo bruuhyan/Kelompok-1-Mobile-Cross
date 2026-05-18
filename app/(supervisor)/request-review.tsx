@@ -4,7 +4,7 @@
  */
 
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -58,9 +59,11 @@ export default function SupervisorRequestReviewScreen() {
     }
   }, [user?.organization_id]);
 
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
+  useFocusEffect(
+    useCallback(() => {
+      loadRequests();
+    }, [loadRequests]),
+  );
 
   const handleReview = async (requestId: string, status: 'approved' | 'rejected') => {
     if (!user?.id) return;
