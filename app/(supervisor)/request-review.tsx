@@ -3,33 +3,10 @@
  * Will be implemented in Phase 12
  */
 
-import { BrandColors } from '@/constants/theme';
-import { StyleSheet, Text, View } from 'react-native';
+import { PlaceholderScreen } from "@/components/PlaceholderScreen";
 
 export default function SupervisorRequestReviewScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Request Review</Text>
-      <Text style={styles.subtitle}>Coming in Phase 12</Text>
-    </View>
+    <PlaceholderScreen title="Request Review" subtitle="Coming in Phase 12" />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: BrandColors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: BrandColors.textSecondary,
-  },
-});

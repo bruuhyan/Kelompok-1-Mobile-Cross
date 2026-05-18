@@ -14,7 +14,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
@@ -22,6 +23,8 @@ import { useAuthStore } from '@/store/authStore';
 import { authService, profileService } from '@/services/supabase';
 
 export default function EmployeeProfileScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -77,7 +80,7 @@ export default function EmployeeProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol name="chevron.left" size={24} color={BrandColors.text} />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <TouchableOpacity
@@ -116,7 +119,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="person" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="person" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Name</Text>
           </View>
           {isEditing ? (
@@ -125,7 +128,7 @@ export default function EmployeeProfileScreen() {
               value={name}
               onChangeText={setName}
               placeholder="Enter name"
-              placeholderTextColor={BrandColors.textMuted}
+              placeholderTextColor={colors.textMuted}
             />
           ) : (
             <Text style={styles.infoValue}>{user?.name || 'Loading...'}</Text>
@@ -134,7 +137,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="envelope" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="envelope" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Email</Text>
           </View>
           <Text style={[styles.infoValue, styles.disabled]}>{user?.email || 'Loading...'}</Text>
@@ -142,7 +145,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="phone" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="phone" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Phone</Text>
           </View>
           {isEditing ? (
@@ -151,7 +154,7 @@ export default function EmployeeProfileScreen() {
               value={phone}
               onChangeText={setPhone}
               placeholder="Add phone number"
-              placeholderTextColor={BrandColors.textMuted}
+              placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
             />
           ) : (
@@ -161,7 +164,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="calendar" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="calendar" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Member Since</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -176,7 +179,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="building.2" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="building.2" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Organization ID</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -186,10 +189,10 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="shield" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="shield" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Status</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? BrandColors.success : BrandColors.warning }]}>
+          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? colors.success : colors.warning }]}>
             <Text style={styles.statusText}>
               {user?.status === 'active' ? 'Active' : user?.status || 'Loading...'}
             </Text>
@@ -200,18 +203,19 @@ export default function EmployeeProfileScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
-          <Text style={[styles.actionButtonText, { color: BrandColors.error }]}>Log Out</Text>
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
+          <Text style={[styles.actionButtonText, { color: colors.error }]}>Log Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -226,7 +230,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: Typography.lg,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
   },
   editButton: {
     padding: Spacing.sm,
@@ -234,7 +238,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.primary,
+    color: colors.primary,
   },
   profileCard: {
     marginHorizontal: Spacing.lg,
@@ -250,14 +254,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 32,
     fontWeight: '800',
-    color: BrandColors.background,
+    color: colors.background,
   },
   trustScoreBadge: {
     position: 'absolute',
@@ -267,16 +271,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: Typography['2xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   userEmail: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.md,
   },
   roleBadge: {
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -284,7 +288,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   infoCard: {
     marginHorizontal: Spacing.lg,
@@ -293,7 +297,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: Typography.lg,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.lg,
   },
   infoRow: {
@@ -309,23 +313,23 @@ const styles = StyleSheet.create({
   },
   infoLabelText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   infoValue: {
     fontSize: Typography.base,
     fontWeight: '500',
-    color: BrandColors.text,
+    color: colors.text,
   },
   disabled: {
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
   },
   editableField: {
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
     fontSize: Typography.base,
-    color: BrandColors.text,
+    color: colors.text,
     minWidth: 140,
     textAlign: 'right',
   },
@@ -337,7 +341,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: BrandColors.background,
+    color: colors.background,
   },
   actions: {
     paddingHorizontal: Spacing.lg,
@@ -347,11 +351,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
     gap: Spacing.sm,
   },
   actionButtonText: {

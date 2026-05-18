@@ -3,12 +3,13 @@
  * Handles app-wide theming and navigation structure
  */
 
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useCustomFonts } from "@/constants/fonts";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { ThemePreferenceProvider } from "@/hooks/use-theme-preference";
 import * as SplashScreen from "expo-splash-screen";
 
 // Keep the splash screen visible while fonts load
@@ -31,12 +32,22 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={DarkTheme}>
+    <ThemePreferenceProvider>
+      <RootStack />
+    </ThemePreferenceProvider>
+  );
+}
+
+function RootStack() {
+  const colors = useAppTheme();
+
+  return (
+    <>
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: "#0D1B2A",
+            backgroundColor: colors.background,
           },
         }}
       >
@@ -52,7 +63,7 @@ export default function RootLayout() {
           options={{ presentation: "modal", title: "Modal" }}
         />
       </Stack>
-      <StatusBar style="light" backgroundColor="#0D1B2A" />
-    </ThemeProvider>
+      <StatusBar style="auto" backgroundColor={colors.background} />
+    </>
   );
 }

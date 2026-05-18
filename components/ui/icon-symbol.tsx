@@ -37,6 +37,7 @@ const MAPPING = {
   'checkmark.seal.fill': 'verified',
   'doc.text.magnifyingglass': 'find-in-page',
   'person.2.fill': 'groups',
+  'gearshape.fill': 'settings',
 } as IconMapping;
 
 /**

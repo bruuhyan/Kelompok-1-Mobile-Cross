@@ -3,12 +3,16 @@ import { StyleSheet, View, Text } from 'react-native';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
+import { ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function HomeScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#6366F1', dark: '#0A0E27' }}
+      headerBackgroundColor={{ light: colors.backgroundLighter, dark: colors.background }}
       headerImage={
         <View style={styles.headerGradient}>
           <View style={styles.logo}>
@@ -30,15 +34,15 @@ export default function HomeScreen() {
         <ThemedText type="subtitle">Features</ThemedText>
         <ThemedView style={styles.featureList}>
           <View style={styles.featureItem}>
-            <View style={[styles.featureDot, { backgroundColor: Colors.dark.primary }]} />
+            <View style={[styles.featureDot, { backgroundColor: colors.primary }]} />
             <ThemedText>End-to-end encryption</ThemedText>
           </View>
           <View style={styles.featureItem}>
-            <View style={[styles.featureDot, { backgroundColor: Colors.dark.secondary }]} />
+            <View style={[styles.featureDot, { backgroundColor: colors.secondary }]} />
             <ThemedText>Secure authentication</ThemedText>
           </View>
           <View style={styles.featureItem}>
-            <View style={[styles.featureDot, { backgroundColor: Colors.dark.accent }]} />
+            <View style={[styles.featureDot, { backgroundColor: colors.accent }]} />
             <ThemedText>Privacy-first design</ThemedText>
           </View>
         </ThemedView>
@@ -47,7 +51,8 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -59,7 +64,7 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     flex: 1,
-    backgroundColor: '#0A0E27',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -67,10 +72,10 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 25,
-    backgroundColor: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%)',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -79,7 +84,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 40,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: colors.background,
     letterSpacing: 2,
   },
   featureList: {

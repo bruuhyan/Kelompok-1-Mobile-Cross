@@ -12,7 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService, profileService } from '@/services/supabase';
@@ -20,6 +21,8 @@ import { useAuthStore } from '@/store/authStore';
 import { UserStatus } from '@/utils/types';
 
 export default function WaitingApprovalScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -82,7 +85,7 @@ export default function WaitingApprovalScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <IconSymbol name="clock.fill" size={48} color={BrandColors.primary} />
+          <IconSymbol name="clock.fill" size={48} color={colors.primary} />
         </View>
         <Text style={styles.title}>Account Pending Approval</Text>
         <Text style={styles.subtitle}>
@@ -120,7 +123,7 @@ export default function WaitingApprovalScreen() {
       {/* Info Card */}
       <Card style={styles.infoCard}>
         <View style={styles.infoHeader}>
-          <IconSymbol name="info.circle.fill" size={20} color={BrandColors.info} />
+          <IconSymbol name="info.circle.fill" size={20} color={colors.info} />
           <Text style={styles.infoTitle}>What happens next?</Text>
         </View>
         <Text style={styles.infoText}>
@@ -134,7 +137,7 @@ export default function WaitingApprovalScreen() {
 
       {/* Auto-refresh indicator */}
       <View style={styles.refreshIndicator}>
-        <ActivityIndicator size="small" color={BrandColors.primary} />
+        <ActivityIndicator size="small" color={colors.primary} />
         <Text style={styles.refreshText}>
           {isChecking ? 'Checking for approval updates...' : 'Waiting for approval updates...'}
         </Text>
@@ -150,11 +153,12 @@ export default function WaitingApprovalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   scrollContent: {
     padding: Spacing.lg,
     paddingTop: Spacing['3xl'],
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     minHeight: '100%',
   },
   header: {
@@ -165,7 +169,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -173,13 +177,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: Spacing.lg,
   },
@@ -195,17 +199,17 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: BrandColors.warning,
+    backgroundColor: colors.warning,
     marginRight: Spacing.sm,
   },
   statusText: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
   },
   divider: {
     height: 1,
-    backgroundColor: BrandColors.border,
+    backgroundColor: colors.border,
     marginVertical: Spacing.md,
   },
   infoRow: {
@@ -215,12 +219,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   infoValue: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
   },
   infoCard: {
     marginBottom: Spacing.lg,
@@ -233,12 +237,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginLeft: Spacing.sm,
   },
   infoText: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: Spacing.sm,
   },
@@ -247,13 +251,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.md,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
   },
   refreshText: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     marginLeft: Spacing.sm,
   },
   footer: {
@@ -261,6 +265,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: Typography.sm,
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
   },
 });
