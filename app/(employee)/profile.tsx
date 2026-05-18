@@ -28,9 +28,20 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { Card } from '@/components/Card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { TrustScoreBadge } from '@/components/TrustScoreBadge';
+import { useAuthStore } from '@/store/authStore';
+import { authService, profileService } from '@/services/supabase';
+
 
 export default function EmployeeProfileScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -285,7 +296,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="person" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="person" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Name</Text>
           </View>
           {isEditing ? (
@@ -294,7 +305,7 @@ export default function EmployeeProfileScreen() {
               value={name}
               onChangeText={setName}
               placeholder="Enter name"
-              placeholderTextColor={BrandColors.textMuted}
+              placeholderTextColor={colors.textMuted}
             />
           ) : (
             <Text style={styles.infoValue}>{user?.name || "Loading..."}</Text>
@@ -317,11 +328,26 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol
-              name="calendar"
-              size={16}
-              color={BrandColors.textMuted}
+            <IconSymbol name="phone" size={16} color={colors.textMuted} />
+            <Text style={styles.infoLabelText}>Phone</Text>
+          </View>
+          {isEditing ? (
+            <TextInput
+              style={styles.editableField}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Add phone number"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
             />
+          ) : (
+            <Text style={styles.infoValue}>{user?.phone || 'Not set'}</Text>
+          )}
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoLabel}>
+            <IconSymbol name="calendar" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Member Since</Text>
           </View>
           <Text style={styles.infoValue}>
@@ -348,7 +374,7 @@ export default function EmployeeProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="shield" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="shield" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Status</Text>
           </View>
           <View
@@ -388,10 +414,11 @@ export default function EmployeeProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -492,11 +519,11 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.md,
   },
   roleBadge: {
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -529,7 +556,7 @@ const styles = StyleSheet.create({
   },
   infoLabelText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   infoValue: {
     fontSize: Typography.base,
@@ -537,15 +564,15 @@ const styles = StyleSheet.create({
     color: BrandColors.text,
   },
   disabled: {
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
   },
   editableField: {
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.sm,
     fontSize: Typography.base,
-    color: BrandColors.text,
+    color: colors.text,
     minWidth: 140,
     textAlign: "right",
   },
@@ -571,7 +598,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
     gap: Spacing.sm,
   },
   actionButtonText: {

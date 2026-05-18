@@ -15,7 +15,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -25,6 +26,8 @@ import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
 
 export default function JoinOrganizationScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -142,7 +145,7 @@ export default function JoinOrganizationScreen() {
             autoCapitalize="characters"
             maxLength={VALIDATION.ORG_CODE_LENGTH}
             error={errors.orgCode}
-            leftIcon={<IconSymbol name="building.2" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="building.2" size={20} color={colors.textMuted} />}
             style={styles.codeInput}
           />
 
@@ -157,7 +160,7 @@ export default function JoinOrganizationScreen() {
 
           {organization && (
             <View style={styles.orgInfo}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color={BrandColors.primary} />
+              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
               <View style={styles.orgInfoText}>
                 <Text style={styles.orgName}>{organization.name}</Text>
                 <Text style={styles.orgAddress}>{organization.address}</Text>
@@ -176,7 +179,7 @@ export default function JoinOrganizationScreen() {
               onChangeText={setName}
               autoCapitalize="words"
               error={errors.name}
-              leftIcon={<IconSymbol name="person" size={20} color={BrandColors.textMuted} />}
+              leftIcon={<IconSymbol name="person" size={20} color={colors.textMuted} />}
             />
 
             <Button
@@ -198,10 +201,11 @@ export default function JoinOrganizationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -213,12 +217,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   codeCard: {
     marginBottom: Spacing.lg,
@@ -231,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     borderRadius: 12,
   },
   orgInfoText: {
@@ -241,12 +245,12 @@ const styles = StyleSheet.create({
   orgName: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: 2,
   },
   orgAddress: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   formCard: {
     marginBottom: Spacing.lg,
@@ -260,6 +264,6 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
 });

@@ -1,11 +1,14 @@
 /**
  * Supervisor Request Review Screen
+ * Shows all holiday/overtime submissions in the supervisor organization.
  */
+
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,

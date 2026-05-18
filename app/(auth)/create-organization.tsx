@@ -15,7 +15,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -26,6 +27,8 @@ import { ERROR_MESSAGES } from '@/utils/constants';
 import { generateOrgCode } from '@/utils/helpers';
 
 export default function CreateOrganizationScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -121,7 +124,7 @@ export default function CreateOrganizationScreen() {
           <View style={styles.codeContainer}>
             <Text style={styles.codeText}>{generatedCode}</Text>
             <TouchableOpacity onPress={regenerateCode} style={styles.regenerateButton}>
-              <IconSymbol name="arrow.clockwise" size={20} color={BrandColors.primary} />
+              <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
           <Text style={styles.codeHint}>
@@ -138,7 +141,7 @@ export default function CreateOrganizationScreen() {
             onChangeText={setOrgName}
             autoCapitalize="words"
             error={errors.orgName}
-            leftIcon={<IconSymbol name="building.2" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="building.2" size={20} color={colors.textMuted} />}
           />
 
           <Input
@@ -148,7 +151,7 @@ export default function CreateOrganizationScreen() {
             onChangeText={setOrgAddress}
             autoCapitalize="sentences"
             error={errors.orgAddress}
-            leftIcon={<IconSymbol name="location" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="location" size={20} color={colors.textMuted} />}
           />
 
           <Button
@@ -169,10 +172,11 @@ export default function CreateOrganizationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -184,12 +188,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   codeCard: {
     marginBottom: Spacing.lg,
@@ -197,7 +201,7 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.sm,
   },
   codeContainer: {
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 36,
     fontWeight: '800',
-    color: BrandColors.primary,
+    color: colors.primary,
     letterSpacing: 4,
   },
   regenerateButton: {
@@ -216,7 +220,7 @@ const styles = StyleSheet.create({
   },
   codeHint: {
     fontSize: Typography.xs,
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },
@@ -232,6 +236,6 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
 });

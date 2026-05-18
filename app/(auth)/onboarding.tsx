@@ -12,12 +12,15 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/store/authStore';
 
 export default function OnboardingScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -46,7 +49,7 @@ export default function OnboardingScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <IconSymbol name="checkmark.circle.fill" size={48} color={BrandColors.primary} />
+          <IconSymbol name="checkmark.circle.fill" size={48} color={colors.primary} />
         </View>
         <Text style={styles.title}>Welcome to TrustEnd!</Text>
         <Text style={styles.subtitle}>
@@ -57,7 +60,7 @@ export default function OnboardingScreen() {
       {/* User Info Card */}
       <Card style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <IconSymbol name="envelope.fill" size={20} color={BrandColors.textMuted} />
+          <IconSymbol name="envelope.fill" size={20} color={colors.textMuted} />
           <Text style={styles.infoText}>{user?.email || 'Loading...'}</Text>
         </View>
       </Card>
@@ -70,7 +73,7 @@ export default function OnboardingScreen() {
         onPress={handleCreateOrganization}
         activeOpacity={0.7}>
         <View style={styles.optionIconContainer}>
-          <IconSymbol name="building.2.fill" size={32} color={BrandColors.primary} />
+          <IconSymbol name="building.2.fill" size={32} color={colors.primary} />
         </View>
         <View style={styles.optionContent}>
           <Text style={styles.optionTitle}>Create Organization</Text>
@@ -78,7 +81,7 @@ export default function OnboardingScreen() {
             Start a new organization and become the administrator
           </Text>
         </View>
-        <IconSymbol name="chevron.right" size={20} color={BrandColors.textMuted} />
+        <IconSymbol name="chevron.right" size={20} color={colors.textMuted} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -86,7 +89,7 @@ export default function OnboardingScreen() {
         onPress={handleJoinOrganization}
         activeOpacity={0.7}>
         <View style={styles.optionIconContainer}>
-          <IconSymbol name="person.2.fill" size={32} color={BrandColors.info} />
+          <IconSymbol name="person.2.fill" size={32} color={colors.info} />
         </View>
         <View style={styles.optionContent}>
           <Text style={styles.optionTitle}>Join Organization</Text>
@@ -94,7 +97,7 @@ export default function OnboardingScreen() {
             Join an existing organization with a code
           </Text>
         </View>
-        <IconSymbol name="chevron.right" size={20} color={BrandColors.textMuted} />
+        <IconSymbol name="chevron.right" size={20} color={colors.textMuted} />
       </TouchableOpacity>
 
       {/* Logout */}
@@ -105,11 +108,12 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   scrollContent: {
     padding: Spacing.lg,
     paddingTop: Spacing['3xl'],
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     minHeight: '100%',
   },
   header: {
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -128,13 +132,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: Spacing.lg,
   },
@@ -147,30 +151,30 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: Typography.base,
-    color: BrandColors.text,
+    color: colors.text,
     marginLeft: Spacing.md,
   },
   sectionTitle: {
     fontSize: Typography.lg,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
   },
   optionIconContainer: {
     width: 56,
     height: 56,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -181,12 +185,12 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: Typography.lg,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   optionDescription: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   logoutButton: {
     alignItems: 'center',
@@ -195,6 +199,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: Typography.base,
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
   },
 });

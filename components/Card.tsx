@@ -4,7 +4,8 @@
 
 import React from 'react';
 import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
-import { BrandColors, BorderRadius, Shadows } from '@/constants/theme';
+import { BorderRadius, Shadows, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -14,6 +15,8 @@ interface CardProps {
 }
 
 export function Card({ children, style, onPress, variant = 'default' }: CardProps) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const cardStyle = [
     styles.card,
     variant === 'elevated' && styles.elevated,
@@ -32,19 +35,20 @@ export function Card({ children, style, onPress, variant = 'default' }: CardProp
   return <View style={cardStyle}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   card: {
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.lg,
     padding: 16,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
   },
   elevated: {
     ...Shadows.md,
   },
   outlined: {
     backgroundColor: 'transparent',
-    borderColor: BrandColors.borderLight,
+    borderColor: colors.borderLight,
   },
 });

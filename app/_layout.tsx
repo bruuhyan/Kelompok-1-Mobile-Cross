@@ -9,6 +9,8 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useCustomFonts } from "@/constants/fonts";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { ThemePreferenceProvider } from "@/hooks/use-theme-preference";
 import { authService, profileService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
 import * as SplashScreen from "expo-splash-screen";
@@ -120,12 +122,22 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={DarkTheme}>
+    <ThemePreferenceProvider>
+      <RootStack />
+    </ThemePreferenceProvider>
+  );
+}
+
+function RootStack() {
+  const colors = useAppTheme();
+
+  return (
+    <>
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: "#0D1B2A",
+            backgroundColor: colors.background,
           },
         }}
       >
@@ -141,8 +153,7 @@ export default function RootLayout() {
           options={{ presentation: "modal", title: "Modal" }}
         />
       </Stack>
-      <AuthGate />
-      <StatusBar style="light" backgroundColor="#0D1B2A" />
-    </ThemeProvider>
+      <StatusBar style="auto" backgroundColor={colors.background} />
+    </>
   );
 }

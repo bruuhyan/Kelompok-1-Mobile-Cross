@@ -5,21 +5,22 @@
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { BrandColors, Colors } from "@/constants/theme";
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function EmployeeTabsLayout() {
+  const colors = useAppTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: BrandColors.primary,
-        tabBarInactiveTintColor: Colors.dark.textMuted,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.dark.background,
-          borderTopColor: Colors.dark.border,
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 60,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8, // Use safe area inset or default 8px
