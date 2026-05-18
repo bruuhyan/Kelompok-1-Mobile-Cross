@@ -6,7 +6,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './supabase';
 
 const AVATARS_BUCKET = 'profile-pictures';
-const MAX_SIZE = 512;
 const JPEG_QUALITY = 0.7;
 
 export interface PickedImage {
@@ -27,8 +26,6 @@ export const storageService = {
       allowsEditing: true,
       aspect: [1, 1],
       quality: JPEG_QUALITY,
-      maxWidth: MAX_SIZE,
-      maxHeight: MAX_SIZE,
       base64: true,
     });
 
@@ -54,8 +51,6 @@ export const storageService = {
       allowsEditing: true,
       aspect: [1, 1],
       quality: JPEG_QUALITY,
-      maxWidth: MAX_SIZE,
-      maxHeight: MAX_SIZE,
       base64: true,
     });
 

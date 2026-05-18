@@ -122,6 +122,8 @@ export default function EmployeeProfileScreen() {
   };
 
   const showAvatarOptions = () => {
+    if (!user) return;
+
     const options = [
       "Take Photo",
       "Choose from Gallery",
