@@ -43,13 +43,14 @@ export default function SupervisorRequestReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadRequests = useCallback(async () => {
     if (!user?.organization_id) return;
 
     try {
       const data = await supervisorService.getPendingRequests(user.organization_id);
-      setRequests(data as ReviewRequest[]);
+      setRequests((data as ReviewRequest[]).filter((request) => request.type === 'holiday'));
     } catch (error) {
       console.error('Load requests error:', error);
       Alert.alert('Error', 'Failed to load pending requests');
@@ -72,6 +73,7 @@ export default function SupervisorRequestReviewScreen() {
     try {
       await supervisorService.reviewRequest(requestId, user.id, status);
       setRequests((current) => current.filter((request) => request.id !== requestId));
+      setExpandedId((current) => (current === requestId ? null : current));
       Alert.alert('Success', `Request ${status}`);
     } catch (error) {
       console.error('Review request error:', error);
@@ -103,8 +105,8 @@ export default function SupervisorRequestReviewScreen() {
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Requests</Text>
-        <Text style={styles.headerTitle}>Pending Review</Text>
-        <Text style={styles.headerSubtitle}>{requests.length} employee requests waiting for approval</Text>
+        <Text style={styles.headerTitle}>Leave Requests</Text>
+        <Text style={styles.headerSubtitle}>{requests.length} employee leave requests waiting for approval</Text>
       </View>
 
       <View style={styles.list}>
@@ -115,18 +117,21 @@ export default function SupervisorRequestReviewScreen() {
             <Text style={styles.emptyText}>New holiday and overtime requests will appear here.</Text>
           </Card>
         ) : (
-          requests.map((request) => (
-            <Card key={request.id} style={styles.requestCard}>
+          requests.map((request) => {
+            const expanded = expandedId === request.id;
+
+            return (
+            <TouchableOpacity
+              key={request.id}
+              activeOpacity={0.82}
+              onPress={() => setExpandedId((current) => (current === request.id ? null : request.id))}>
+            <Card style={styles.requestCard}>
               <View style={styles.requestTop}>
                 <View style={styles.requestMain}>
                   <Text style={styles.employeeName}>{request.profiles?.name || 'Employee'}</Text>
                   <Text style={styles.employeeEmail}>{request.profiles?.email || 'No email'}</Text>
                 </View>
                 <TrustScoreBadge score={request.profiles?.trust_score || 50} size="small" />
-              </View>
-
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeText}>{request.type === 'holiday' ? 'Holiday' : 'Overtime'}</Text>
               </View>
 
               <View style={styles.dateRow}>
@@ -136,35 +141,59 @@ export default function SupervisorRequestReviewScreen() {
                 </Text>
               </View>
 
-              <Text style={styles.reason}>{request.reason}</Text>
-
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.rejectButton]}
-                  disabled={reviewingId === request.id}
-                  onPress={() => handleReview(request.id, 'rejected')}>
-                  <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={BrandColors.error} />
-                  <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.approveButton]}
-                  disabled={reviewingId === request.id}
-                  onPress={() => handleReview(request.id, 'approved')}>
-                  {reviewingId === request.id ? (
-                    <ActivityIndicator color={BrandColors.background} />
-                  ) : (
-                    <>
-                      <IconSymbol name="checkmark.seal.fill" size={18} color={BrandColors.background} />
-                      <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+              <View style={styles.tapHintRow}>
+                <Text style={styles.tapHint}>{expanded ? 'Hide details' : 'Tap for details'}</Text>
+                <IconSymbol name={expanded ? 'chevron.down' : 'chevron.right'} size={20} color={BrandColors.textMuted} />
               </View>
+
+              {expanded && (
+                <>
+                  <View style={styles.detailBlock}>
+                    <DetailRow label="Type" value="Leave" />
+                    <DetailRow label="Submitted" value={formatLongDate(request.created_at)} />
+                    <DetailRow label="Reason" value={request.reason} />
+                  </View>
+
+                  <View style={styles.actions}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.rejectButton]}
+                      disabled={reviewingId === request.id}
+                      onPress={() => handleReview(request.id, 'rejected')}>
+                      <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={BrandColors.error} />
+                      <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.approveButton]}
+                      disabled={reviewingId === request.id}
+                      onPress={() => handleReview(request.id, 'approved')}>
+                      {reviewingId === request.id ? (
+                        <ActivityIndicator color={BrandColors.background} />
+                      ) : (
+                        <>
+                          <IconSymbol name="checkmark.seal.fill" size={18} color={BrandColors.background} />
+                          <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
             </Card>
-          ))
+            </TouchableOpacity>
+          );
+          })
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -238,18 +267,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.sm,
     marginTop: 2,
   },
-  typeBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: BrandColors.backgroundLighter,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  typeText: {
-    color: BrandColors.primary,
-    fontSize: Typography.xs,
-    fontWeight: '800',
-  },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,10 +276,37 @@ const styles = StyleSheet.create({
     color: BrandColors.textSecondary,
     fontSize: Typography.sm,
   },
-  reason: {
+  tapHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.border,
+    paddingTop: Spacing.sm,
+  },
+  tapHint: {
+    color: BrandColors.primary,
+    fontSize: Typography.sm,
+    fontWeight: '700',
+  },
+  detailBlock: {
+    backgroundColor: BrandColors.backgroundLight,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  detailRow: {
+    gap: 2,
+  },
+  detailLabel: {
+    color: BrandColors.textMuted,
+    fontSize: Typography.xs,
+    fontWeight: '700',
+  },
+  detailValue: {
     color: BrandColors.text,
-    fontSize: Typography.base,
-    lineHeight: 22,
+    fontSize: Typography.sm,
+    lineHeight: 20,
   },
   actions: {
     flexDirection: 'row',

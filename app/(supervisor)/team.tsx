@@ -31,9 +31,26 @@ type TeamMember = {
   created_at: string;
 };
 
+type TeamAttendanceLog = {
+  id: string;
+  check_in_time: string;
+  check_out_time?: string | null;
+  check_in_lat?: number | null;
+  check_in_lng?: number | null;
+  check_out_lat?: number | null;
+  check_out_lng?: number | null;
+  check_in_wifi_bssid?: string | null;
+  check_out_wifi_bssid?: string | null;
+  profiles?: {
+    name?: string;
+    email?: string;
+  } | null;
+};
+
 export default function SupervisorTeamScreen() {
   const user = useAuthStore((state) => state.user);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [attendanceLogs, setAttendanceLogs] = useState<TeamAttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -42,11 +59,16 @@ export default function SupervisorTeamScreen() {
     if (!user?.organization_id) return;
 
     try {
-      const data = await supervisorService.getTeamMembers(user.organization_id);
-      setMembers(data as TeamMember[]);
+      const [memberData, attendanceData] = await Promise.all([
+        supervisorService.getTeamMembers(user.organization_id),
+        supervisorService.getTeamAttendanceToday(user.organization_id),
+      ]);
+
+      setMembers(memberData as TeamMember[]);
+      setAttendanceLogs(attendanceData as TeamAttendanceLog[]);
     } catch (error) {
-      console.error('Load team members error:', error);
-      Alert.alert('Error', 'Failed to load employees');
+      console.error('Load team data error:', error);
+      Alert.alert('Error', 'Failed to load team data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -112,7 +134,7 @@ export default function SupervisorTeamScreen() {
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Employee Management</Text>
         <Text style={styles.headerTitle}>Team Overview</Text>
-        <Text style={styles.headerSubtitle}>Approve registrations and monitor TrustScore health.</Text>
+        <Text style={styles.headerSubtitle}>Monitor attendance, approve registrations, and review team health.</Text>
       </View>
 
       <View style={styles.summaryRow}>
@@ -128,6 +150,19 @@ export default function SupervisorTeamScreen() {
           <Text style={styles.summaryValue}>{averageTrustScore}</Text>
           <Text style={styles.summaryLabel}>Avg TrustScore</Text>
         </Card>
+      </View>
+
+      <Text style={styles.sectionTitle}>Today Attendance</Text>
+      <View style={styles.list}>
+        {attendanceLogs.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <IconSymbol name="clock.fill" size={30} color={BrandColors.primary} />
+            <Text style={styles.emptyTitle}>No check-ins yet</Text>
+            <Text style={styles.emptyText}>Team check-in and checkout logs for today will appear here.</Text>
+          </Card>
+        ) : (
+          attendanceLogs.map((log) => <AttendanceLogCard key={log.id} log={log} />)
+        )}
       </View>
 
       <Text style={styles.sectionTitle}>New Registrations</Text>
@@ -162,6 +197,43 @@ export default function SupervisorTeamScreen() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function AttendanceLogCard({ log }: { log: TeamAttendanceLog }) {
+  return (
+    <Card style={styles.attendanceCard}>
+      <View style={styles.attendanceTop}>
+        <Avatar name={log.profiles?.name || 'Employee'} small />
+        <View style={styles.memberInfo}>
+          <Text style={styles.memberName}>{log.profiles?.name || 'Employee'}</Text>
+          <Text style={styles.memberEmail}>{log.profiles?.email || 'No email'}</Text>
+        </View>
+        <View style={[styles.attendanceBadge, log.check_out_time && styles.completedBadge]}>
+          <Text style={[styles.attendanceBadgeText, log.check_out_time && styles.completedBadgeText]}>
+            {log.check_out_time ? 'Done' : 'Checked in'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.attendanceGrid}>
+        <AttendanceField label="Check-in" value={formatTime(log.check_in_time)} />
+        <AttendanceField label="Checkout" value={log.check_out_time ? formatTime(log.check_out_time) : 'Not yet'} />
+        <AttendanceField label="Check-in Location" value={formatLocation(log.check_in_lat, log.check_in_lng)} />
+        <AttendanceField label="Checkout Location" value={formatLocation(log.check_out_lat, log.check_out_lng)} />
+        <AttendanceField label="Check-in BSSID" value={log.check_in_wifi_bssid || 'Not recorded'} />
+        <AttendanceField label="Checkout BSSID" value={log.check_out_wifi_bssid || 'Not recorded'} />
+      </View>
+    </Card>
+  );
+}
+
+function AttendanceField({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.attendanceField}>
+      <Text style={styles.attendanceLabel}>{label}</Text>
+      <Text style={styles.attendanceValue}>{value}</Text>
+    </View>
   );
 }
 
@@ -246,6 +318,18 @@ function formatDate(date: string) {
   });
 }
 
+function formatTime(date: string) {
+  return new Date(date).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatLocation(lat?: number | null, lng?: number | null) {
+  if (lat == null || lng == null) return 'Not recorded';
+  return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -320,6 +404,49 @@ const styles = StyleSheet.create({
   },
   memberCard: {
     gap: Spacing.md,
+  },
+  attendanceCard: {
+    gap: Spacing.md,
+  },
+  attendanceTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  attendanceBadge: {
+    backgroundColor: `${BrandColors.primary}22`,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  completedBadge: {
+    backgroundColor: BrandColors.backgroundLighter,
+  },
+  attendanceBadgeText: {
+    color: BrandColors.primary,
+    fontSize: Typography.xs,
+    fontWeight: '800',
+  },
+  completedBadgeText: {
+    color: BrandColors.textSecondary,
+  },
+  attendanceGrid: {
+    gap: Spacing.sm,
+  },
+  attendanceField: {
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.border,
+    paddingTop: Spacing.sm,
+  },
+  attendanceLabel: {
+    color: BrandColors.textMuted,
+    fontSize: Typography.xs,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  attendanceValue: {
+    color: BrandColors.text,
+    fontSize: Typography.sm,
+    fontWeight: '600',
   },
   memberTop: {
     flexDirection: 'row',

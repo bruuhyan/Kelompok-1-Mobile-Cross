@@ -98,6 +98,7 @@ ALTER TABLE org_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Organizations policies
 -- Allow public read for organization lookup by code
@@ -252,6 +253,47 @@ CREATE POLICY "Admins and supervisors can view org reports"
 CREATE POLICY "Admins and supervisors can review reports"
   ON reports FOR UPDATE
   USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  );
+
+-- Tasks policies
+-- Employees can view their assigned tasks
+CREATE POLICY "Employees can view own tasks"
+  ON tasks FOR SELECT
+  USING (assigned_to = auth.uid());
+
+-- Employees can update tasks they need to submit
+CREATE POLICY "Employees can submit own assigned tasks"
+  ON tasks FOR UPDATE
+  USING (assigned_to = auth.uid() AND status IN ('assigned', 'rejected'))
+  WITH CHECK (assigned_to = auth.uid());
+
+-- Admins and supervisors can view all tasks in their organization
+CREATE POLICY "Supervisors can view org tasks"
+  ON tasks FOR SELECT
+  USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  );
+
+-- Admins and supervisors can assign tasks in their organization
+CREATE POLICY "Supervisors can create org tasks"
+  ON tasks FOR INSERT
+  WITH CHECK (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+    AND created_by = auth.uid()
+  );
+
+-- Admins and supervisors can review tasks in their organization
+CREATE POLICY "Supervisors can review org tasks"
+  ON tasks FOR UPDATE
+  USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  )
+  WITH CHECK (
     is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
