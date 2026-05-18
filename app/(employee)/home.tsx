@@ -8,10 +8,11 @@ import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
   BorderRadius,
-  BrandColors,
   Spacing,
+  ThemeColors,
   Typography,
 } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { authService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
@@ -27,6 +28,8 @@ import {
 } from "react-native";
 
 export default function EmployeeHomeScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -75,11 +78,11 @@ export default function EmployeeHomeScreen() {
   const getStatusColor = () => {
     switch (todayStatus) {
       case "not_checked_in":
-        return BrandColors.textSecondary;
+        return colors.textSecondary;
       case "checked_in":
-        return BrandColors.success;
+        return colors.success;
       case "checked_out":
-        return BrandColors.info;
+        return colors.info;
     }
   };
 
@@ -93,7 +96,7 @@ export default function EmployeeHomeScreen() {
                <Text style={styles.userName}>{user?.name || 'Loading...'}</Text>
              </View>
              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-               <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.textMuted} />
+               <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.textMuted} />
              </TouchableOpacity>
            </View>
          </View>
@@ -103,7 +106,7 @@ export default function EmployeeHomeScreen() {
            <View style={styles.trustScoreHeader}>
              <Text style={styles.trustScoreTitle}>Your Trust Score</Text>
              <TouchableOpacity onPress={() => setShowTrustScoreModal(true)}>
-               <IconSymbol name="info.circle" size={16} color={BrandColors.textMuted} />
+               <IconSymbol name="info.circle" size={16} color={colors.textMuted} />
              </TouchableOpacity>
            </View>
            <View style={styles.trustScoreContent}>
@@ -130,10 +133,10 @@ export default function EmployeeHomeScreen() {
                onPress={handleCheckIn}
                disabled={isLoading}>
                {isLoading ? (
-                 <ActivityIndicator color={BrandColors.background} />
+                 <ActivityIndicator color={colors.background} />
                ) : (
                  <>
-                   <IconSymbol name="location.fill" size={20} color={BrandColors.background} />
+                   <IconSymbol name="location.fill" size={20} color={colors.background} />
                    <Text style={styles.checkInButtonText}>Check In</Text>
                  </>
                )}
@@ -144,17 +147,17 @@ export default function EmployeeHomeScreen() {
                onPress={handleCheckOut}
                disabled={isLoading}>
                {isLoading ? (
-                 <ActivityIndicator color={BrandColors.background} />
+                 <ActivityIndicator color={colors.background} />
                ) : (
                  <>
-                   <IconSymbol name="location.slash" size={20} color={BrandColors.background} />
+                   <IconSymbol name="location.slash" size={20} color={colors.background} />
                    <Text style={styles.checkOutButtonText}>Check Out</Text>
                  </>
                )}
              </TouchableOpacity>
            ) : (
              <View style={styles.completedStatus}>
-               <IconSymbol name="checkmark.circle.fill" size={20} color={BrandColors.success} />
+               <IconSymbol name="checkmark.circle.fill" size={20} color={colors.success} />
                <Text style={styles.completedText}>Completed for today</Text>
              </View>
            )}
@@ -167,7 +170,7 @@ export default function EmployeeHomeScreen() {
              style={styles.quickAction}
              onPress={() => router.push('/(employee)/requests')}>
              <View style={styles.quickActionIcon}>
-               <IconSymbol name="calendar" size={24} color={BrandColors.primary} />
+               <IconSymbol name="calendar" size={24} color={colors.primary} />
              </View>
              <Text style={styles.quickActionText}>Requests</Text>
            </TouchableOpacity>
@@ -176,7 +179,7 @@ export default function EmployeeHomeScreen() {
              style={styles.quickAction}
              onPress={() => router.push('/(employee)/reports')}>
              <View style={styles.quickActionIcon}>
-               <IconSymbol name="doc.text" size={24} color={BrandColors.info} />
+               <IconSymbol name="doc.text" size={24} color={colors.info} />
              </View>
              <Text style={styles.quickActionText}>Reports</Text>
            </TouchableOpacity>
@@ -185,7 +188,7 @@ export default function EmployeeHomeScreen() {
              style={styles.quickAction}
              onPress={() => router.push('/(employee)/profile')}>
              <View style={styles.quickActionIcon}>
-               <IconSymbol name="person.circle" size={24} color={BrandColors.warning} />
+               <IconSymbol name="person.circle" size={24} color={colors.warning} />
              </View>
              <Text style={styles.quickActionText}>Profile</Text>
            </TouchableOpacity>
@@ -196,7 +199,7 @@ export default function EmployeeHomeScreen() {
          <Card style={styles.activityCard}>
            <View style={styles.activityItem}>
              <View style={styles.activityIcon}>
-               <IconSymbol name="clock" size={16} color={BrandColors.textMuted} />
+               <IconSymbol name="clock" size={16} color={colors.textMuted} />
              </View>
              <View style={styles.activityContent}>
                <Text style={styles.activityTitle}>No recent activity</Text>
@@ -212,7 +215,7 @@ export default function EmployeeHomeScreen() {
                <View style={styles.modalHeader}>
                  <Text style={styles.modalTitle}>Understanding Your Trust Score</Text>
                  <TouchableOpacity onPress={() => setShowTrustScoreModal(false)}>
-                   <IconSymbol name="xmark" size={20} color={BrandColors.textMuted} />
+                   <IconSymbol name="xmark" size={20} color={colors.textMuted} />
                  </TouchableOpacity>
                </View>
                <View style={styles.modalContent}>
@@ -221,7 +224,7 @@ export default function EmployeeHomeScreen() {
                    <Text style={styles.explanationTitle}>Three Key Factors:</Text>
                    <View style={styles.factorRow}>
                      <View style={styles.factorIcon}>
-                       <IconSymbol name="clock.fill" size={18} color={BrandColors.primary} />
+                       <IconSymbol name="clock.fill" size={18} color={colors.primary} />
                      </View>
                      <View style={styles.factorText}>
                        <Text style={styles.factorTitle}>Punctuality</Text>
@@ -232,7 +235,7 @@ export default function EmployeeHomeScreen() {
                    </View>
                    <View style={styles.factorRow}>
                      <View style={styles.factorIcon}>
-                       <IconSymbol name="location.fill" size={18} color={BrandColors.info} />
+                       <IconSymbol name="location.fill" size={18} color={colors.info} />
                      </View>
                      <View style={styles.factorText}>
                        <Text style={styles.factorTitle}>Location Consistency</Text>
@@ -243,7 +246,7 @@ export default function EmployeeHomeScreen() {
                    </View>
                    <View style={styles.factorRow}>
                      <View style={styles.factorIcon}>
-                       <IconSymbol name="exclamationmark.triangle.fill" size={18} color={BrandColors.warning} />
+                       <IconSymbol name="exclamationmark.triangle.fill" size={18} color={colors.warning} />
                      </View>
                      <View style={styles.factorText}>
                        <Text style={styles.factorTitle}>Activity Patterns</Text>
@@ -285,10 +288,11 @@ export default function EmployeeHomeScreen() {
      );
  }
  
- const styles = StyleSheet.create({
+ const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   header: {
     padding: Spacing.lg,
@@ -301,12 +305,12 @@ export default function EmployeeHomeScreen() {
   },
   greeting: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   userName: {
     fontSize: Typography["2xl"],
     fontWeight: "700",
-    color: BrandColors.text,
+    color: colors.text,
   },
   logoutButton: {
     padding: Spacing.sm,
@@ -324,7 +328,7 @@ export default function EmployeeHomeScreen() {
   trustScoreTitle: {
     fontSize: Typography.lg,
     fontWeight: "600",
-    color: BrandColors.text,
+    color: colors.text,
     marginRight: Spacing.xs,
   },
   trustScoreContent: {
@@ -332,7 +336,7 @@ export default function EmployeeHomeScreen() {
   },
   trustScoreDescription: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
   },
   statusCard: {
@@ -342,7 +346,7 @@ export default function EmployeeHomeScreen() {
   statusTitle: {
     fontSize: Typography.lg,
     fontWeight: "600",
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   statusContent: {
@@ -364,13 +368,13 @@ export default function EmployeeHomeScreen() {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
   },
   checkInButtonText: {
-    color: BrandColors.background,
+    color: colors.background,
     fontSize: Typography.base,
     fontWeight: "600",
   },
@@ -378,13 +382,13 @@ export default function EmployeeHomeScreen() {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BrandColors.info,
+    backgroundColor: colors.info,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
   },
   checkOutButtonText: {
-    color: BrandColors.background,
+    color: colors.background,
     fontSize: Typography.base,
     fontWeight: "600",
   },
@@ -396,14 +400,14 @@ export default function EmployeeHomeScreen() {
     gap: Spacing.sm,
   },
   completedText: {
-    color: BrandColors.success,
+    color: colors.success,
     fontSize: Typography.base,
     fontWeight: "600",
   },
   sectionTitle: {
     fontSize: Typography.lg,
     fontWeight: "600",
-    color: BrandColors.text,
+    color: colors.text,
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
@@ -416,17 +420,17 @@ export default function EmployeeHomeScreen() {
   quickAction: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
   },
   quickActionIcon: {
     width: 48,
     height: 48,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.sm,
@@ -434,7 +438,7 @@ export default function EmployeeHomeScreen() {
   quickActionText: {
     fontSize: Typography.sm,
     fontWeight: "600",
-    color: BrandColors.text,
+    color: colors.text,
   },
   activityCard: {
     marginHorizontal: Spacing.lg,
@@ -448,7 +452,7 @@ export default function EmployeeHomeScreen() {
     width: 32,
     height: 32,
     borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     justifyContent: "center",
     alignItems: "center",
     marginRight: Spacing.md,
@@ -459,11 +463,11 @@ export default function EmployeeHomeScreen() {
   activityTitle: {
     fontSize: Typography.base,
     fontWeight: "600",
-    color: BrandColors.text,
+    color: colors.text,
   },
   activitySubtitle: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   // Trust Score Modal Styles
   modalOverlay: {
@@ -479,7 +483,7 @@ export default function EmployeeHomeScreen() {
   modalContainer: {
     width: '90%',
     maxWidth: 350,
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     maxHeight: '80%',
@@ -493,7 +497,7 @@ export default function EmployeeHomeScreen() {
   modalTitle: {
     fontSize: Typography.lg,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
   },
   modalContent: {
     gap: Spacing.md,
@@ -501,7 +505,7 @@ export default function EmployeeHomeScreen() {
   modalSubtitle: {
     fontSize: Typography.base,
     fontWeight: '500',
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   explanationBox: {
     gap: Spacing.sm,
@@ -509,7 +513,7 @@ export default function EmployeeHomeScreen() {
   explanationTitle: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   factorRow: {
@@ -529,11 +533,11 @@ export default function EmployeeHomeScreen() {
   factorTitle: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
   },
   factorDescription: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   scoreTiers: {
@@ -542,7 +546,7 @@ export default function EmployeeHomeScreen() {
   scoreTiersTitle: {
     fontSize: Typography.base,
     fontWeight: '600',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   tierRow: {
@@ -558,24 +562,24 @@ export default function EmployeeHomeScreen() {
   },
   tierLabel: {
     fontSize: Typography.sm,
-    color: BrandColors.text,
+    color: colors.text,
   },
   modalFooterText: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: Spacing.md,
     fontStyle: 'italic',
   },
   modalCloseButton: {
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginTop: Spacing.sm,
   },
   modalCloseButtonText: {
-    color: BrandColors.background,
+    color: colors.background,
     fontSize: Typography.base,
     fontWeight: '600',
   },

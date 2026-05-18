@@ -11,7 +11,8 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
-import { BrandColors, BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -30,6 +31,9 @@ export function Input({
   style,
   ...props
 }: InputProps) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -37,7 +41,7 @@ export function Input({
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         <TextInput
           style={[styles.input, style]}
-          placeholderTextColor={BrandColors.textMuted}
+          placeholderTextColor={colors.textMuted}
           {...props}
         />
         {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
@@ -47,33 +51,34 @@ export function Input({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   container: {
     marginBottom: Spacing.md,
   },
   label: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.xs,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BrandColors.backgroundLight,
+    backgroundColor: colors.backgroundLight,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
     paddingHorizontal: Spacing.md,
     height: 50,
   },
   inputError: {
-    borderColor: BrandColors.error,
+    borderColor: colors.error,
   },
   input: {
     flex: 1,
     fontSize: Typography.base,
-    color: BrandColors.text,
+    color: colors.text,
     paddingVertical: 0,
   },
   iconLeft: {
@@ -84,7 +89,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: Typography.xs,
-    color: BrandColors.error,
+    color: colors.error,
     marginTop: Spacing.xs,
   },
 });

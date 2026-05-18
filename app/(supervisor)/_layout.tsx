@@ -3,23 +3,24 @@
  * Bottom tab navigation for supervisor role
  */
 
-import { Tabs } from 'expo-router';
-import { Colors, BrandColors } from '@/constants/theme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { HapticTab } from '@/components/haptic-tab';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Tabs } from "expo-router";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { HapticTab } from "@/components/haptic-tab";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function SupervisorTabsLayout() {
+  const colors = useAppTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: BrandColors.primary,
-        tabBarInactiveTintColor: Colors.dark.textMuted,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.dark.background,
-          borderTopColor: Colors.dark.border,
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 60,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8, // Use safe area inset or default 8px
@@ -29,14 +30,17 @@ export default function SupervisorTabsLayout() {
         tabBarButton: HapticTab,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="house.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
