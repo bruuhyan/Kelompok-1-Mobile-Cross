@@ -305,17 +305,17 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: Spacing.sm,
   },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  metricCard: {
-    width: '47.8%',
-    minHeight: 132,
-  },
+ metricsGrid: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: Spacing.md,
+  paddingHorizontal: Spacing.lg,
+  marginBottom: Spacing.lg,
+},
+metricCard: {
+  width: 163,
+  minHeight: 120,
+},
   metricIcon: {
     width: 42,
     height: 42,

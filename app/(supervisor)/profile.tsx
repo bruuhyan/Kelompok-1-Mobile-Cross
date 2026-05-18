@@ -6,12 +6,14 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
@@ -33,6 +35,7 @@ export default function SupervisorProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -68,6 +71,78 @@ export default function SupervisorProfileScreen() {
     }
   };
 
+  const handleChangePhoto = () => {
+    Alert.alert('Change Profile Picture', 'Choose a photo source', [
+      { text: 'Camera', onPress: () => pickProfileImage('camera') },
+      { text: 'Gallery', onPress: () => pickProfileImage('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const pickProfileImage = async (source: 'camera' | 'library') => {
+    if (!user?.id || uploadingImage) return;
+
+    try {
+      const permission =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission Required',
+          source === 'camera'
+            ? 'Camera permission is required to take a profile picture.'
+            : 'Photo library permission is required to select a profile picture.',
+        );
+        return;
+      }
+
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      await uploadProfileImage(result.assets[0]);
+    } catch (error) {
+      console.error('Pick supervisor profile image error:', error);
+      Alert.alert('Error', 'Failed to choose profile picture');
+    }
+  };
+
+  const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!user?.id) return;
+
+    setUploadingImage(true);
+    try {
+      const response = await fetch(asset.uri);
+      const arrayBuffer = await response.arrayBuffer();
+      const contentType = asset.mimeType || 'image/jpeg';
+      const fileExt = getFileExtension(asset.uri, contentType);
+      const imageUrl = await profileService.uploadProfileImage(user.id, arrayBuffer, fileExt, contentType);
+      const updatedProfile = await profileService.updateProfile(user.id, { image_url: imageUrl });
+
+      setUser(updatedProfile);
+      Alert.alert('Success', 'Profile picture updated successfully');
+    } catch (error) {
+      console.error('Upload supervisor profile image error:', error);
+      Alert.alert('Error', 'Failed to upload profile picture');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -85,9 +160,27 @@ export default function SupervisorProfileScreen() {
       </View>
 
       <Card style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitials(user?.name || 'Supervisor')}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.avatarWrap}
+          activeOpacity={0.8}
+          disabled={uploadingImage}
+          onPress={handleChangePhoto}>
+          <View style={styles.avatar}>
+            {user?.image_url ? (
+              <Image source={{ uri: user.image_url }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{getInitials(user?.name || 'Supervisor')}</Text>
+            )}
+            {uploadingImage && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color={BrandColors.background} />
+              </View>
+            )}
+          </View>
+          <View style={styles.avatarEditButton}>
+            <IconSymbol name="camera.fill" size={18} color={BrandColors.background} />
+          </View>
+        </TouchableOpacity>
         <Text style={styles.name}>{user?.name || 'Supervisor'}</Text>
         <Text style={styles.email}>{user?.email || 'No email'}</Text>
         <View style={styles.badges}>
@@ -166,6 +259,16 @@ function formatDate(date: string) {
   });
 }
 
+function getFileExtension(uri: string, contentType: string) {
+  const extensionFromUri = uri.split('.').pop()?.split('?')[0];
+
+  if (extensionFromUri && extensionFromUri.length <= 5) {
+    return extensionFromUri;
+  }
+
+  return contentType.split('/')[1] || 'jpg';
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -203,6 +306,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing['2xl'],
   },
+  avatarWrap: {
+    position: 'relative',
+    marginBottom: Spacing.md,
+  },
   avatar: {
     width: 84,
     height: 84,
@@ -210,7 +317,30 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  avatarEditButton: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BrandColors.primary,
+    borderWidth: 2,
+    borderColor: BrandColors.card,
   },
   avatarText: {
     color: BrandColors.background,

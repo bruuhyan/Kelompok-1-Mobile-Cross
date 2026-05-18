@@ -139,6 +139,29 @@ export const profileService = {
     if (error) throw error;
     return data;
   },
+
+  /**
+   * Upload profile image to Supabase Storage and return its public URL
+   */
+  async uploadProfileImage(userId: string, image: ArrayBuffer, fileExt: string, contentType: string) {
+    const sanitizedExt = fileExt.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
+    const filePath = `${userId}/${Date.now()}.${sanitizedExt}`;
+
+    const { error } = await supabase.storage
+      .from('profile-pictures')
+      .upload(filePath, image, {
+        contentType,
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  },
 };
 
 /**

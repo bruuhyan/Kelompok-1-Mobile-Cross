@@ -54,6 +54,9 @@ const MAPPING = {
   'chart.bar.fill': 'bar-chart',
   'hourglass': 'hourglass-empty',
   'arrow.clockwise': 'refresh',
+  'camera.fill': 'photo-camera',
+  'photo.fill': 'photo-library',
+  'pencil': 'edit',
 } as IconMapping;
 
 /**

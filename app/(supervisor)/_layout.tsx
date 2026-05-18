@@ -7,8 +7,10 @@ import { Tabs } from 'expo-router';
 import { Colors, BrandColors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { HapticTab } from '@/components/haptic-tab';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SupervisorTabsLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -18,8 +20,8 @@ export default function SupervisorTabsLayout() {
           backgroundColor: Colors.dark.background,
           borderTopColor: Colors.dark.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
           paddingTop: 8,
         },
         headerShown: false,
