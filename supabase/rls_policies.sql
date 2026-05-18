@@ -144,11 +144,18 @@ CREATE POLICY "Admins and supervisors can view org profiles"
     AND get_user_organization_id() = organization_id
   );
 
--- Admins can update any profile in their organization
-CREATE POLICY "Admins can update org profiles"
+DROP POLICY IF EXISTS "Admins can update org profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins and supervisors can update org profiles" ON profiles;
+
+-- Admins and supervisors can update profiles in their organization
+CREATE POLICY "Admins and supervisors can update org profiles"
   ON profiles FOR UPDATE
   USING (
-    is_user_admin()
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  )
+  WITH CHECK (
+    is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
 
