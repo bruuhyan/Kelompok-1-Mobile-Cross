@@ -1,11 +1,15 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+/**
+ * Employee Settings Screen
+ * Display and navigation preferences
+ */
 
-import { Spacing, ThemeColors, Typography } from "@/constants/theme";
-import { useAppTheme } from "@/hooks/use-app-theme";
-import { SettingsAppearance } from "@/components/SettingsAppearance";
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { SettingsAppearance } from '@/components/SettingsAppearance';
 
-export default function SupervisorSettingsScreen() {
+export default function EmployeeSettingsScreen() {
   const colors = useAppTheme();
   const styles = createStyles(colors);
 
@@ -29,8 +33,8 @@ const createStyles = (colors: ThemeColors) =>
     },
     title: {
       color: colors.text,
-      fontSize: Typography["3xl"],
-      fontWeight: "700",
+      fontSize: Typography['3xl'],
+      fontWeight: '700',
     },
     subtitle: {
       color: colors.textSecondary,

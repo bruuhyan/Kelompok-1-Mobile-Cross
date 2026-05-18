@@ -14,7 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
@@ -32,6 +33,8 @@ type TeamMember = {
 };
 
 export default function SupervisorTeamScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const user = useAuthStore((state) => state.user);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +100,7 @@ export default function SupervisorTeamScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading employees...</Text>
       </View>
     );
@@ -107,7 +110,7 @@ export default function SupervisorTeamScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={BrandColors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Employee Management</Text>
@@ -134,7 +137,7 @@ export default function SupervisorTeamScreen() {
       <View style={styles.list}>
         {pendingMembers.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <IconSymbol name="checkmark.circle.fill" size={30} color={BrandColors.primary} />
+            <IconSymbol name="checkmark.circle.fill" size={30} color={colors.primary} />
             <Text style={styles.emptyTitle}>No pending registrations</Text>
             <Text style={styles.emptyText}>New employees who join your organization will appear here.</Text>
           </Card>
@@ -176,6 +179,9 @@ function MemberApprovalCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <Card style={styles.memberCard}>
       <View style={styles.memberTop}>
@@ -191,16 +197,16 @@ function MemberApprovalCard({
           style={[styles.actionButton, styles.rejectButton]}
           disabled={updating}
           onPress={onReject}>
-          <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+          <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.approveButton]}
           disabled={updating}
           onPress={onApprove}>
           {updating ? (
-            <ActivityIndicator color={BrandColors.background} />
+            <ActivityIndicator color={colors.background} />
           ) : (
-            <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+            <Text style={[styles.actionText, { color: colors.background }]}>Approve</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -224,6 +230,8 @@ function TrustScoreRow({ member }: { member: TeamMember }) {
 }
 
 function Avatar({ name, small = false }: { name: string; small?: boolean }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const initials = name
     .split(' ')
     .map((part) => part[0])
@@ -246,173 +254,174 @@ function formatDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-  },
-  headerSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  summaryCard: {
-    flex: 1,
-    alignItems: 'center',
-    minHeight: 96,
-    justifyContent: 'center',
-  },
-  summaryValue: {
-    color: BrandColors.primary,
-    fontSize: Typography['2xl'],
-    fontWeight: '800',
-  },
-  summaryLabel: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.xs,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-  },
-  sectionTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  memberCard: {
-    gap: Spacing.md,
-  },
-  memberTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  avatarSmall: {
-    width: 42,
-    height: 42,
-  },
-  avatarText: {
-    color: BrandColors.background,
-    fontSize: Typography.lg,
-    fontWeight: '800',
-  },
-  avatarTextSmall: {
-    fontSize: Typography.sm,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    fontWeight: '700',
-  },
-  memberEmail: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  memberMeta: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    marginTop: Spacing.xs,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    height: 42,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.borderLight,
-  },
-  approveButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  actionText: {
-    fontSize: Typography.sm,
-    fontWeight: '800',
-  },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  trustLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-  },
-  emptyTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-    marginTop: Spacing.sm,
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing['2xl'],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: '800',
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography['3xl'],
+      fontWeight: '800',
+    },
+    headerSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    summaryCard: {
+      flex: 1,
+      alignItems: 'center',
+      minHeight: 96,
+      justifyContent: 'center',
+    },
+    summaryValue: {
+      color: colors.primary,
+      fontSize: Typography['2xl'],
+      fontWeight: '800',
+    },
+    summaryLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.xs,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    list: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing.lg,
+      gap: Spacing.md,
+    },
+    memberCard: {
+      gap: Spacing.md,
+    },
+    memberTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatar: {
+      width: 54,
+      height: 54,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    avatarSmall: {
+      width: 42,
+      height: 42,
+    },
+    avatarText: {
+      color: colors.background,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+    },
+    avatarTextSmall: {
+      fontSize: Typography.sm,
+    },
+    memberInfo: {
+      flex: 1,
+    },
+    memberName: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
+    },
+    memberEmail: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    memberMeta: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      marginTop: Spacing.xs,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+      height: 42,
+      borderRadius: BorderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rejectButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: '800',
+    },
+    trustRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    trustLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    emptyCard: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginTop: Spacing.sm,
+      textAlign: 'center',
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+    },
+  });

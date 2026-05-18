@@ -3,7 +3,6 @@
  * Shows all holiday/overtime submissions in the supervisor organization.
  */
 
-
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +15,8 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
@@ -38,6 +38,8 @@ type ReviewRequest = {
 };
 
 export default function SupervisorRequestReviewScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const user = useAuthStore((state) => state.user);
   const [requests, setRequests] = useState<ReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +74,7 @@ export default function SupervisorRequestReviewScreen() {
     try {
       await supervisorService.reviewRequest(requestId, user.id, status);
       setRequests((current) => current.filter((request) => request.id !== requestId));
-      Alert.alert('Success', `Request ${status}`);
+      Alert.alert('Success', Request );
     } catch (error) {
       console.error('Review request error:', error);
       Alert.alert('Error', 'Failed to review request');
@@ -89,7 +91,7 @@ export default function SupervisorRequestReviewScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading pending requests...</Text>
       </View>
     );
@@ -99,7 +101,7 @@ export default function SupervisorRequestReviewScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={BrandColors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Requests</Text>
@@ -110,7 +112,7 @@ export default function SupervisorRequestReviewScreen() {
       <View style={styles.list}>
         {requests.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <IconSymbol name="checkmark.circle.fill" size={32} color={BrandColors.primary} />
+            <IconSymbol name="checkmark.circle.fill" size={32} color={colors.primary} />
             <Text style={styles.emptyTitle}>All caught up</Text>
             <Text style={styles.emptyText}>New holiday and overtime requests will appear here.</Text>
           </Card>
@@ -130,7 +132,7 @@ export default function SupervisorRequestReviewScreen() {
               </View>
 
               <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={16} color={BrandColors.textMuted} />
+                <IconSymbol name="calendar" size={16} color={colors.textMuted} />
                 <Text style={styles.dateText}>
                   {formatLongDate(request.start_date)} to {formatLongDate(request.end_date)}
                 </Text>
@@ -143,19 +145,19 @@ export default function SupervisorRequestReviewScreen() {
                   style={[styles.actionButton, styles.rejectButton]}
                   disabled={reviewingId === request.id}
                   onPress={() => handleReview(request.id, 'rejected')}>
-                  <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={BrandColors.error} />
-                  <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+                  <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={colors.error} />
+                  <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.approveButton]}
                   disabled={reviewingId === request.id}
                   onPress={() => handleReview(request.id, 'approved')}>
                   {reviewingId === request.id ? (
-                    <ActivityIndicator color={BrandColors.background} />
+                    <ActivityIndicator color={colors.background} />
                   ) : (
                     <>
-                      <IconSymbol name="checkmark.seal.fill" size={18} color={BrandColors.background} />
-                      <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+                      <IconSymbol name="checkmark.seal.fill" size={18} color={colors.background} />
+                      <Text style={[styles.actionText, { color: colors.background }]}>Approve</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -176,133 +178,134 @@ function formatLongDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-  },
-  headerSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['2xl'],
-    gap: Spacing.md,
-  },
-  requestCard: {
-    gap: Spacing.md,
-  },
-  requestTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  requestMain: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  employeeName: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-  },
-  employeeEmail: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  typeBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: BrandColors.backgroundLighter,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  typeText: {
-    color: BrandColors.primary,
-    fontSize: Typography.xs,
-    fontWeight: '800',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  dateText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  reason: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    lineHeight: 22,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.borderLight,
-  },
-  approveButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  actionText: {
-    fontSize: Typography.sm,
-    fontWeight: '800',
-  },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  emptyTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-    marginTop: Spacing.md,
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing['2xl'],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: '800',
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography['3xl'],
+      fontWeight: '800',
+    },
+    headerSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    list: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing['2xl'],
+      gap: Spacing.md,
+    },
+    requestCard: {
+      gap: Spacing.md,
+    },
+    requestTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    requestMain: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    employeeName: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+    },
+    employeeEmail: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    typeBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.backgroundLighter,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+    },
+    typeText: {
+      color: colors.primary,
+      fontSize: Typography.xs,
+      fontWeight: '800',
+    },
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    dateText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    reason: {
+      color: colors.text,
+      fontSize: Typography.base,
+      lineHeight: 22,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+      height: 44,
+      borderRadius: BorderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    rejectButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: '800',
+    },
+    emptyCard: {
+      alignItems: 'center',
+      paddingVertical: Spacing['2xl'],
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginTop: Spacing.md,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+    },
+  });

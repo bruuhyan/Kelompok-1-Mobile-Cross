@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { BorderRadius, BrandColors, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -237,7 +237,7 @@ export default function SupervisorProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -251,7 +251,7 @@ export default function SupervisorProfileScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <IconSymbol name="chevron.left" size={24} color={BrandColors.text} />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
         <View>
           <Text style={styles.headerEyebrow}>Supervisor Profile</Text>
@@ -289,13 +289,13 @@ export default function SupervisorProfileScreen() {
             )}
             {isUploadingAvatar && (
               <View style={styles.avatarOverlay}>
-                <ActivityIndicator color={BrandColors.background} />
+                <ActivityIndicator color={colors.background} />
               </View>
             )}
           </View>
           {!isUploadingAvatar && (
             <View style={styles.avatarEditButton}>
-              <IconSymbol name="camera.fill" size={18} color={BrandColors.background} />
+              <IconSymbol name="camera.fill" size={18} color={colors.background} />
             </View>
           )}
         </TouchableOpacity>
@@ -313,7 +313,7 @@ export default function SupervisorProfileScreen() {
               {user?.role === 'admin' ? 'Admin' : 'Supervisor'}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? BrandColors.success : BrandColors.warning }]}>
+          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? colors.success : colors.warning }]}>
             <Text style={styles.statusText}>
               {user?.status === 'active' ? 'Active' : user?.status || 'Loading...'}
             </Text>
@@ -331,7 +331,7 @@ export default function SupervisorProfileScreen() {
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="person" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="person" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Name</Text>
           </View>
           {isEditing ? (
@@ -362,7 +362,7 @@ export default function SupervisorProfileScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
@@ -384,7 +384,7 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.md,
     },
     loadingText: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.sm,
     },
     header: {
@@ -398,12 +398,12 @@ const createStyles = (colors: ThemeColors) =>
       padding: Spacing.sm,
     },
     headerEyebrow: {
-      color: BrandColors.primary,
+      color: colors.primary,
       fontSize: Typography.sm,
       fontWeight: '800',
     },
     headerTitle: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography['3xl'],
       fontWeight: '800',
     },
@@ -413,7 +413,7 @@ const createStyles = (colors: ThemeColors) =>
     editButtonText: {
       fontSize: Typography.base,
       fontWeight: '600',
-      color: BrandColors.primary,
+      color: colors.primary,
     },
     profileCard: {
       marginHorizontal: Spacing.lg,
@@ -429,7 +429,7 @@ const createStyles = (colors: ThemeColors) =>
       width: 84,
       height: 84,
       borderRadius: BorderRadius.full,
-      backgroundColor: BrandColors.primary,
+      backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
@@ -439,7 +439,7 @@ const createStyles = (colors: ThemeColors) =>
       height: '100%',
     },
     avatarText: {
-      color: BrandColors.background,
+      color: colors.background,
       fontSize: Typography['2xl'],
       fontWeight: '800',
     },
@@ -458,23 +458,23 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: BorderRadius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: BrandColors.primary,
+      backgroundColor: colors.primary,
       borderWidth: 2,
-      borderColor: BrandColors.card,
+      borderColor: colors.card,
     },
     avatarHint: {
       fontSize: Typography.sm,
-      color: BrandColors.textMuted,
+      color: colors.textMuted,
       textAlign: 'center',
       marginBottom: Spacing.sm,
     },
     name: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography['2xl'],
       fontWeight: '800',
     },
     email: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.base,
       marginTop: Spacing.xs,
     },
@@ -484,13 +484,13 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: Spacing.md,
     },
     roleBadge: {
-      backgroundColor: BrandColors.backgroundLighter,
+      backgroundColor: colors.backgroundLighter,
       borderRadius: BorderRadius.full,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.xs,
     },
     roleText: {
-      color: BrandColors.primary,
+      color: colors.primary,
       fontSize: Typography.xs,
       fontWeight: '800',
     },
@@ -500,7 +500,7 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.xs,
     },
     statusText: {
-      color: BrandColors.background,
+      color: colors.background,
       fontSize: Typography.xs,
       fontWeight: '800',
     },
@@ -512,7 +512,7 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: Spacing.lg,
     },
     cardTitle: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography.lg,
       fontWeight: '700',
       marginBottom: Spacing.lg,
@@ -530,11 +530,11 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.sm,
     },
     infoLabelText: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.base,
     },
     infoValue: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography.base,
       fontWeight: '500',
       flex: 1,
@@ -558,7 +558,7 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: BrandColors.card,
+      backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: BorderRadius.md,
@@ -566,7 +566,7 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.sm,
     },
     logoutText: {
-      color: BrandColors.error,
+      color: colors.error,
       fontSize: Typography.base,
       fontWeight: '700',
     },

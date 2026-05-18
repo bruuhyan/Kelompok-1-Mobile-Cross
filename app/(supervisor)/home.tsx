@@ -15,7 +15,8 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
@@ -49,6 +50,8 @@ const emptySummary: DashboardSummary = {
 };
 
 export default function SupervisorHomeScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -103,7 +106,7 @@ export default function SupervisorHomeScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading supervisor dashboard...</Text>
       </View>
     );
@@ -116,7 +119,7 @@ export default function SupervisorHomeScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={BrandColors.primary}
+          tintColor={colors.primary}
         />
       }>
       <View style={styles.header}>
@@ -125,7 +128,7 @@ export default function SupervisorHomeScreen() {
           <Text style={styles.userName}>{user?.name || 'Supervisor'}</Text>
         </View>
         <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={22} color={BrandColors.textMuted} />
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={22} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -134,25 +137,25 @@ export default function SupervisorHomeScreen() {
           label="Pending Requests"
           value={summary.pendingRequests}
           icon="hourglass"
-          color={BrandColors.warning}
+          color={colors.warning}
         />
         <MetricCard
           label="New Registrations"
           value={summary.pendingRegistrations}
           icon="person.badge.plus"
-          color={BrandColors.primary}
+          color={colors.primary}
         />
         <MetricCard
           label="Active Employees"
           value={summary.activeEmployees}
           icon="person.2.fill"
-          color={BrandColors.info}
+          color={colors.info}
         />
         <MetricCard
           label="Pending Reports"
           value={summary.pendingReports}
           icon="doc.text.magnifyingglass"
-          color={BrandColors.error}
+          color={colors.error}
         />
       </View>
 
@@ -162,12 +165,14 @@ export default function SupervisorHomeScreen() {
           title="Review Requests"
           subtitle={`${summary.pendingRequests} waiting`}
           icon="checkmark.seal.fill"
+          color={colors.primary}
           onPress={() => router.push('/(supervisor)/request-review')}
         />
         <ActionCard
           title="Manage Employees"
           subtitle={`${summary.pendingRegistrations} new accounts`}
           icon="person.crop.circle.badge.checkmark"
+          color={colors.primary}
           onPress={() => router.push('/(supervisor)/team')}
         />
       </View>
@@ -181,7 +186,7 @@ export default function SupervisorHomeScreen() {
 
       <Card style={styles.listCard}>
         {recentRequests.length === 0 ? (
-          <EmptyState text="No pending requests right now" />
+          <EmptyState text="No pending requests right now" color={colors.primary} />
         ) : (
           recentRequests.map((request) => (
             <View key={request.id} style={styles.requestRow}>
@@ -216,6 +221,9 @@ function MetricCard({
   icon: React.ComponentProps<typeof IconSymbol>['name'];
   color: string;
 }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <Card style={styles.metricCard}>
       <View style={[styles.metricIcon, { backgroundColor: `${color}22` }]}>
@@ -231,31 +239,39 @@ function ActionCard({
   title,
   subtitle,
   icon,
+  color,
   onPress,
 }: {
   title: string;
   subtitle: string;
   icon: React.ComponentProps<typeof IconSymbol>['name'];
+  color: string;
   onPress: () => void;
 }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.75}>
       <View style={styles.actionIcon}>
-        <IconSymbol name={icon} size={24} color={BrandColors.primary} />
+        <IconSymbol name={icon} size={24} color={color} />
       </View>
       <View style={styles.actionText}>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
       </View>
-      <IconSymbol name="chevron.right" size={22} color={BrandColors.textMuted} />
+      <IconSymbol name="chevron.right" size={22} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text, color }: { text: string; color: string }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.emptyState}>
-      <IconSymbol name="checkmark.circle.fill" size={26} color={BrandColors.primary} />
+      <IconSymbol name="checkmark.circle.fill" size={26} color={color} />
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
@@ -272,162 +288,163 @@ function formatDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  greeting: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-  },
-  userName: {
-    color: BrandColors.text,
-    fontSize: Typography['2xl'],
-    fontWeight: '700',
-  },
-  iconButton: {
-    padding: Spacing.sm,
-  },
- metricsGrid: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  gap: Spacing.md,
-  paddingHorizontal: Spacing.lg,
-  marginBottom: Spacing.lg,
-},
-metricCard: {
-  width: 163,
-  minHeight: 120,
-},
-  metricIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.md,
-  },
-  metricValue: {
-    color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-  },
-  metricLabel: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: Spacing.xs,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  linkText: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: '700',
-  },
-  quickActions: {
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: BrandColors.card,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.backgroundLighter,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  actionText: {
-    flex: 1,
-  },
-  actionTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    fontWeight: '700',
-  },
-  actionSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  listCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing['2xl'],
-  },
-  requestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: BrandColors.border,
-  },
-  requestContent: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  requestTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    fontWeight: '700',
-  },
-  requestMeta: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  requestReason: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.sm,
-    marginTop: Spacing.xs,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: Spacing.lg,
+      paddingTop: Spacing['2xl'],
+    },
+    greeting: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+    },
+    userName: {
+      color: colors.text,
+      fontSize: Typography['2xl'],
+      fontWeight: '700',
+    },
+    iconButton: {
+      padding: Spacing.sm,
+    },
+    metricsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    metricCard: {
+      width: 163,
+      minHeight: 120,
+    },
+    metricIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: BorderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: Spacing.md,
+    },
+    metricValue: {
+      color: colors.text,
+      fontSize: Typography['3xl'],
+      fontWeight: '800',
+    },
+    metricLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: Spacing.xs,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+    },
+    linkText: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+    },
+    quickActions: {
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    actionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.md,
+    },
+    actionIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: BorderRadius.md,
+      backgroundColor: colors.backgroundLighter,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: Spacing.md,
+    },
+    actionText: {
+      flex: 1,
+    },
+    actionTitle: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
+    },
+    actionSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    listCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing['2xl'],
+    },
+    requestRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    requestContent: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    requestTitle: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
+    },
+    requestMeta: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    requestReason: {
+      color: colors.textMuted,
+      fontSize: Typography.sm,
+      marginTop: Spacing.xs,
+    },
+    emptyState: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+      gap: Spacing.sm,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+  });
