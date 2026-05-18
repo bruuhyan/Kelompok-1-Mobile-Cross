@@ -23,6 +23,7 @@ export default function OnboardingScreen() {
   const styles = createStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleCreateOrganization = () => {
     router.push('/(auth)/create-organization');
@@ -36,6 +37,7 @@ export default function OnboardingScreen() {
     const { authService } = await import('@/services/supabase');
     try {
       await authService.signOut();
+      logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);

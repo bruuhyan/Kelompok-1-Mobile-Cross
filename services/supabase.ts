@@ -2,6 +2,10 @@
  * Supabase Service - Authentication and API calls
  */
 
+import 'react-native-url-polyfill/auto';
+
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { API_CONFIG } from '@/utils/constants';
 
@@ -9,8 +13,36 @@ import { API_CONFIG } from '@/utils/constants';
 const supabaseUrl = API_CONFIG.supabaseUrl;
 const supabasePublishableKey = API_CONFIG.supabasePublishableKey;
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+// Create a custom storage that safely handles SSR (Server-Side Rendering)
+const customStorage = {
+  getItem: (key: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve(null);
+    }
+    return AsyncStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve();
+    }
+    return AsyncStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    if (Platform.OS === 'web' && typeof window === 'undefined') {
+      return Promise.resolve();
+    }
+    return AsyncStorage.removeItem(key);
+  },
+};
 
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    storage: customStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 /**
  * Authentication Service
  */
@@ -139,6 +171,29 @@ export const profileService = {
     if (error) throw error;
     return data;
   },
+
+  /**
+   * Upload profile image to Supabase Storage and return its public URL
+   */
+  async uploadProfileImage(userId: string, image: ArrayBuffer, fileExt: string, contentType: string) {
+    const sanitizedExt = fileExt.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
+    const filePath = `${userId}/${Date.now()}.${sanitizedExt}`;
+
+    const { error } = await supabase.storage
+      .from('profile-pictures')
+      .upload(filePath, image, {
+        contentType,
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  },
 };
 
 /**
@@ -160,6 +215,20 @@ export const organizationService = {
   },
 
   /**
+   * Get organization by ID
+   */
+  async getOrganizationById(id: string) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Create organization
    */
   async createOrganization(org: {
@@ -175,5 +244,141 @@ export const organizationService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Securely create an organization and the current user's admin profile.
+   * Requires the matching SQL RPC in supabase/rls_policies.sql.
+   */
+  async createOrganizationWithAdmin(org: {
+    name: string;
+    address: string;
+    code: string;
+    adminName: string;
+    adminEmail: string;
+  }) {
+    const { data, error } = await supabase.rpc('create_organization_with_admin', {
+      p_name: org.name,
+      p_address: org.address,
+      p_code: org.code,
+      p_admin_name: org.adminName,
+      p_admin_email: org.adminEmail,
+    });
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+/**
+ * Supervisor Service
+ */
+export const supervisorService = {
+  async getTeamMembers(organizationId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .neq('role', 'admin')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getPendingRegistrations(organizationId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateRegistrationStatus(userId: string, status: 'active' | 'suspended') {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ status })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getPendingRequests(organizationId: string) {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*, profiles:user_id(id, name, email, trust_score, status)')
+      .eq('organization_id', organizationId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async reviewRequest(
+    requestId: string,
+    reviewerId: string,
+    status: 'approved' | 'rejected',
+    reviewNotes?: string,
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .update({
+        status,
+        reviewed_by: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        review_notes: reviewNotes || null,
+      })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getDashboardSummary(organizationId: string) {
+    const [pendingProfiles, activeEmployees, pendingRequests, pendingReports] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('role', 'employee')
+        .eq('status', 'active'),
+      supabase
+        .from('requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+      supabase
+        .from('reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending'),
+    ]);
+
+    const errors = [pendingProfiles.error, activeEmployees.error, pendingRequests.error, pendingReports.error]
+      .filter(Boolean);
+
+    if (errors.length > 0) throw errors[0];
+
+    return {
+      pendingRegistrations: pendingProfiles.count || 0,
+      activeEmployees: activeEmployees.count || 0,
+      pendingRequests: pendingRequests.count || 0,
+      pendingReports: pendingReports.count || 0,
+    };
   },
 };

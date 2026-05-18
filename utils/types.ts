@@ -29,8 +29,8 @@ export interface User {
 }
 
 export interface UserProfile extends User {
-  phone?: string;
   avatar_url?: string;
+  image_url?: string;
   department?: string;
   position?: string;
 }

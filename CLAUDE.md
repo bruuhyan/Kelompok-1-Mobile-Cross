@@ -32,7 +32,16 @@ The app uses Expo Router's file-based routing with three route groups:
 2. **`/(employee)`** - Employee dashboard with 5 bottom tabs (Home, Attendance, Requests, Reports, Profile)
 3. **`/(supervisor)`** - Supervisor dashboard with 6 bottom tabs (Home, Attendance, Requests, Reports, Team, Profile)
 
-The root layout (`app/_layout.tsx`) handles the initial routing decision. After splash screen, users are routed to auth. After successful login, routing is determined by `user.role` in the auth store.
+The root layout (`app/_layout.tsx`) is the central auth gate. It checks the Supabase session, fetches the linked profile, mirrors that profile into `store/authStore.ts`, and routes by profile `status` and `role`.
+
+Routing rules:
+
+- No Supabase session: route to `/(auth)/login`
+- Session without a profile: route to `/(auth)/onboarding`
+- Pending profile: route to `/(auth)/waiting-approval`
+- Suspended profile: sign out, clear persisted auth store, route to login
+- Active employee: route to `/(employee)/home`
+- Active supervisor/admin: route to `/(supervisor)/home`
 
 ### Auth Flow (Register-First Pattern)
 
@@ -44,6 +53,13 @@ The app uses a register-first pattern for cleaner separation of concerns:
 4. **Waiting Approval** → For employees joining existing organizations
 
 This pattern ensures users are authenticated before any organization operations, simplifying RLS policies.
+
+Important implementation details:
+
+- Supabase session persistence is configured in `services/supabase.ts` with React Native AsyncStorage. Do not create another Supabase client outside this service.
+- Creating a new organization and first admin profile must use `organizationService.createOrganizationWithAdmin()`, backed by the `create_organization_with_admin` SQL RPC in `supabase/rls_policies.sql`.
+- Normal self-created profiles are restricted by RLS to `role = 'employee'` and `status = 'pending'`.
+- Logout flows must call both `authService.signOut()` and `useAuthStore().logout()` so persisted profile state cannot survive sign-out.
 
 ### Multi-Tenant Architecture
 
@@ -105,8 +121,8 @@ When back online:
 
 ### Navigation
 
-- `app/_layout.tsx` - Root layout with theme provider and font loading
-- `app/splash.tsx` - Animated splash screen, routes to auth after 2.5s
+- `app/_layout.tsx` - Root layout with theme provider, font loading, and central auth/profile routing gate
+- `app/splash.tsx` - Animated splash screen; root auth gate performs actual session/profile routing
 - `app/(auth)/_layout.tsx` - Auth stack navigation
 - `app/(employee)/_layout.tsx` - Employee bottom tab navigation
 - `app/(supervisor)/_layout.tsx` - Supervisor bottom tab navigation
@@ -120,7 +136,7 @@ When back online:
 
 ### Services
 
-- `services/supabase.ts` - Supabase client and service functions (auth, profile, organization)
+- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization)
 
 ### State Management
 
@@ -144,6 +160,13 @@ Row Level Security policies use helper functions to avoid recursion:
 - `is_user_admin_or_supervisor()` - Check if user is admin or supervisor
 - `is_user_admin()` - Check if user is admin
 - `get_user_organization_id()` - Get user's organization ID
+- `create_organization_with_admin()` - Authenticated RPC that atomically creates an organization and the current user's admin profile
+
+Security constraints:
+
+- Client-side profile self-insert may only create pending employee profiles.
+- First admin profile creation must go through `create_organization_with_admin()`.
+- Apply `supabase/rls_policies.sql` in Supabase after changing auth or organization creation behavior.
 
 ## Build Phases
 
@@ -174,6 +197,15 @@ The app is built incrementally across 16 phases. Current status:
 - Trust Score Badge Component
 - Employee Home Screen (dashboard with status, trust score, quick actions)
 - Employee Profile Screen (editable profile with organization details)
+
+### Auth/Security Hardening Complete
+
+- Supabase session persistence configured for React Native AsyncStorage
+- Root auth gate routes by session, profile status, and role
+- Pending login stores the profile before redirecting to waiting approval
+- Logout flows clear both Supabase session and persisted Zustand auth state
+- Organization admin creation moved to secure SQL RPC
+- RLS self-profile insert restricted to pending employees
 
 ### Phase 5: Attendance Tracking (Next)
 
