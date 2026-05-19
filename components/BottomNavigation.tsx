@@ -31,18 +31,6 @@ export function BottomNavigation() {
         <IconSymbol name="paperplane.fill" size={20} color={colors.info} />
         <Text style={styles.navText}>Explore</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.navButton}
-        onPress={() => router.push("/(tabs)/settings")}
-      >
-        <IconSymbol
-          name="gearshape.fill"
-          size={20}
-          color={colors.warning}
-        />
-        <Text style={styles.navText}>Settings</Text>
-      </TouchableOpacity>
     </View>
   );
 }

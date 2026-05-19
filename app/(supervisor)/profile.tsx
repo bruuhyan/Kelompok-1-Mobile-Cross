@@ -2,23 +2,27 @@
  * Supervisor Profile Screen
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useThemePreference } from '@/hooks/use-theme-preference';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 
@@ -29,6 +33,11 @@ type Organization = {
 };
 
 export default function SupervisorProfileScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+  const { themePreference, setThemePreference, effectiveTheme } =
+    useThemePreference();
+  const isDark = effectiveTheme === 'dark';
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -36,6 +45,14 @@ export default function SupervisorProfileScreen() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const themeLabel = useMemo(() => {
+    if (themePreference === 'system') {
+      return `System (${effectiveTheme})`;
+    }
+
+    return themePreference.charAt(0).toUpperCase() + themePreference.slice(1);
+  }, [effectiveTheme, themePreference]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -146,7 +163,7 @@ export default function SupervisorProfileScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -173,12 +190,12 @@ export default function SupervisorProfileScreen() {
             )}
             {uploadingImage && (
               <View style={styles.avatarOverlay}>
-                <ActivityIndicator color={BrandColors.background} />
+                <ActivityIndicator color={colors.background} />
               </View>
             )}
           </View>
           <View style={styles.avatarEditButton}>
-            <IconSymbol name="camera.fill" size={18} color={BrandColors.background} />
+            <IconSymbol name="camera.fill" size={18} color={colors.background} />
           </View>
         </TouchableOpacity>
         <Text style={styles.name}>{user?.name || 'Supervisor'}</Text>
@@ -210,9 +227,49 @@ export default function SupervisorProfileScreen() {
         <InfoRow icon="location.fill" label="Address" value={organization?.address || 'Not set'} />
       </Card>
 
+      <Card style={styles.infoCard}>
+        <Text style={styles.cardTitle}>Appearance</Text>
+        <View style={styles.controlRow}>
+          <View style={styles.controlCopy}>
+            <Text style={styles.controlLabel}>Dark mode</Text>
+            <Text style={styles.controlDescription}>{themeLabel}</Text>
+          </View>
+          <Switch
+            value={isDark}
+            trackColor={{ false: colors.textMuted, true: colors.primary }}
+            thumbColor={isDark ? colors.primary : '#FFFFFF'}
+            onValueChange={(value) =>
+              setThemePreference(value ? 'dark' : 'light')
+            }
+          />
+        </View>
+        <View style={styles.segmentedControl}>
+          {(['system', 'light', 'dark'] as const).map((value) => (
+            <TouchableOpacity
+              key={value}
+              style={[
+                styles.segment,
+                themePreference === value && styles.segmentActive,
+              ]}
+              activeOpacity={0.75}
+              onPress={() => setThemePreference(value)}>
+              <Text
+                style={[
+                  styles.segmentLabel,
+                  themePreference === value && styles.segmentLabelActive,
+                ]}>
+                {value === 'system'
+                  ? 'System'
+                  : value.charAt(0).toUpperCase() + value.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
       <View style={styles.actions}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
@@ -231,10 +288,13 @@ function InfoRow({
   value: string;
   muted?: boolean;
 }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLabel}>
-        <IconSymbol name={icon} size={16} color={BrandColors.textMuted} />
+        <IconSymbol name={icon} size={16} color={colors.textMuted} />
         <Text style={styles.infoLabelText}>{label}</Text>
       </View>
       <Text style={[styles.infoValue, muted && styles.mutedValue]}>{value}</Text>
@@ -269,179 +329,225 @@ function getFileExtension(uri: string, contentType: string) {
   return contentType.split('/')[1] || 'jpg';
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-  },
-  profileCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  avatarWrap: {
-    position: 'relative',
-    marginBottom: Spacing.md,
-  },
-  avatar: {
-    width: 84,
-    height: 84,
-    borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-  },
-  avatarEditButton: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.primary,
-    borderWidth: 2,
-    borderColor: BrandColors.card,
-  },
-  avatarText: {
-    color: BrandColors.background,
-    fontSize: Typography['2xl'],
-    fontWeight: '800',
-  },
-  name: {
-    color: BrandColors.text,
-    fontSize: Typography['2xl'],
-    fontWeight: '800',
-  },
-  email: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  badges: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  roleBadge: {
-    backgroundColor: BrandColors.backgroundLighter,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  roleText: {
-    color: BrandColors.primary,
-    fontSize: Typography.xs,
-    fontWeight: '800',
-  },
-  statusBadge: {
-    backgroundColor: BrandColors.primary,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  statusText: {
-    color: BrandColors.background,
-    fontSize: Typography.xs,
-    fontWeight: '800',
-    textTransform: 'capitalize',
-  },
-  scoreWrap: {
-    marginTop: Spacing.xl,
-  },
-  infoCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  cardTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '700',
-    marginBottom: Spacing.lg,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  infoLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  infoLabelText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-  },
-  infoValue: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'right',
-  },
-  mutedValue: {
-    color: BrandColors.textMuted,
-  },
-  actions: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing['2xl'],
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.card,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
-  },
-  logoutText: {
-    color: BrandColors.error,
-    fontSize: Typography.base,
-    fontWeight: '700',
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing['2xl'],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: '800',
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography['3xl'],
+      fontWeight: '800',
+    },
+    profileCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      alignItems: 'center',
+      paddingVertical: Spacing['2xl'],
+    },
+    avatarWrap: {
+      position: 'relative',
+      marginBottom: Spacing.md,
+    },
+    avatar: {
+      width: 84,
+      height: 84,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
+    },
+    avatarOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    },
+    avatarEditButton: {
+      position: 'absolute',
+      right: -2,
+      bottom: -2,
+      width: 32,
+      height: 32,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+      borderWidth: 2,
+      borderColor: colors.card,
+    },
+    avatarText: {
+      color: colors.background,
+      fontSize: Typography['2xl'],
+      fontWeight: '800',
+    },
+    name: {
+      color: colors.text,
+      fontSize: Typography['2xl'],
+      fontWeight: '800',
+    },
+    email: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    badges: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+    },
+    roleBadge: {
+      backgroundColor: colors.backgroundLighter,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+    },
+    roleText: {
+      color: colors.primary,
+      fontSize: Typography.xs,
+      fontWeight: '800',
+    },
+    statusBadge: {
+      backgroundColor: colors.primary,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.xs,
+    },
+    statusText: {
+      color: colors.background,
+      fontSize: Typography.xs,
+      fontWeight: '800',
+      textTransform: 'capitalize',
+    },
+    scoreWrap: {
+      marginTop: Spacing.xl,
+    },
+    infoCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginBottom: Spacing.lg,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.lg,
+      gap: Spacing.md,
+    },
+    infoLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    infoLabelText: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+    },
+    infoValue: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'right',
+    },
+    mutedValue: {
+      color: colors.textMuted,
+    },
+    controlRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: Spacing.md,
+      justifyContent: 'space-between',
+      marginBottom: Spacing.md,
+    },
+    controlCopy: {
+      flex: 1,
+    },
+    controlLabel: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
+    },
+    controlDescription: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 4,
+    },
+    segmentedControl: {
+      backgroundColor: colors.backgroundLight,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      flexDirection: 'row',
+      padding: 4,
+    },
+    segment: {
+      alignItems: 'center',
+      borderRadius: BorderRadius.sm,
+      flex: 1,
+      paddingVertical: Spacing.sm,
+    },
+    segmentActive: {
+      backgroundColor: colors.primary,
+    },
+    segmentLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+    },
+    segmentLabelActive: {
+      color: colors.background,
+    },
+    actions: {
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing['2xl'],
+    },
+    logoutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.md,
+      gap: Spacing.sm,
+    },
+    logoutText: {
+      color: colors.error,
+      fontSize: Typography.base,
+      fontWeight: '700',
+    },
+  });

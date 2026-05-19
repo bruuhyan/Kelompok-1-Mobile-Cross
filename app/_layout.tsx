@@ -3,7 +3,6 @@
  * Handles app-wide theming and navigation structure
  */
 
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -123,6 +122,7 @@ export default function RootLayout() {
 
   return (
     <ThemePreferenceProvider>
+      <AuthGate />
       <RootStack />
     </ThemePreferenceProvider>
   );
