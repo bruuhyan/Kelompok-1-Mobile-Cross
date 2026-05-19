@@ -59,7 +59,7 @@ export const VALIDATION = {
 
   // Trust Score
   TRUST_SCORE_MIN: 0,
-  TRUST_SCORE_MAX: 100,
+  TRUST_SCORE_MAX: 50,
 
   // Pagination
   DEFAULT_PAGE_SIZE: 20,
