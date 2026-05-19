@@ -3,7 +3,6 @@
  * Handles app-wide theming and navigation structure
  */
 
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -18,10 +17,6 @@ import { useEffect } from "react";
 
 // Keep the splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync();
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
 
 function AuthGate() {
   const router = useRouter();
@@ -133,6 +128,7 @@ function RootStack() {
 
   return (
     <>
+      <AuthGate />
       <Stack
         screenOptions={{
           headerShown: false,

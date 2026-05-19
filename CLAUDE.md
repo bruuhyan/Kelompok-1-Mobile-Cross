@@ -30,7 +30,7 @@ The app uses Expo Router's file-based routing with three route groups:
 
 1. **`/(auth)`** - Authentication flow (login, register, onboarding, create/join organization, waiting approval)
 2. **`/(employee)`** - Employee dashboard with 5 bottom tabs (Home, Attendance, Requests, Reports, Profile)
-3. **`/(supervisor)`** - Supervisor dashboard with 6 bottom tabs (Home, Attendance, Requests, Reports, Team, Profile)
+3. **`/(supervisor)`** - Supervisor dashboard with 5 bottom tabs (Home, Team, Request, Task, Profile)
 
 The root layout (`app/_layout.tsx`) is the central auth gate. It checks the Supabase session, fetches the linked profile, mirrors that profile into `store/authStore.ts`, and routes by profile `status` and `role`.
 
@@ -67,7 +67,9 @@ All data is scoped by `organization_id`. The database schema enforces this throu
 
 - Always include `organization_id` in queries
 - Use Row Level Security (RLS) policies in Supabase to ensure users can only access their org's data
-- Organization settings (GPS radius, WiFi SSID/BSSID) are stored in `org_settings` table
+- Organization settings (GPS radius, WiFi SSID/BSSID, IP range, work hours) are stored in `organization_settings` table
+- `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` handle CRUD operations
+  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
 
 ### Trust Score System
 
@@ -139,18 +141,14 @@ When back online:
 
 ### Services
 
-- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization, supervisor)
-- `services/storageService.ts` - Supabase Storage operations for profile picture upload (uses expo-image-picker with base64, NOT fetch().blob())
+- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization, supervisor, task, request, report)
+- `services/storageService.ts` - Supabase Storage operations for profile picture and report photo upload (uses expo-image-picker with base64, NOT fetch().blob())
+- `services/attendanceService.ts` - GPS/WiFi/IP validation, offline queue, trust score recalculation
 
 ### State Management
 
 - `store/authStore.ts` - User authentication state, role, organization, avatar_url (via `updateUser` partial updates) ✅
 - `store/attendanceStore.ts` - Check-in/check-out state, today's status, validation progress, offline sync queue, location monitoring ✅
-
-Stores to be created:
-
-- `store/requestStore.ts` - Holiday/overtime requests
-- `store/syncStore.ts` - Offline sync queue and status
 
 ## UI Patterns
 
@@ -164,6 +162,9 @@ Stores to be created:
 - Profile cards show: avatar (image or initials), name, email, role/status badges, large TrustScoreBadge
 - `components/SettingsAppearance.tsx` - Shared dark mode toggle component used across employee and supervisor settings
 - Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
+- Settings screens are accessed from Profile screens (not as bottom tabs) — both employee and supervisor Profile have a Settings button with gear icon navigating to their respective settings screens
+- Supervisor Profile Settings button: `router.push('/(supervisor)/settings')`
+- Employee Profile Settings button: `router.push('/(employee)/settings')`
 
 ## Validation Rules
 
@@ -302,6 +303,7 @@ After Qwen produces output, Claude reviews for:
 - `services/attendanceService.ts` - GPS/WiFi/IP validation, offline queue, trust score recalculation
 - `app/(employee)/attendance.tsx` - Attendance history screen with auto-refresh via `useFocusEffect`
 - `app/(employee)/home.tsx` - Dashboard with check-in/out buttons, validation status display, offline banner
+- `app/(supervisor)/home.tsx` - "My Attendance" card with identical check-in/out flow (role-agnostic store)
 - Offline sync with integrity hash validation and 24-hour age limit
 - Location monitoring every 30 minutes while checked in
 - Trust score sync to local UI after check-in/out via `useAuthStore.getState().updateUser()`
@@ -315,6 +317,8 @@ After Qwen produces output, Claude reviews for:
 - `app/(employee)/reports.tsx` - Report submission with photo attachment
 - `app/(supervisor)/report-review.tsx` - Supervisor report review
 - `app/(supervisor)/report-detail/[id].tsx` - Report detail view
+- Photo upload via `storageService` to `report-photos` bucket (4:3 aspect ratio, quality 0.7)
+- `reports` table requires `photo_url` TEXT column
 
 #### Task Management (Phase 8)
 - `app/(supervisor)/team.tsx` - Team management with attendance logs, registration approvals, TrustScore overview
@@ -331,3 +335,49 @@ After Qwen produces output, Claude reviews for:
 - Kept staging's `useAppTheme()` theming pattern throughout
 - Integrated joshua_tes's full attendance implementation with staging's trust score modal
 - All files pass lint (0 errors) and TypeScript (0 errors)
+
+#### Cherry-pick: Sebastest → staging
+- Added employee request submission screen (`app/(employee)/requests.tsx`)
+- Added employee report submission screen (`app/(employee)/reports.tsx`)
+- Added `requestService` and `reportService` to `services/supabase.ts`
+- Enhanced `Input` component with multiline support for report content
+- Added `supabase/add_request_hours.sql` migration for `hours` column on `requests` table
+
+#### Employee Task Management
+- `app/(employee)/tasks.tsx` — View assigned tasks grouped by status (To Do, In Review, Needs Revision, Completed)
+- Expandable cards with submission form for assigned/rejected tasks
+- `useFocusEffect` for auto-refresh
+- `taskService.getMyTasks(userId)` and `taskService.submitTask(taskId, submissionNote)` in `services/supabase.ts`
+- Tasks accessible from Home dashboard "My Tasks" card (not a bottom tab)
+
+#### Organization Settings
+- `app/(supervisor)/settings.tsx` — Configure attendance validation rules (GPS, WiFi, IP, work hours)
+- Uses `expo-location` for "Use Current Location" button
+- `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` in `services/supabase.ts`
+  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
+- Upserts into `organization_settings` table with `onConflict: 'organization_id'`
+- Settings accessible from Supervisor Profile screen via Settings button
+- `expo-location` plugin configured in `app.json` — requires native rebuild: `npx expo run:android`
+- Android emulator: enable Location in Quick Settings + set mock location via Extended Controls (three dots → Location)
+
+#### Report Photo Upload
+- `services/storageService.ts` — Added `pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`
+- Uses `report-photos` bucket, path `{userId}/{reportId}.jpg`
+- `app/(employee)/reports.tsx` — Photo picker with preview and remove button
+- Image settings: 4:3 aspect ratio, quality 0.7
+
+#### Supervisor Check-In/Check-Out
+- `app/(supervisor)/home.tsx` — "My Attendance" card with same check-in/out flow as employees
+- Uses the shared `attendanceStore` and `attendanceService` — role-agnostic, no separate logic needed
+- Validation flow: GPS, WiFi, IP, spoofing detection (same as employee)
+- Trust score recalculated after supervisor check-in/out
+- UI states: Not checked in (green button) → Checked in (blue button) → Completed (checkmark)
+- Offline sync and location monitoring work identically for supervisors
+
+#### Bottom Navigation Cleanup
+- Employee: reduced from 7 tabs to 5 tabs (Home, Attendance, Requests, Reports, Profile)
+- Settings moved to Profile screen as a row/button
+- Tasks moved to Home dashboard as a "My Tasks" card with "View All" link
+- Supervisor: already at 5 tabs (Home, Team, Request, Task, Profile) — no changes needed
+- Supervisor Profile now has Settings button navigating to `/(supervisor)/settings`
+- Supervisor Home now has "My Attendance" card with check-in/out functionality

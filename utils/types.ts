@@ -52,6 +52,8 @@ export interface OrganizationSettings {
   gps_lng?: number | null;
   gps_radius?: number | null;
   gps_radius_meters?: number | null;
+  workplace_lat?: number | null;
+  workplace_lng?: number | null;
   wifi_ssid?: string;
   wifi_bssid?: string;
   ip_range?: string;

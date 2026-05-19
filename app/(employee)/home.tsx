@@ -22,7 +22,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
-import { authService } from '@/services/supabase';
+import { authService, taskService } from '@/services/supabase';
 import { formatTime } from '@/utils/helpers';
 
 export default function EmployeeHomeScreen() {
@@ -32,6 +32,8 @@ export default function EmployeeHomeScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
+  const [myTasks, setMyTasks] = useState<any[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const {
     status: todayStatus,
     currentLog,
@@ -51,6 +53,22 @@ export default function EmployeeHomeScreen() {
       processSyncQueue();
     }
   }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (!user?.id) return;
+      setTasksLoading(true);
+      try {
+        const data = await taskService.getMyTasks(user.id);
+        setMyTasks((data as any[]).filter((t) => t.status !== 'approved').slice(0, 3));
+      } catch (error) {
+        console.error('Load tasks error:', error);
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+    loadTasks();
+  }, [user?.id]);
 
   useEffect(() => {
     if (error) {
@@ -256,6 +274,41 @@ export default function EmployeeHomeScreen() {
           </View>
           <Text style={styles.quickActionText}>Profile</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* My Tasks */}
+      <View style={styles.tasksSection}>
+        <View style={styles.tasksHeader}>
+          <Text style={styles.sectionTitle}>My Tasks</Text>
+          <TouchableOpacity onPress={() => router.push('/(employee)/tasks')}>
+            <Text style={styles.tasksViewAll}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        {tasksLoading ? (
+          <Card style={styles.taskItem}>
+            <ActivityIndicator size="small" color={colors.textMuted} />
+          </Card>
+        ) : myTasks.length === 0 ? (
+          <Card style={styles.taskItem}>
+            <Text style={styles.taskEmpty}>No pending tasks</Text>
+          </Card>
+        ) : (
+          myTasks.map((task) => (
+            <Card key={task.id} style={styles.taskItem}>
+              <View style={styles.taskRow}>
+                <View style={[styles.taskDot, { backgroundColor: task.status === 'rejected' ? colors.error : colors.primary }]} />
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
+                  <Text style={styles.taskMeta}>
+                    {task.status === 'rejected' ? 'Needs revision' : 'To Do'}
+                    {task.due_date ? ` · Due ${new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                  </Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+              </View>
+            </Card>
+          ))
+        )}
       </View>
 
       {/* Recent Activity */}
@@ -511,8 +564,54 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.lg,
       fontWeight: '600',
       color: colors.text,
-      marginHorizontal: Spacing.lg,
+    },
+    tasksSection: {
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing['2xl'],
+    },
+    tasksHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: Spacing.md,
+    },
+    tasksViewAll: {
+      fontSize: Typography.sm,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    taskItem: {
+      marginBottom: Spacing.sm,
+    },
+    taskRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    taskDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      flexShrink: 0,
+    },
+    taskInfo: {
+      flex: 1,
+    },
+    taskTitle: {
+      fontSize: Typography.base,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    taskMeta: {
+      fontSize: Typography.sm,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    taskEmpty: {
+      fontSize: Typography.sm,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingVertical: Spacing.sm,
     },
     quickActions: {
       flexDirection: 'row',

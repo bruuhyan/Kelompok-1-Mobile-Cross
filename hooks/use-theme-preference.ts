@@ -1,7 +1,8 @@
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  DefaultTheme,
   DarkTheme,
+  DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
 import React, {
@@ -11,7 +12,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const STORAGE_KEY = "trustend-theme-preference";
 

@@ -48,7 +48,10 @@ export default function SupervisorRequestReviewScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadRequests = useCallback(async () => {
-    if (!user?.organization_id) return;
+    if (!user?.organization_id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const data = await supervisorService.getPendingRequests(

@@ -459,6 +459,94 @@ export const supervisorService = {
       pendingReports: pendingReports.count || 0,
     };
   },
+
+  async getOrganizationSettings(organizationId: string) {
+    const { data, error } = await supabase
+      .from('org_settings')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return data;
+
+    return {
+      ...data,
+      gps_lat: data.gps_lat ?? data.workplace_lat ?? null,
+      gps_lng: data.gps_lng ?? data.workplace_lng ?? null,
+      gps_radius_meters: data.gps_radius_meters ?? data.gps_radius ?? null,
+    };
+  },
+
+  async upsertOrganizationSettings(organizationId: string, settings: {
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    gps_radius_meters?: number | null;
+    wifi_ssid?: string | null;
+    wifi_bssid?: string | null;
+    ip_range?: string | null;
+    work_start_time?: string | null;
+    work_end_time?: string | null;
+  }) {
+    const { data, error } = await supabase
+      .from('org_settings')
+      .upsert({
+        organization_id: organizationId,
+        workplace_lat: settings.gps_lat,
+        workplace_lng: settings.gps_lng,
+        gps_radius: settings.gps_radius_meters,
+        wifi_ssid: settings.wifi_ssid,
+        wifi_bssid: settings.wifi_bssid,
+        ip_range: settings.ip_range,
+        work_start_time: settings.work_start_time,
+        work_end_time: settings.work_end_time,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'organization_id',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      gps_lat: data.gps_lat ?? data.workplace_lat ?? null,
+      gps_lng: data.gps_lng ?? data.workplace_lng ?? null,
+      gps_radius_meters: data.gps_radius_meters ?? data.gps_radius ?? null,
+    };
+  },
+};
+
+/**
+ * Task Service
+ */
+export const taskService = {
+  async getMyTasks(userId: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*, creator:profiles!tasks_created_by_fkey(id, name, email), reviewer:profiles!tasks_reviewed_by_fkey(id, name, email)')
+      .eq('assigned_to', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async submitTask(taskId: string, submissionNote: string) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        status: 'submitted',
+        submission_note: submissionNote.trim(),
+        submitted_at: new Date().toISOString(),
+      })
+      .eq('id', taskId)
+      .select('*, creator:profiles!tasks_created_by_fkey(id, name, email), reviewer:profiles!tasks_reviewed_by_fkey(id, name, email)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 /**

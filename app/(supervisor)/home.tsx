@@ -3,7 +3,7 @@
  * Dashboard for pending requests, registrations, and team health.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useAttendanceStore } from '@/store/attendanceStore';
+import { formatTime } from '@/utils/helpers';
 
 type DashboardSummary = {
   pendingRegistrations: number;
@@ -60,6 +62,32 @@ export default function SupervisorHomeScreen() {
   const [recentRequests, setRecentRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    status: todayStatus,
+    currentLog,
+    pendingSyncLogs,
+    validationStatus,
+    isLoading: attendanceLoading,
+    error: attendanceError,
+    initializeToday,
+    performCheckIn,
+    performCheckOut,
+    processSyncQueue,
+  } = useAttendanceStore();
+
+  useEffect(() => {
+    if (user) {
+      initializeToday(user);
+      processSyncQueue();
+    }
+  }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    if (attendanceError) {
+      Alert.alert('Attendance', attendanceError);
+    }
+  }, [attendanceError]);
 
   const loadDashboard = useCallback(async () => {
     if (!user?.organization_id) return;
@@ -100,6 +128,54 @@ export default function SupervisorHomeScreen() {
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Error', 'Failed to log out');
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!user) return;
+
+    try {
+      await performCheckIn(user);
+      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-in saved and will sync when online.' : 'Check-in successful.');
+    } catch {
+      // Error state is already surfaced by the attendance store.
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!user) return;
+
+    try {
+      await performCheckOut(user);
+      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-out saved and will sync when online.' : 'Check-out successful.');
+    } catch {
+      // Error state is already surfaced by the attendance store.
+    }
+  };
+
+  const getStatusText = () => {
+    switch (todayStatus) {
+      case 'not_checked_in':
+        return 'Not checked in yet';
+      case 'checked_in':
+        return currentLog?.check_in_time
+          ? `Checked in at ${formatTime(new Date(currentLog.check_in_time))}`
+          : 'Checked in';
+      case 'checked_out':
+        return currentLog?.check_out_time
+          ? `Checked out at ${formatTime(new Date(currentLog.check_out_time))}`
+          : 'Checked out';
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (todayStatus) {
+      case 'not_checked_in':
+        return colors.textSecondary;
+      case 'checked_in':
+        return colors.success;
+      case 'checked_out':
+        return colors.info;
     }
   };
 
@@ -158,6 +234,86 @@ export default function SupervisorHomeScreen() {
           color={colors.error}
         />
       </View>
+
+      {/* My Attendance Card */}
+      <Card style={styles.attendanceCard}>
+        <Text style={styles.attendanceTitle}>My Attendance</Text>
+        <View style={styles.attendanceStatus}>
+          <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+          <Text style={[styles.statusText, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+        </View>
+
+        {pendingSyncLogs.length > 0 ? (
+          <View style={styles.offlineBanner}>
+            <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={colors.warning} />
+            <Text style={styles.offlineText}>
+              {pendingSyncLogs.length} offline attendance item{pendingSyncLogs.length > 1 ? 's' : ''} pending sync
+            </Text>
+          </View>
+        ) : null}
+
+        {validationStatus.gps.status !== 'idle' ? (
+          <View style={styles.validationList}>
+            {(['gps', 'wifi', 'ip', 'spoofing'] as const).map((key) => (
+              <View key={key} style={styles.validationItem}>
+                <View
+                  style={[
+                    styles.validationDot,
+                    {
+                      backgroundColor:
+                        validationStatus[key].status === 'valid'
+                          ? colors.success
+                          : validationStatus[key].status === 'invalid'
+                            ? colors.error
+                            : validationStatus[key].status === 'warning'
+                              ? colors.warning
+                              : colors.textMuted,
+                    },
+                  ]}
+                />
+                <Text style={styles.validationText}>{validationStatus[key].message}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {todayStatus === 'not_checked_in' ? (
+          <TouchableOpacity
+            style={styles.checkInButton}
+            onPress={handleCheckIn}
+            disabled={attendanceLoading}>
+            {attendanceLoading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <>
+                <IconSymbol name="location.fill" size={20} color={colors.background} />
+                <Text style={styles.checkInButtonText}>Check In</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : todayStatus === 'checked_in' ? (
+          <TouchableOpacity
+            style={styles.checkOutButton}
+            onPress={handleCheckOut}
+            disabled={attendanceLoading}>
+            {attendanceLoading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <>
+                <IconSymbol name="location.slash" size={20} color={colors.background} />
+                <Text style={styles.checkOutButtonText}>Check Out</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.completedStatus}>
+            <IconSymbol name="checkmark.circle.fill" size={20} color={colors.success} />
+            <Text style={styles.completedText}>Completed for today</Text>
+          </View>
+        )}
+      </Card>
 
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickActions}>
@@ -352,6 +508,104 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       fontSize: Typography.sm,
       marginTop: Spacing.xs,
+    },
+    attendanceCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    attendanceTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '700',
+      marginBottom: Spacing.md,
+    },
+    attendanceStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.lg,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: Spacing.sm,
+    },
+    statusText: {
+      fontSize: Typography.base,
+      fontWeight: '500',
+    },
+    offlineBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundLighter,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.md,
+      gap: Spacing.sm,
+    },
+    offlineText: {
+      flex: 1,
+      color: colors.warning,
+      fontSize: Typography.sm,
+    },
+    validationList: {
+      marginBottom: Spacing.md,
+      gap: Spacing.xs,
+    },
+    validationItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    validationDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    validationText: {
+      flex: 1,
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    checkInButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.md,
+      gap: Spacing.sm,
+    },
+    checkInButtonText: {
+      color: colors.background,
+      fontSize: Typography.base,
+      fontWeight: '600',
+    },
+    checkOutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.info,
+      paddingVertical: Spacing.md,
+      borderRadius: BorderRadius.md,
+      gap: Spacing.sm,
+    },
+    checkOutButtonText: {
+      color: colors.background,
+      fontSize: Typography.base,
+      fontWeight: '600',
+    },
+    completedStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.md,
+      gap: Spacing.sm,
+    },
+    completedText: {
+      color: colors.success,
+      fontSize: Typography.base,
+      fontWeight: '600',
     },
     sectionHeader: {
       flexDirection: 'row',

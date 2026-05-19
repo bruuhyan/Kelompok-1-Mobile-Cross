@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from './supabase';
 
 const AVATARS_BUCKET = 'profile-pictures';
+const REPORT_PHOTOS_BUCKET = 'report-photos';
 const JPEG_QUALITY = 0.7;
 
 export interface PickedImage {
@@ -97,6 +98,70 @@ export const storageService = {
 
     const { error } = await supabase.storage
       .from(AVATARS_BUCKET)
+      .remove([filePath]);
+
+    if (error && error.message !== 'The resource was not found') {
+      throw error;
+    }
+  },
+
+  async pickReportPhoto(): Promise<PickedImage | null> {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      throw new Error('Gallery permission is required');
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: JPEG_QUALITY,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return null;
+    }
+
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      throw new Error('Failed to get base64 data from gallery');
+    }
+    return { uri: asset.uri, base64: asset.base64 };
+  },
+
+  async uploadReportPhoto(userId: string, reportId: string, base64: string): Promise<string> {
+    const filePath = userId + '/' + reportId + '.jpg';
+
+    const binaryStr = atob(base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    const { data, error } = await supabase.storage
+      .from(REPORT_PHOTOS_BUCKET)
+      .upload(filePath, bytes, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(REPORT_PHOTOS_BUCKET)
+      .getPublicUrl(data.path);
+
+    return urlData.publicUrl;
+  },
+
+  async deleteReportPhoto(userId: string, reportId: string): Promise<void> {
+    const filePath = userId + '/' + reportId + '.jpg';
+
+    const { error } = await supabase.storage
+      .from(REPORT_PHOTOS_BUCKET)
       .remove([filePath]);
 
     if (error && error.message !== 'The resource was not found') {

@@ -23,7 +23,7 @@ export default function EmployeeTabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 60,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8, // Use safe area inset or default 8px
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
         },
         headerShown: false,
@@ -80,12 +80,17 @@ export default function EmployeeTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tasks"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="gearshape.fill" color={color} />
-          ),
+          href: null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
     </Tabs>

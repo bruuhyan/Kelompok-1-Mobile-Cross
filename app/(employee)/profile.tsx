@@ -360,6 +360,13 @@ export default function EmployeeProfileScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/(employee)/settings')}>
+          <IconSymbol name="gearshape.fill" size={20} color={colors.text} />
+          <Text style={styles.settingsButtonText}>Settings</Text>
+          <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
@@ -552,6 +559,25 @@ const createStyles = (colors: ThemeColors) =>
     actions: {
       paddingHorizontal: Spacing.lg,
       marginBottom: Spacing['2xl'],
+      gap: Spacing.md,
+    },
+    settingsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: BrandColors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.sm,
+    },
+    settingsButtonText: {
+      flex: 1,
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
     },
     logoutButton: {
       flexDirection: 'row',
