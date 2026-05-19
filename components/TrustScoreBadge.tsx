@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { BrandColors, Spacing, Typography, BorderRadius } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface TrustScoreBadgeProps {
   score: number;
@@ -14,10 +15,13 @@ interface TrustScoreBadgeProps {
 }
 
 export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: TrustScoreBadgeProps) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   const getTier = (score: number) => {
-    if (score >= 80) return { color: BrandColors.success, label: 'Trusted' };
-    if (score >= 50) return { color: BrandColors.warning, label: 'Moderate' };
-    return { color: BrandColors.error, label: 'At Risk' };
+    if (score >= 80) return { color: colors.success, label: 'Trusted' };
+    if (score >= 50) return { color: colors.warning, label: 'Moderate' };
+    return { color: colors.error, label: 'At Risk' };
   };
 
   const tier = getTier(score);
@@ -63,7 +67,8 @@ export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: T
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   container: {
     alignItems: 'center',
   },
@@ -72,7 +77,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
   },
   score: {
     fontWeight: '800',

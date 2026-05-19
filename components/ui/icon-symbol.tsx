@@ -51,6 +51,7 @@ const MAPPING = {
   'checkmark.seal.fill': 'verified',
   'doc.text.magnifyingglass': 'find-in-page',
   'person.2.fill': 'groups',
+  'gearshape.fill': 'settings',
   'person.badge.plus': 'person-add',
   'person.crop.circle.badge.checkmark': 'how-to-reg',
   'person.crop.circle.badge.xmark': 'person-remove',

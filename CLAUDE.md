@@ -133,10 +133,12 @@ When back online:
 - `components/Input.tsx` - Input component with label, error, and icon support
 - `components/Button.tsx` - Button component with variants and sizes
 - `components/TrustScoreBadge.tsx` - Color-coded trust score display
+- `components/InfoRow.tsx` - Reusable labeled information row with icon (used in profile screens)
 
 ### Services
 
-- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization)
+- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization, supervisor)
+- `services/storageService.ts` - Supabase Storage operations for profile picture upload (uses expo-image-picker with base64, NOT fetch().blob())
 
 ### State Management
 
@@ -147,11 +149,15 @@ When back online:
 Tables created:
 
 - `organizations` - Organization details (id, name, address, code)
-- `profiles` - User profiles linked to organizations (extends Supabase auth.users)
+- `profiles` - User profiles linked to organizations (extends Supabase auth.users), includes `avatar_url` TEXT column
 - `attendance_logs` - Check-in/check-out records with GPS/WiFi/IP data
 - `requests` - Holiday and overtime requests
 - `reports` - Employee reports
 - `org_settings` - Organization-specific settings (GPS radius, WiFi, IP range)
+
+Storage buckets:
+
+- `profile-pictures` - Public bucket for user avatars, path: `{userId}/avatar.jpg`
 
 ### RLS Policies
 
@@ -207,6 +213,21 @@ The app is built incrementally across 16 phases. Current status:
 - Organization admin creation moved to secure SQL RPC
 - RLS self-profile insert restricted to pending employees
 
+### Profile Picture Upload Complete ✅
+
+- `services/storageService.ts` - Avatar upload/delete via Supabase Storage
+- `app/(employee)/profile.tsx` - Employee profile with camera/gallery upload
+- `app/(supervisor)/profile.tsx` - Supervisor profile with camera/gallery upload
+- Both profiles share: `InfoRow` component, `storageService`, `useAppTheme()` theming
+- Storage bucket: `profile-pictures` with path `{userId}/avatar.jpg`
+- Uses `expo-image-picker` with `base64: true` (NOT fetch().blob())
+
+### Dashboard Auto-Refresh Complete ✅
+
+- `app/(supervisor)/home.tsx` - Uses `useFocusEffect` for auto-refresh on focus
+- `app/(supervisor)/request-review.tsx` - Uses `useFocusEffect` for auto-refresh on focus
+- Dashboard metrics and pending request counts update when navigating back from review screens
+
 ### Phase 5: Attendance Tracking (Next)
 
 - GPS location tracking
@@ -214,6 +235,46 @@ The app is built incrementally across 16 phases. Current status:
 - IP address validation
 - Check-in validation modal
 - Offline sync for attendance logs
+
+## Profile Picture Upload
+
+### Storage Configuration
+- Bucket: `profile-pictures` (public)
+- File path: `{userId}/avatar.jpg`
+- Field in profiles table: `avatar_url` (TEXT)
+- RLS policies ensure users can only access their own folder
+
+### Upload Implementation
+- `services/storageService.ts` handles all avatar operations
+- Uses `expo-image-picker` with `base64: true` option
+- Converts base64 → `Uint8Array` → Supabase Storage upload
+- Image settings: 1:1 aspect ratio, quality 0.7
+- Old avatars are deleted before uploading new ones
+
+### Critical Gotchas
+- **NEVER use `fetch(uri).blob()`** for uploads — it fails with "Network request failed" on React Native
+- **NEVER use `expo-file-system`** for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
+- Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
+
+### Profile Screen Architecture
+- Employee profile: `app/(employee)/profile.tsx`
+- Supervisor profile: `app/(supervisor)/profile.tsx`
+- Both share: `InfoRow` component, `storageService` for uploads, `useAppTheme()` for theming
+- Both support: camera/gallery upload, remove photo, inline name editing
+
+## Dashboard Auto-Refresh
+
+- Supervisor screens use `useFocusEffect` from `expo-router` instead of `useEffect`
+- This ensures dashboard data (pending requests count, metrics) refreshes when navigating back from review screens
+- Applied to: `app/(supervisor)/home.tsx` and `app/(supervisor)/request-review.tsx`
+- Pattern:
+  ```tsx
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
+  );
+  ```
 
 ### Phase 6: Requests System
 
@@ -242,7 +303,7 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 
 Zustand is used for state management. Stores created:
 
-- `store/authStore.ts` - User authentication state, role, organization ✅
+- `store/authStore.ts` - User authentication state, role, organization, avatar_url (via `updateUser` partial updates) ✅
 
 Stores to be created:
 
@@ -258,6 +319,9 @@ Stores to be created:
 - All screens use dark theme by default
 - Bottom tabs use `HapticTab` component for haptic feedback
 - Icons use `IconSymbol` from `@expo/vector-icons`
+- Profile screens use `useAppTheme()` hook for dynamic theming via `ThemeColors`
+- Profile screens share `InfoRow` component for labeled information rows
+- Profile cards show: avatar (image or initials), name, email, role/status badges, large TrustScoreBadge
 
 ## Validation Rules
 

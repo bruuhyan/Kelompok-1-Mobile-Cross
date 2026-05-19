@@ -14,9 +14,12 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { BrandColors } from '@/constants/theme';
+import { ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SplashScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.8);
@@ -77,10 +80,11 @@ export default function SplashScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -95,10 +99,10 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 30,
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: BrandColors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -107,7 +111,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 48,
     fontWeight: '800',
-    color: BrandColors.background,
+    color: colors.background,
     letterSpacing: 2,
   },
   textContainer: {
@@ -117,13 +121,13 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 36,
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     letterSpacing: 1,
   },
   tagline: {
     fontSize: 14,
     fontWeight: '400',
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   footer: {
@@ -136,9 +140,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: BrandColors.textMuted,
+    backgroundColor: colors.textMuted,
   },
   dotActive: {
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
   },
 });

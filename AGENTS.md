@@ -36,3 +36,29 @@ npm run reset-project  # Clear app directory (use with caution)
 - `expo-router/entry` is the main entry point in package.json
 - After changing `supabase/rls_policies.sql`, apply it in Supabase before testing auth/organization flows
 - Logout flows must call both `authService.signOut()` and `useAuthStore().logout()` to clear persisted profile state
+
+## Profile Picture Upload
+
+### Storage Setup
+- Bucket: `profile-pictures` (public)
+- File path: `{userId}/avatar.jpg`
+- RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
+- Field name in profiles table: `avatar_url` (TEXT)
+
+### Upload Service
+- `services/storageService.ts` handles all avatar operations
+- Uses `expo-image-picker` with `base64: true` option (avoids React Native's buggy `fetch().blob()`)
+- Converts base64 → `Uint8Array` → Supabase Storage upload
+- Image settings: 1:1 aspect ratio, quality 0.7
+- Old avatars are deleted before uploading new ones
+
+### Gotchas
+- Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
+- Do NOT use `expo-file-system` for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
+- Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
+
+## Dashboard Auto-Refresh
+
+- Supervisor screens use `useFocusEffect` from `expo-router` instead of `useEffect`
+- This ensures dashboard data (pending requests count, metrics) refreshes when navigating back from review screens
+- Applied to: `app/(supervisor)/home.tsx` and `app/(supervisor)/request-review.tsx`

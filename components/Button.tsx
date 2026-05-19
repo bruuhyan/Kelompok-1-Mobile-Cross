@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   TouchableOpacityProps,
 } from 'react-native';
-import { BrandColors, BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -31,6 +32,8 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const buttonStyle = [
     styles.button,
     styles[variant],
@@ -52,7 +55,7 @@ export function Button({
       activeOpacity={0.7}
       {...props}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? BrandColors.background : BrandColors.primary} />
+        <ActivityIndicator color={variant === 'primary' ? colors.background : colors.primary} />
       ) : (
         <Text style={textStyle}>{title}</Text>
       )}
@@ -60,7 +63,8 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -69,15 +73,15 @@ const styles = StyleSheet.create({
   },
   // Variants
   primary: {
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: BrandColors.primary,
+    borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -104,16 +108,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryText: {
-    color: BrandColors.background,
+    color: colors.background,
   },
   secondaryText: {
-    color: BrandColors.text,
+    color: colors.text,
   },
   outlineText: {
-    color: BrandColors.primary,
+    color: colors.primary,
   },
   ghostText: {
-    color: BrandColors.primary,
+    color: colors.primary,
   },
   smallText: {
     fontSize: Typography.sm,

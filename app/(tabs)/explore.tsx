@@ -5,17 +5,21 @@ import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function TabTwoScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#6366F1', dark: '#0A0E27' }}
+      headerBackgroundColor={{ light: colors.backgroundLighter, dark: colors.background }}
       headerImage={
         <View style={styles.headerGradient}>
           <IconSymbol
             size={120}
-            color={Colors.dark.primary}
+            color={colors.primary}
             name="shield.fill"
             style={styles.headerIcon}
           />
@@ -52,10 +56,11 @@ export default function TabTwoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+StyleSheet.create({
   headerGradient: {
     flex: 1,
-    backgroundColor: '#0A0E27',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
