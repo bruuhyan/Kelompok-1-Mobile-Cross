@@ -29,7 +29,7 @@ import {
 const DEFAULT_WORK_START_TIME = '09:00';
 const GRACE_PERIOD_MINUTES = 15;
 const OFFLINE_MAX_AGE_HOURS = 24;
-const TRUST_SCORE_MAX = 100;
+const TRUST_SCORE_MAX = 50;
 
 type AttendanceNotes = {
   validation_flags?: AttendanceValidation;

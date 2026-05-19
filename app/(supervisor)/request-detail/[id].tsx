@@ -154,7 +154,7 @@ export default function RequestDetailScreen() {
 
         <View style={styles.section}>
           <InfoRow label="Email" value={request.profiles?.email ?? '-'} />
-          <InfoRow label="Trust Score" value={`${request.profiles?.trust_score ?? '-'} / 100`} />
+          <InfoRow label="Trust Score" value={`${request.profiles?.trust_score ?? '-'} / 50`} />
           <InfoRow label="Start Date" value={formatDate(request.start_date)} />
           <InfoRow label="End Date" value={formatDate(request.end_date)} />
           <InfoRow label="Submitted" value={formatDateTime(request.created_at)} />
