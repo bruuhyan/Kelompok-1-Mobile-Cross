@@ -91,17 +91,26 @@ export function LocationPicker({ value, onChange }: Props) {
 
     // Listen for commands from React Native
     window.movePin = function(lat, lng, zoom) {
-      map.setView([lat, lng], zoom || 15);
-      if (marker) {
-        marker.setLatLng([lat, lng]);
-      } else {
-        marker = L.marker([lat, lng]).addTo(map);
-      }
-    };
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng]).addTo(map);
+  }
+
+  map.flyTo([lat, lng], zoom || 15, {
+    animate: true,
+    duration: 1.5
+  });
+};
   </script>
 </body>
 </html>
 `;
+
+const NOMINATIM_HEADERS = {
+  'Accept-Language': 'id,en',
+  'User-Agent': 'TrustEnd/1.0 (contact@trustend.app)',
+};
 
   // Handle messages from WebView (map tap)
   const handleWebViewMessage = async (event: any) => {
@@ -114,7 +123,7 @@ export function LocationPicker({ value, onChange }: Props) {
         // Reverse geocode via Nominatim
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-          { headers: { 'Accept-Language': 'id,en' } }
+          { headers: NOMINATIM_HEADERS}
         );
         const json = await res.json();
         if (json.display_name) {
@@ -130,11 +139,13 @@ export function LocationPicker({ value, onChange }: Props) {
 
   // Move map pin programmatically
   const movePinOnMap = (lat: number, lng: number, zoom = 15) => {
+  setTimeout(() => {
     webViewRef.current?.injectJavaScript(`
       window.movePin(${lat}, ${lng}, ${zoom});
       true;
     `);
-  };
+  }, 100);
+};
 
   const handleSearch = async () => {
     if (!searchText.trim()) return;
@@ -142,7 +153,7 @@ export function LocationPicker({ value, onChange }: Props) {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText.trim())}&format=json&limit=1`,
-        { headers: { 'Accept-Language': 'id,en' } }
+        { headers: NOMINATIM_HEADERS }
       );
       const results = await res.json();
       if (!results || results.length === 0) {
@@ -177,7 +188,7 @@ export function LocationPicker({ value, onChange }: Props) {
       // Reverse geocode via Nominatim
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-        { headers: { 'Accept-Language': 'id,en' } }
+        { headers: NOMINATIM_HEADERS  } 
       );
       const json = await res.json();
       if (json.display_name) {

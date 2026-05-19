@@ -38,9 +38,11 @@ export default function CreateOrganizationScreen() {
   const [orgName, setOrgName] = useState('');
   const [orgLocation, setOrgLocation] = useState<LocationData | null>(null);
   const [generatedCode, setGeneratedCode] = useState('');
+  const [wifiBssid, setWifiBssid] = useState('');
   const [errors, setErrors] = useState<{
     orgName?: string;
     orgAddress?: string;
+    wifiBssid?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,19 +55,27 @@ export default function CreateOrganizationScreen() {
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+  const newErrors: any = {};
 
-    if (!orgName.trim()) {
-      newErrors.orgName = ERROR_MESSAGES.REQUIRED_FIELD;
-    }
+  if (!orgName.trim()) {
+    newErrors.orgName = ERROR_MESSAGES.REQUIRED_FIELD;
+  }
 
-    if (!orgLocation) {
-      newErrors.orgAddress = 'Please select a location';
-    }
+  if (!orgLocation) {
+    newErrors.orgAddress = 'Please select a location';
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Optional BSSID validation
+  if (
+    wifiBssid.trim() &&
+    !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(wifiBssid.trim())
+  ) {
+    newErrors.wifiBssid = 'Invalid BSSID format';
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   const handleCreateOrganization = async () => {
     if (!validateForm()) return;
@@ -85,6 +95,7 @@ export default function CreateOrganizationScreen() {
         address: orgLocation!.address,
         latitude: orgLocation!.latitude,
         longitude: orgLocation!.longitude,
+        wifi_bssid: wifiBssid.trim() || null,
         code: generatedCode,
         adminName: orgName.trim(),
         adminEmail: currentUser.email || user?.email || '',
@@ -145,11 +156,28 @@ export default function CreateOrganizationScreen() {
             <LocationPicker
               value={orgLocation}
               onChange={setOrgLocation}
-            />
+            />   
             {errors.orgAddress && (
               <Text style={styles.errorText}>{errors.orgAddress}</Text>
             )}
           </View>
+
+            <Input
+            style = {styles.wifiField}
+            label="WiFi BSSID (Optional)"
+            placeholder="AA:BB:CC:DD:EE:FF"
+            value={wifiBssid}
+            onChangeText={(text) => setWifiBssid(text.toUpperCase())}
+            autoCapitalize="characters"
+            error={errors.wifiBssid}
+            leftIcon={
+            <IconSymbol
+              name="wifi"
+              size={20}
+              color={colors.textMuted}
+            />
+  }
+/> 
 
           <Button
             title="Create Organization"
@@ -232,6 +260,10 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: '600',
       color: colors.textSecondary,
       marginBottom: Spacing.xs,
+    },
+    wifiField: {
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.sm,
     },
     errorText: {
       color: colors.error,

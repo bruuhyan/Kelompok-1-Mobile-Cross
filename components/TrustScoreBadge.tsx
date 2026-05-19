@@ -19,8 +19,8 @@ export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: T
   const styles = createStyles(colors);
 
   const getTier = (score: number) => {
-    if (score >= 80) return { color: colors.success, label: 'Trusted' };
-    if (score >= 50) return { color: colors.warning, label: 'Moderate' };
+    if (score >= 36) return { color: colors.success, label: 'Trusted' };
+    if (score >= 20) return { color: colors.warning, label: 'Moderate' };
     return { color: colors.error, label: 'At Risk' };
   };
 

@@ -486,19 +486,19 @@ export default function EmployeeHomeScreen() {
                   <View
                     style={[styles.tierDot, { backgroundColor: "#00F5A0" }]}
                   />
-                  <Text style={styles.tierLabel}>80-100: Trusted (Green)</Text>
+                  <Text style={styles.tierLabel}>36-50: Trusted (Green)</Text>
                 </View>
                 <View style={styles.tierRow}>
                   <View
-                    style={[styles.tierDot, { backgroundColor: "#FFAA00" }]}
+                    style={[styles.tierDot, { backgroundColor: "#F59E0B" }]}
                   />
-                  <Text style={styles.tierLabel}>50-79: Moderate (Yellow)</Text>
+                  <Text style={styles.tierLabel}>20-35: Moderate (Yellow)</Text>
                 </View>
                 <View style={styles.tierRow}>
                   <View
-                    style={[styles.tierDot, { backgroundColor: "#FF4757" }]}
+                    style={[styles.tierDot, { backgroundColor: "#EF4444" }]}
                   />
-                  <Text style={styles.tierLabel}>0-49: At Risk (Red)</Text>
+                  <Text style={styles.tierLabel}>0-19: At Risk (Red)</Text>
                 </View>
               </View>
               <Text style={styles.modalFooterText}>

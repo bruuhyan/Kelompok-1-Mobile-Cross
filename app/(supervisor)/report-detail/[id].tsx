@@ -152,7 +152,7 @@ export default function ReportDetailScreen() {
 
         <View style={styles.section}>
           <InfoRow label="Email" value={report.profiles?.email ?? '-'} />
-          <InfoRow label="Trust Score" value={`${report.profiles?.trust_score ?? '-'} / 100`} />
+          <InfoRow label="Trust Score" value={`${report.profiles?.trust_score ?? '-'} / 50`} />
           <InfoRow label="Submitted" value={formatDateTime(report.created_at)} />
           {report.reviewed_at ? <InfoRow label="Reviewed" value={formatDateTime(report.reviewed_at)} /> : null}
         </View>
