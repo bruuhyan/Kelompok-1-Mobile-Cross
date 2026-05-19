@@ -171,29 +171,6 @@ export const profileService = {
     if (error) throw error;
     return data;
   },
-
-  /**
-   * Upload profile image to Supabase Storage and return its public URL
-   */
-  async uploadProfileImage(userId: string, image: ArrayBuffer, fileExt: string, contentType: string) {
-    const sanitizedExt = fileExt.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
-    const filePath = `${userId}/${Date.now()}.${sanitizedExt}`;
-
-    const { error } = await supabase.storage
-      .from('profile-pictures')
-      .upload(filePath, image, {
-        contentType,
-        upsert: true,
-      });
-
-    if (error) throw error;
-
-    const { data } = supabase.storage
-      .from('profile-pictures')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  },
 };
 
 /**
@@ -247,6 +224,25 @@ export const organizationService = {
   },
 
   /**
+   * Update organization
+   */
+  async updateOrganization(id: string, updates: Partial<{
+    name: string;
+    address: string;
+    code: string;
+  }>) {
+    const { data, error } = await supabase
+      .from('organizations')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Securely create an organization and the current user's admin profile.
    * Requires the matching SQL RPC in supabase/rls_policies.sql.
    */
@@ -256,6 +252,8 @@ export const organizationService = {
     code: string;
     adminName: string;
     adminEmail: string;
+    latitude?: number;
+    longitude?: number;
   }) {
     const { data, error } = await supabase.rpc('create_organization_with_admin', {
       p_name: org.name,
@@ -263,6 +261,8 @@ export const organizationService = {
       p_code: org.code,
       p_admin_name: org.adminName,
       p_admin_email: org.adminEmail,
+      p_latitude: org.latitude,
+    p_longitude: org.longitude,
     });
 
     if (error) throw error;
