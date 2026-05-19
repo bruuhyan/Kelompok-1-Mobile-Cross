@@ -83,7 +83,9 @@ Trust score tiers:
 - 50-79: Moderate (yellow)
 - 0-49: At Risk (red)
 
-Trust score recalculation should happen server-side (Supabase Edge Function or trigger) after every attendance log insert.
+Trust score recalculation happens client-side via `attendanceService.recalculateTrustScore()` after every check-in and check-out. The new score is synced to the local UI by calling `useAuthStore.getState().updateUser({ trust_score: newScore })` after each attendance action.
+
+Penalty weights: late check-in (1), GPS outside workplace (4), WiFi mismatch (3), IP anomaly (1), spoofing detected (6), duplicate same-day check-in (2), missing checkout (2). Penalties use stacking multipliers based on offense count (0.5x for first 2, 1x for 3-5, 1.5x for 6-8, 2x for 9+).
 
 ### Check-in Validation Flow
 
@@ -142,99 +144,59 @@ When back online:
 
 ### State Management
 
-- `store/authStore.ts` - User authentication state, role, organization (Zustand)
+- `store/authStore.ts` - User authentication state, role, organization, avatar_url (via `updateUser` partial updates) ✅
+- `store/attendanceStore.ts` - Check-in/check-out state, today's status, validation progress, offline sync queue, location monitoring ✅
 
-### Database Schema (Supabase)
+Stores to be created:
 
-Tables created:
+- `store/requestStore.ts` - Holiday/overtime requests
+- `store/syncStore.ts` - Offline sync queue and status
 
-- `organizations` - Organization details (id, name, address, code)
-- `profiles` - User profiles linked to organizations (extends Supabase auth.users), includes `avatar_url` TEXT column
-- `attendance_logs` - Check-in/check-out records with GPS/WiFi/IP data
-- `requests` - Holiday and overtime requests
-- `reports` - Employee reports
-- `org_settings` - Organization-specific settings (GPS radius, WiFi, IP range)
+## UI Patterns
 
-Storage buckets:
+- **NEVER use `BrandColors`** in component styles — it is hardcoded to dark theme values and breaks in light mode
+- **ALWAYS use `useAppTheme()`** hook + `createStyles(colors)` pattern for dynamic light/dark switching
+- `BrandColors` is only used as the source of truth in `constants/theme.ts` for defining `Colors.dark` and `Colors.light`
+- All screens support both light and dark themes via `ThemeColors`
+- Bottom tabs use `HapticTab` component for haptic feedback
+- Icons use `IconSymbol` from `@expo/vector-icons`
+- Profile screens share `InfoRow` component for labeled information rows
+- Profile cards show: avatar (image or initials), name, email, role/status badges, large TrustScoreBadge
+- `components/SettingsAppearance.tsx` - Shared dark mode toggle component used across employee and supervisor settings
+- Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
 
-- `profile-pictures` - Public bucket for user avatars, path: `{userId}/avatar.jpg`
+## Validation Rules
 
-### RLS Policies
+- Password: min 8 chars, 1 uppercase, 1 lowercase, 1 number
+- Organization code: exactly 6 alphanumeric characters
+- GPS radius: 10-1000 meters (default 100)
+- Trust score: 0-100
 
-Row Level Security policies use helper functions to avoid recursion:
+## Attendance Check-Out
 
-- `is_user_admin_or_supervisor()` - Check if user is admin or supervisor
-- `is_user_admin()` - Check if user is admin
-- `get_user_organization_id()` - Get user's organization ID
-- `create_organization_with_admin()` - Authenticated RPC that atomically creates an organization and the current user's admin profile
+- Requires an UPDATE RLS policy on `attendance_logs` table. If check-out fails with a permission error, verify this policy exists in Supabase:
+  ```sql
+  CREATE POLICY "Users can update own attendance"
+    ON attendance_logs FOR UPDATE
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+  ```
+- Check-out runs the full validation flow (GPS, WiFi, IP, spoofing) before submitting
+- If `currentLog` is null, check-out fails with "No active check-in found"
 
-Security constraints:
+## Dashboard Auto-Refresh
 
-- Client-side profile self-insert may only create pending employee profiles.
-- First admin profile creation must go through `create_organization_with_admin()`.
-- Apply `supabase/rls_policies.sql` in Supabase after changing auth or organization creation behavior.
-
-## Build Phases
-
-The app is built incrementally across 16 phases. Current status:
-
-### Phase 1 Complete ✅
-
-- Theme & Design System
-- Navigation Structure
-- Screen Placeholders
-- Utility Files
-
-### Phase 2 Complete ✅
-
-- Reusable Components (Card, Input, Button)
-- State Management (authStore)
-- Supabase Service
-- Auth Screens (login, register, create-organization, join-organization, waiting-approval)
-
-### Phase 3 Complete ✅
-
-- Supabase Database Setup (schema.sql)
-- Row Level Security Policies (rls_policies.sql)
-- Environment Configuration
-
-### Phase 4 Complete ✅
-
-- Trust Score Badge Component
-- Employee Home Screen (dashboard with status, trust score, quick actions)
-- Employee Profile Screen (editable profile with organization details)
-
-### Auth/Security Hardening Complete
-
-- Supabase session persistence configured for React Native AsyncStorage
-- Root auth gate routes by session, profile status, and role
-- Pending login stores the profile before redirecting to waiting approval
-- Logout flows clear both Supabase session and persisted Zustand auth state
-- Organization admin creation moved to secure SQL RPC
-- RLS self-profile insert restricted to pending employees
-
-### Profile Picture Upload Complete ✅
-
-- `services/storageService.ts` - Avatar upload/delete via Supabase Storage
-- `app/(employee)/profile.tsx` - Employee profile with camera/gallery upload
-- `app/(supervisor)/profile.tsx` - Supervisor profile with camera/gallery upload
-- Both profiles share: `InfoRow` component, `storageService`, `useAppTheme()` theming
-- Storage bucket: `profile-pictures` with path `{userId}/avatar.jpg`
-- Uses `expo-image-picker` with `base64: true` (NOT fetch().blob())
-
-### Dashboard Auto-Refresh Complete ✅
-
-- `app/(supervisor)/home.tsx` - Uses `useFocusEffect` for auto-refresh on focus
-- `app/(supervisor)/request-review.tsx` - Uses `useFocusEffect` for auto-refresh on focus
-- Dashboard metrics and pending request counts update when navigating back from review screens
-
-### Phase 5: Attendance Tracking (Next)
-
-- GPS location tracking
-- WiFi network detection
-- IP address validation
-- Check-in validation modal
-- Offline sync for attendance logs
+- Use `useFocusEffect` from `expo-router` instead of `useEffect` for screens that need to refresh data when the user navigates back to them
+- Applied to: `app/(supervisor)/home.tsx`, `app/(supervisor)/request-review.tsx`, and `app/(employee)/attendance.tsx`
+- Pattern:
+  ```tsx
+  import { useFocusEffect } from 'expo-router';
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
+  );
+  ```
 
 ## Profile Picture Upload
 
@@ -255,80 +217,6 @@ The app is built incrementally across 16 phases. Current status:
 - **NEVER use `fetch(uri).blob()`** for uploads — it fails with "Network request failed" on React Native
 - **NEVER use `expo-file-system`** for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
 - Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
-
-### Profile Screen Architecture
-- Employee profile: `app/(employee)/profile.tsx`
-- Supervisor profile: `app/(supervisor)/profile.tsx`
-- Both share: `InfoRow` component, `storageService` for uploads, `useAppTheme()` for theming
-- Both support: camera/gallery upload, remove photo, inline name editing
-
-## Dashboard Auto-Refresh
-
-- Supervisor screens use `useFocusEffect` from `expo-router` instead of `useEffect`
-- This ensures dashboard data (pending requests count, metrics) refreshes when navigating back from review screens
-- Applied to: `app/(supervisor)/home.tsx` and `app/(supervisor)/request-review.tsx`
-- Pattern:
-  ```tsx
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData]),
-  );
-  ```
-
-### Phase 6: Requests System
-
-- Holiday request form
-- Overtime request form
-- Request history display
-- Request status tracking
-
-### Phase 7: Reports System
-
-- Report submission form
-- Photo attachment support
-- Report history display
-- Report status tracking
-
-## Environment Variables
-
-Required in `.env`:
-
-```
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
-EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-```
-
-## State Management
-
-Zustand is used for state management. Stores created:
-
-- `store/authStore.ts` - User authentication state, role, organization, avatar_url (via `updateUser` partial updates) ✅
-
-Stores to be created:
-
-- `store/attendanceStore.ts` - Check-in/check-out state, today's status
-- `store/requestStore.ts` - Holiday/overtime requests
-- `store/syncStore.ts` - Offline sync queue and status
-
-## UI Patterns
-
-- Use `BrandColors.primary` (#00F5A0) for primary actions and accents
-- Use `BrandColors.background` (#0D1B2A) for backgrounds
-- Use `BrandColors.card` (#1B263B) for cards
-- All screens use dark theme by default
-- Bottom tabs use `HapticTab` component for haptic feedback
-- Icons use `IconSymbol` from `@expo/vector-icons`
-- Profile screens use `useAppTheme()` hook for dynamic theming via `ThemeColors`
-- Profile screens share `InfoRow` component for labeled information rows
-- Profile cards show: avatar (image or initials), name, email, role/status badges, large TrustScoreBadge
-
-## Validation Rules
-
-- Password: min 8 chars, 1 uppercase, 1 lowercase, 1 number
-- Organization code: exactly 6 alphanumeric characters
-- GPS radius: 10-1000 meters (default 100)
-- Trust score: 0-100
 
 ## Hybrid Build Workflow (Claude Code + Qwen Local)
 
@@ -397,3 +285,49 @@ After Qwen produces output, Claude reviews for:
 - [ ] `organization_id` always included in database queries
 - [ ] Error handling follows existing patterns in the codebase
 - [ ] No `any` types without explicit justification
+
+## Additional Implementation Notes
+
+### Completed Features Since Initial Setup
+
+#### Dark Mode & Theming System
+- All supervisor screens converted from `BrandColors` to `useAppTheme()` + `createStyles(colors)`
+- `components/SettingsAppearance.tsx` - Shared dark mode toggle component
+- `app/(employee)/settings.tsx` - Employee settings screen with dark mode toggle
+- Light theme fully supported via `Colors.light` in `constants/theme.ts`
+- Every screen follows the pattern: `const colors = useAppTheme(); const styles = createStyles(colors);`
+
+#### Attendance System (Phase 5)
+- `store/attendanceStore.ts` - Full attendance state management with check-in/out, validation, offline sync
+- `services/attendanceService.ts` - GPS/WiFi/IP validation, offline queue, trust score recalculation
+- `app/(employee)/attendance.tsx` - Attendance history screen with auto-refresh via `useFocusEffect`
+- `app/(employee)/home.tsx` - Dashboard with check-in/out buttons, validation status display, offline banner
+- Offline sync with integrity hash validation and 24-hour age limit
+- Location monitoring every 30 minutes while checked in
+- Trust score sync to local UI after check-in/out via `useAuthStore.getState().updateUser()`
+
+#### Requests System (Phase 6)
+- `app/(employee)/requests.tsx` - Holiday/overtime request submission and history
+- `app/(supervisor)/request-review.tsx` - Supervisor request review with `useFocusEffect` auto-refresh
+- `app/(supervisor)/request-detail/[id].tsx` - Request detail view
+
+#### Reports System (Phase 7)
+- `app/(employee)/reports.tsx` - Report submission with photo attachment
+- `app/(supervisor)/report-review.tsx` - Supervisor report review
+- `app/(supervisor)/report-detail/[id].tsx` - Report detail view
+
+#### Task Management (Phase 8)
+- `app/(supervisor)/team.tsx` - Team management with attendance logs, registration approvals, TrustScore overview
+- `app/(supervisor)/task.tsx` - Task assignment and review
+- `supabase/tasks.sql` - Tasks table schema and RLS policies
+
+#### Trust Score System Updates
+- `TRUST_SCORE_MAX` changed from 50 to 100 to align with badge tiers (80-100 Trusted, 50-79 Moderate, 0-49 At Risk)
+- Removed hardcoded trust score cap in employee home screen
+- Trust score now syncs to local UI after check-in/out via `attendanceStore`
+
+#### Merge: joshua_tes → staging
+- Resolved 8 merge conflicts across attendance, auth, theme, and store files
+- Kept staging's `useAppTheme()` theming pattern throughout
+- Integrated joshua_tes's full attendance implementation with staging's trust score modal
+- All files pass lint (0 errors) and TypeScript (0 errors)

@@ -460,3 +460,104 @@ export const supervisorService = {
     };
   },
 };
+
+/**
+ * Request Service
+ */
+export const requestService = {
+  async submitHolidayRequest(
+    userId: string,
+    organizationId: string,
+    form: { start_date: string; end_date: string; reason: string },
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        type: 'holiday',
+        start_date: form.start_date,
+        end_date: form.end_date,
+        reason: form.reason.trim(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async submitOvertimeRequest(
+    userId: string,
+    organizationId: string,
+    form: { date: string; hours: number; reason: string },
+  ) {
+    const { data, error } = await supabase
+      .from('requests')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        type: 'overtime',
+        start_date: form.date,
+        end_date: form.date,
+        hours: form.hours,
+        reason: form.reason.trim(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getUserRequests(userId: string) {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+};
+
+/**
+ * Report Service
+ */
+export const reportService = {
+  async submitReport(
+    userId: string,
+    organizationId: string,
+    form: { title: string; content: string; photo?: string },
+  ) {
+    const { data, error } = await supabase
+      .from('reports')
+      .insert({
+        user_id: userId,
+        organization_id: organizationId,
+        title: form.title.trim(),
+        content: form.content.trim(),
+        photo_url: form.photo?.trim() || null,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getUserReports(userId: string) {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+};
