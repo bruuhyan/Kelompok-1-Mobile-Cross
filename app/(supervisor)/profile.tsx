@@ -223,27 +223,7 @@ export default function SupervisorProfileScreen() {
     });
   };
 
-  const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!user?.id) return;
 
-    setUploadingImage(true);
-    try {
-      const response = await fetch(asset.uri);
-      const arrayBuffer = await response.arrayBuffer();
-      const contentType = asset.mimeType || 'image/jpeg';
-      const fileExt = getFileExtension(asset.uri, contentType);
-      const imageUrl = await profileService.uploadProfileImage(user.id, arrayBuffer, fileExt, contentType);
-      const updatedProfile = await profileService.updateProfile(user.id, { image_url: imageUrl });
-
-      setUser(updatedProfile);
-      Alert.alert('Success', 'Profile picture updated successfully');
-    } catch (error) {
-      console.error('Upload supervisor profile image error:', error);
-      Alert.alert('Error', 'Failed to upload profile picture');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -289,9 +269,16 @@ export default function SupervisorProfileScreen() {
         >
           <View style={styles.avatar}>
             {user?.image_url ? (
-              <Image source={{ uri: user.image_url }} style={styles.avatarImage} />
+              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarText}>{getInitials()}</Text>
+              <Text style={styles.avatarText}>
+  {(user?.name || 'S')
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()}
+</Text>
             )}
             {isUploadingAvatar && (
               <View style={styles.avatarOverlay}>
