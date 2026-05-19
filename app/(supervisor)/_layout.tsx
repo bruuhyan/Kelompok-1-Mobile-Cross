@@ -44,73 +44,43 @@ export default function SupervisorTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="attendance-logs"
+        name="team"
         options={{
-          title: "Attendance",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="list.bullet.rectangle" color={color} />
-          ),
+          title: 'Team',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.2.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="request-review"
         options={{
-          title: "Requests",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="checkmark.seal.fill" color={color} />
-          ),
+          title: 'Request',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.seal.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="report-review"
+        name="task"
         options={{
-          title: "Reports",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol
-              size={24}
-              name="doc.text.magnifyingglass"
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="request-detail/[id]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="report-detail/[id]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="team"
-        options={{
-          title: "Team",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="person.2.fill" color={color} />
-          ),
+          title: 'Task',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="person.fill" color={color} />
-          ),
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="attendance-logs"
         options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="gearshape.fill" color={color} />
-          ),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="report-review"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

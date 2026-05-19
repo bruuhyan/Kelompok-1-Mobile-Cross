@@ -98,6 +98,25 @@ CREATE TABLE IF NOT EXISTS reports (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Tasks table
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+  assigned_to UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  created_by UUID REFERENCES profiles(id) NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  due_date DATE,
+  status TEXT NOT NULL DEFAULT 'assigned' CHECK (status IN ('assigned', 'submitted', 'approved', 'rejected')),
+  submission_note TEXT,
+  submitted_at TIMESTAMP WITH TIME ZONE,
+  reviewed_by UUID REFERENCES profiles(id),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  review_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_profiles_organization ON profiles(organization_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_status ON profiles(status);
@@ -110,6 +129,9 @@ CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_reports_user ON reports(user_id);
 CREATE INDEX IF NOT EXISTS idx_reports_org ON reports(organization_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_tasks_org ON tasks(organization_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -143,5 +165,10 @@ CREATE TRIGGER update_requests_updated_at
 
 CREATE TRIGGER update_reports_updated_at
   BEFORE UPDATE ON reports
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_tasks_updated_at
+  BEFORE UPDATE ON tasks
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
