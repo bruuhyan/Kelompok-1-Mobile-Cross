@@ -15,7 +15,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
@@ -50,6 +51,8 @@ const statusLabels: Record<TeamTask['status'], string> = {
 };
 
 export default function SupervisorTaskScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const user = useAuthStore((state) => state.user);
   const [employees, setEmployees] = useState<AssignableEmployee[]>([]);
   const [tasks, setTasks] = useState<TeamTask[]>([]);
@@ -157,7 +160,7 @@ export default function SupervisorTaskScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading tasks...</Text>
       </View>
     );
@@ -167,7 +170,7 @@ export default function SupervisorTaskScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={BrandColors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Task Management</Text>
@@ -228,10 +231,10 @@ export default function SupervisorTaskScreen() {
           disabled={creating || employees.length === 0}
           onPress={handleCreateTask}>
           {creating ? (
-            <ActivityIndicator color={BrandColors.background} />
+            <ActivityIndicator color={colors.background} />
           ) : (
             <>
-              <IconSymbol name="doc.text.fill" size={18} color={BrandColors.background} />
+              <IconSymbol name="doc.text.fill" size={18} color={colors.background} />
               <Text style={styles.primaryButtonText}>Assign Task</Text>
             </>
           )}
@@ -246,7 +249,7 @@ export default function SupervisorTaskScreen() {
       <View style={styles.list}>
         {tasks.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <IconSymbol name="doc.text.fill" size={32} color={BrandColors.primary} />
+            <IconSymbol name="doc.text.fill" size={32} color={colors.primary} />
             <Text style={styles.emptyTitle}>No tasks yet</Text>
             <Text style={styles.emptyText}>Tasks assigned to employees will appear here.</Text>
           </Card>
@@ -272,12 +275,15 @@ function TaskInput({
   style,
   ...props
 }: React.ComponentProps<typeof TextInput> & { label: string; minHeight?: number }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         style={[styles.input, minHeight ? { minHeight, textAlignVertical: 'top', paddingTop: Spacing.md } : null, style]}
-        placeholderTextColor={BrandColors.textMuted}
+        placeholderTextColor={colors.textMuted}
         {...props}
       />
     </View>
@@ -295,7 +301,9 @@ function TaskCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const statusColor = getStatusColor(task.status);
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+  const statusColor = getStatusColor(task.status, colors);
 
   return (
     <Card style={styles.taskCard}>
@@ -312,7 +320,7 @@ function TaskCard({
       <Text style={styles.taskDescription}>{task.description}</Text>
 
       <View style={styles.taskMetaRow}>
-        <IconSymbol name="calendar" size={15} color={BrandColors.textMuted} />
+        <IconSymbol name="calendar" size={15} color={colors.textMuted} />
         <Text style={styles.taskMetaText}>
           {task.due_date ? `Due ${formatDate(task.due_date)}` : 'No due date'}
         </Text>
@@ -336,13 +344,13 @@ function TaskCard({
       {task.status === 'submitted' ? (
         <View style={styles.actions}>
           <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} disabled={reviewing} onPress={onReject}>
-            <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+            <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.approveButton]} disabled={reviewing} onPress={onApprove}>
             {reviewing ? (
-              <ActivityIndicator color={BrandColors.background} />
+              <ActivityIndicator color={colors.background} />
             ) : (
-              <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+              <Text style={[styles.actionText, { color: colors.background }]}>Approve</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -351,11 +359,11 @@ function TaskCard({
   );
 }
 
-function getStatusColor(status: TeamTask['status']) {
-  if (status === 'approved') return BrandColors.success;
-  if (status === 'rejected') return BrandColors.error;
-  if (status === 'submitted') return BrandColors.warning;
-  return BrandColors.info;
+function getStatusColor(status: TeamTask['status'], colors: ThemeColors) {
+  if (status === 'approved') return colors.success;
+  if (status === 'rejected') return colors.error;
+  if (status === 'submitted') return colors.warning;
+  return colors.info;
 }
 
 function formatDate(date: string) {
@@ -375,259 +383,260 @@ function formatDateTime(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography['3xl'],
-    fontWeight: '800',
-  },
-  headerSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  formCard: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  cardTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '800',
-    marginBottom: Spacing.md,
-  },
-  fieldLabel: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    fontWeight: '700',
-    marginBottom: Spacing.xs,
-  },
-  employeePicker: {
-    gap: Spacing.sm,
-    paddingBottom: Spacing.md,
-  },
-  employeeChip: {
-    width: 170,
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-  },
-  employeeChipSelected: {
-    borderColor: BrandColors.primary,
-    backgroundColor: `${BrandColors.primary}18`,
-  },
-  employeeChipName: {
-    color: BrandColors.text,
-    fontSize: Typography.sm,
-    fontWeight: '800',
-  },
-  employeeChipNameSelected: {
-    color: BrandColors.primary,
-  },
-  employeeChipEmail: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    marginTop: 2,
-  },
-  employeeChipEmailSelected: {
-    color: BrandColors.textSecondary,
-  },
-  inputGroup: {
-    marginBottom: Spacing.md,
-  },
-  input: {
-    minHeight: 50,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-    backgroundColor: BrandColors.backgroundLight,
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    paddingHorizontal: Spacing.md,
-  },
-  primaryButton: {
-    height: 48,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  primaryButtonText: {
-    color: BrandColors.background,
-    fontSize: Typography.base,
-    fontWeight: '800',
-  },
-  disabledButton: {
-    opacity: 0.55,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '800',
-  },
-  sectionMeta: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.sm,
-    fontWeight: '700',
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['2xl'],
-    gap: Spacing.md,
-  },
-  taskCard: {
-    gap: Spacing.md,
-  },
-  taskTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  taskMain: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  taskTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '800',
-  },
-  taskAssignee: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  statusBadge: {
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  statusText: {
-    fontSize: Typography.xs,
-    fontWeight: '800',
-  },
-  taskDescription: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    lineHeight: 22,
-  },
-  taskMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  taskMetaText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  submissionBox: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-  },
-  submissionLabel: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
-  },
-  submissionText: {
-    color: BrandColors.text,
-    fontSize: Typography.sm,
-    lineHeight: 20,
-  },
-  submissionTime: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    marginTop: Spacing.xs,
-  },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  trustLabel: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    fontWeight: '700',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    height: 42,
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.borderLight,
-  },
-  approveButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  actionText: {
-    fontSize: Typography.sm,
-    fontWeight: '800',
-  },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: Spacing['2xl'],
-  },
-  emptyTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: '800',
-    marginTop: Spacing.md,
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-  },
-  emptyInline: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    paddingVertical: Spacing.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing['2xl'],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: '800',
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography['3xl'],
+      fontWeight: '800',
+    },
+    headerSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    formCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    cardTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+      marginBottom: Spacing.md,
+    },
+    fieldLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+      marginBottom: Spacing.xs,
+    },
+    employeePicker: {
+      gap: Spacing.sm,
+      paddingBottom: Spacing.md,
+    },
+    employeeChip: {
+      width: 170,
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+    },
+    employeeChipSelected: {
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}18`,
+    },
+    employeeChipName: {
+      color: colors.text,
+      fontSize: Typography.sm,
+      fontWeight: '800',
+    },
+    employeeChipNameSelected: {
+      color: colors.primary,
+    },
+    employeeChipEmail: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      marginTop: 2,
+    },
+    employeeChipEmailSelected: {
+      color: colors.textSecondary,
+    },
+    inputGroup: {
+      marginBottom: Spacing.md,
+    },
+    input: {
+      minHeight: 50,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.backgroundLight,
+      color: colors.text,
+      fontSize: Typography.base,
+      paddingHorizontal: Spacing.md,
+    },
+    primaryButton: {
+      height: 48,
+      borderRadius: BorderRadius.md,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    primaryButtonText: {
+      color: colors.background,
+      fontSize: Typography.base,
+      fontWeight: '800',
+    },
+    disabledButton: {
+      opacity: 0.55,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+    },
+    sectionMeta: {
+      color: colors.textMuted,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+    },
+    list: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing['2xl'],
+      gap: Spacing.md,
+    },
+    taskCard: {
+      gap: Spacing.md,
+    },
+    taskTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    taskMain: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    taskTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+    },
+    taskAssignee: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    statusBadge: {
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    statusText: {
+      fontSize: Typography.xs,
+      fontWeight: '800',
+    },
+    taskDescription: {
+      color: colors.text,
+      fontSize: Typography.base,
+      lineHeight: 22,
+    },
+    taskMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    taskMetaText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    submissionBox: {
+      backgroundColor: colors.backgroundLight,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+    },
+    submissionLabel: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      fontWeight: '800',
+      marginBottom: Spacing.xs,
+    },
+    submissionText: {
+      color: colors.text,
+      fontSize: Typography.sm,
+      lineHeight: 20,
+    },
+    submissionTime: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      marginTop: Spacing.xs,
+    },
+    trustRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    trustLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: Spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+      height: 42,
+      borderRadius: BorderRadius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rejectButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: '800',
+    },
+    emptyCard: {
+      alignItems: 'center',
+      paddingVertical: Spacing['2xl'],
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+      marginTop: Spacing.md,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: 'center',
+      marginTop: Spacing.xs,
+    },
+    emptyInline: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      paddingVertical: Spacing.sm,
+    },
+  });

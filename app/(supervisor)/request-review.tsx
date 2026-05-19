@@ -6,7 +6,7 @@
 import { Card } from "@/components/Card";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supervisorService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
@@ -191,7 +191,7 @@ export default function SupervisorRequestReviewScreen() {
                     <IconSymbol
                       name={expanded ? "chevron.down" : "chevron.right"}
                       size={20}
-                      color={BrandColors.textMuted}
+                      color={colors.textMuted}
                     />
                   </View>
 
@@ -215,12 +215,12 @@ export default function SupervisorRequestReviewScreen() {
                           <IconSymbol
                             name="person.crop.circle.badge.xmark"
                             size={18}
-                            color={BrandColors.error}
+                            color={colors.error}
                           />
                           <Text
                             style={[
                               styles.actionText,
-                              { color: BrandColors.error },
+                              { color: colors.error },
                             ]}
                           >
                             Reject
@@ -232,18 +232,18 @@ export default function SupervisorRequestReviewScreen() {
                           onPress={() => handleReview(request.id, "approved")}
                         >
                           {reviewingId === request.id ? (
-                            <ActivityIndicator color={BrandColors.background} />
+                            <ActivityIndicator color={colors.background} />
                           ) : (
                             <>
                               <IconSymbol
                                 name="checkmark.seal.fill"
                                 size={18}
-                                color={BrandColors.background}
+                                color={colors.background}
                               />
                               <Text
                                 style={[
                                   styles.actionText,
-                                  { color: BrandColors.background },
+                                  { color: colors.background },
                                 ]}
                               >
                                 Approve
@@ -265,6 +265,9 @@ export default function SupervisorRequestReviewScreen() {
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -281,148 +284,149 @@ function formatLongDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing["2xl"],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: "800",
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography["3xl"],
-    fontWeight: "800",
-  },
-  headerSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing["2xl"],
-    gap: Spacing.md,
-  },
-  requestCard: {
-    gap: Spacing.md,
-  },
-  requestTop: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  requestMain: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  employeeName: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: "700",
-  },
-  employeeEmail: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  dateText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  tapHintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.border,
-    paddingTop: Spacing.sm,
-  },
-  tapHint: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: "700",
-  },
-  detailBlock: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  detailRow: {
-    gap: 2,
-  },
-  detailLabel: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    fontWeight: "700",
-  },
-  detailValue: {
-    color: BrandColors.text,
-    fontSize: Typography.sm,
-    lineHeight: 20,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.borderLight,
-  },
-  approveButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  actionText: {
-    fontSize: Typography.sm,
-    fontWeight: "800",
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingVertical: Spacing["2xl"],
-  },
-  emptyTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: "700",
-    marginTop: Spacing.md,
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    textAlign: "center",
-    marginTop: Spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing["2xl"],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: "800",
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography["3xl"],
+      fontWeight: "800",
+    },
+    headerSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    list: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing["2xl"],
+      gap: Spacing.md,
+    },
+    requestCard: {
+      gap: Spacing.md,
+    },
+    requestTop: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    requestMain: {
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    employeeName: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: "700",
+    },
+    employeeEmail: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    dateRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+    },
+    dateText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    tapHintRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: Spacing.sm,
+    },
+    tapHint: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: "700",
+    },
+    detailBlock: {
+      backgroundColor: colors.backgroundLight,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+      gap: Spacing.sm,
+    },
+    detailRow: {
+      gap: 2,
+    },
+    detailLabel: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      fontWeight: "700",
+    },
+    detailValue: {
+      color: colors.text,
+      fontSize: Typography.sm,
+      lineHeight: 20,
+    },
+    actions: {
+      flexDirection: "row",
+      gap: Spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+      height: 44,
+      borderRadius: BorderRadius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: Spacing.sm,
+    },
+    rejectButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: "800",
+    },
+    emptyCard: {
+      alignItems: "center",
+      paddingVertical: Spacing["2xl"],
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: "700",
+      marginTop: Spacing.md,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: "center",
+      marginTop: Spacing.xs,
+    },
+  });

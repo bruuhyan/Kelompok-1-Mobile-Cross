@@ -6,7 +6,7 @@
 import { Card } from "@/components/Card";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supervisorService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
@@ -183,7 +183,7 @@ export default function SupervisorTeamScreen() {
             <IconSymbol
               name="clock.fill"
               size={30}
-              color={BrandColors.primary}
+              color={colors.primary}
             />
             <Text style={styles.emptyTitle}>No check-ins yet</Text>
             <Text style={styles.emptyText}>
@@ -241,6 +241,9 @@ export default function SupervisorTeamScreen() {
 }
 
 function AttendanceLogCard({ log }: { log: TeamAttendanceLog }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <Card style={styles.attendanceCard}>
       <View style={styles.attendanceTop}>
@@ -303,6 +306,9 @@ function AttendanceLogCard({ log }: { log: TeamAttendanceLog }) {
 }
 
 function AttendanceField({ label, value }: { label: string; value: string }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.attendanceField}>
       <Text style={styles.attendanceLabel}>{label}</Text>
@@ -366,6 +372,9 @@ function MemberApprovalCard({
 }
 
 function TrustScoreRow({ member }: { member: TeamMember }) {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+
   return (
     <Card style={styles.trustRow}>
       <View style={styles.trustLeft}>
@@ -425,216 +434,217 @@ function formatLocation(lat?: number | null, lng?: number | null) {
   return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: BrandColors.background,
-    gap: Spacing.md,
-  },
-  loadingText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-  },
-  header: {
-    padding: Spacing.lg,
-    paddingTop: Spacing["2xl"],
-  },
-  headerEyebrow: {
-    color: BrandColors.primary,
-    fontSize: Typography.sm,
-    fontWeight: "800",
-    marginBottom: Spacing.xs,
-  },
-  headerTitle: {
-    color: BrandColors.text,
-    fontSize: Typography["3xl"],
-    fontWeight: "800",
-  },
-  headerSubtitle: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.base,
-    marginTop: Spacing.xs,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  summaryCard: {
-    flex: 1,
-    alignItems: "center",
-    minHeight: 96,
-    justifyContent: "center",
-  },
-  summaryValue: {
-    color: BrandColors.primary,
-    fontSize: Typography["2xl"],
-    fontWeight: "800",
-  },
-  summaryLabel: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.xs,
-    textAlign: "center",
-    marginTop: Spacing.xs,
-  },
-  sectionTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: "700",
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.md,
-  },
-  memberCard: {
-    gap: Spacing.md,
-  },
-  attendanceCard: {
-    gap: Spacing.md,
-  },
-  attendanceTop: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  attendanceBadge: {
-    backgroundColor: `${BrandColors.primary}22`,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-  },
-  completedBadge: {
-    backgroundColor: BrandColors.backgroundLighter,
-  },
-  attendanceBadgeText: {
-    color: BrandColors.primary,
-    fontSize: Typography.xs,
-    fontWeight: "800",
-  },
-  completedBadgeText: {
-    color: BrandColors.textSecondary,
-  },
-  attendanceGrid: {
-    gap: Spacing.sm,
-  },
-  attendanceField: {
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.border,
-    paddingTop: Spacing.sm,
-  },
-  attendanceLabel: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  attendanceValue: {
-    color: BrandColors.text,
-    fontSize: Typography.sm,
-    fontWeight: "600",
-  },
-  memberTop: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.md,
-  },
-  avatarSmall: {
-    width: 42,
-    height: 42,
-  },
-  avatarText: {
-    color: BrandColors.background,
-    fontSize: Typography.lg,
-    fontWeight: "800",
-  },
-  avatarTextSmall: {
-    fontSize: Typography.sm,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    color: BrandColors.text,
-    fontSize: Typography.base,
-    fontWeight: "700",
-  },
-  memberEmail: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    marginTop: 2,
-  },
-  memberMeta: {
-    color: BrandColors.textMuted,
-    fontSize: Typography.xs,
-    marginTop: Spacing.xs,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-    height: 42,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
-    borderWidth: 1,
-    borderColor: BrandColors.borderLight,
-  },
-  approveButton: {
-    backgroundColor: BrandColors.primary,
-  },
-  actionText: {
-    fontSize: Typography.sm,
-    fontWeight: "800",
-  },
-  trustRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  trustLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-  },
-  emptyTitle: {
-    color: BrandColors.text,
-    fontSize: Typography.lg,
-    fontWeight: "700",
-    marginTop: Spacing.sm,
-    textAlign: "center",
-  },
-  emptyText: {
-    color: BrandColors.textSecondary,
-    fontSize: Typography.sm,
-    textAlign: "center",
-    marginTop: Spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background,
+      gap: Spacing.md,
+    },
+    loadingText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+    },
+    header: {
+      padding: Spacing.lg,
+      paddingTop: Spacing["2xl"],
+    },
+    headerEyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: "800",
+      marginBottom: Spacing.xs,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: Typography["3xl"],
+      fontWeight: "800",
+    },
+    headerSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      marginTop: Spacing.xs,
+    },
+    summaryRow: {
+      flexDirection: "row",
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+    },
+    summaryCard: {
+      flex: 1,
+      alignItems: "center",
+      minHeight: 96,
+      justifyContent: "center",
+    },
+    summaryValue: {
+      color: colors.primary,
+      fontSize: Typography["2xl"],
+      fontWeight: "800",
+    },
+    summaryLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.xs,
+      textAlign: "center",
+      marginTop: Spacing.xs,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: "700",
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    list: {
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing.lg,
+      gap: Spacing.md,
+    },
+    memberCard: {
+      gap: Spacing.md,
+    },
+    attendanceCard: {
+      gap: Spacing.md,
+    },
+    attendanceTop: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    attendanceBadge: {
+      backgroundColor: `${colors.primary}22`,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+    },
+    completedBadge: {
+      backgroundColor: colors.backgroundLighter,
+    },
+    attendanceBadgeText: {
+      color: colors.primary,
+      fontSize: Typography.xs,
+      fontWeight: "800",
+    },
+    completedBadgeText: {
+      color: colors.textSecondary,
+    },
+    attendanceGrid: {
+      gap: Spacing.sm,
+    },
+    attendanceField: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: Spacing.sm,
+    },
+    attendanceLabel: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      fontWeight: "700",
+      marginBottom: 2,
+    },
+    attendanceValue: {
+      color: colors.text,
+      fontSize: Typography.sm,
+      fontWeight: "600",
+    },
+    memberTop: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    avatar: {
+      width: 54,
+      height: 54,
+      borderRadius: BorderRadius.full,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: Spacing.md,
+    },
+    avatarSmall: {
+      width: 42,
+      height: 42,
+    },
+    avatarText: {
+      color: colors.background,
+      fontSize: Typography.lg,
+      fontWeight: "800",
+    },
+    avatarTextSmall: {
+      fontSize: Typography.sm,
+    },
+    memberInfo: {
+      flex: 1,
+    },
+    memberName: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: "700",
+    },
+    memberEmail: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: 2,
+    },
+    memberMeta: {
+      color: colors.textMuted,
+      fontSize: Typography.xs,
+      marginTop: Spacing.xs,
+    },
+    actions: {
+      flexDirection: "row",
+      gap: Spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+      height: 42,
+      borderRadius: BorderRadius.md,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    rejectButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    actionText: {
+      fontSize: Typography.sm,
+      fontWeight: "800",
+    },
+    trustRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    trustLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      marginRight: Spacing.md,
+    },
+    emptyCard: {
+      alignItems: "center",
+      paddingVertical: Spacing.xl,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: "700",
+      marginTop: Spacing.sm,
+      textAlign: "center",
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: "center",
+      marginTop: Spacing.xs,
+    },
+  });
