@@ -185,6 +185,12 @@ CREATE POLICY "Users can create own attendance"
   ON attendance_logs FOR INSERT
   WITH CHECK (user_id = auth.uid());
 
+-- Users can update their own attendance logs (for check-out)
+CREATE POLICY "Users can update own attendance"
+  ON attendance_logs FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
 -- Admins and supervisors can view all attendance in their organization
 CREATE POLICY "Admins and supervisors can view org attendance"
   ON attendance_logs FOR SELECT

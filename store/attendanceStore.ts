@@ -8,6 +8,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { attendanceService } from '@/services/attendanceService';
+import { useAuthStore } from '@/store/authStore';
 import {
   AttendanceLog,
   AttendanceLocation,
@@ -225,6 +226,9 @@ export const useAttendanceStore = create<AttendanceState>()(
             validation: validation.validation,
           });
 
+          const updatedProfile = await attendanceService.getProfileTrustScore(user.id);
+          useAuthStore.getState().updateUser({ trust_score: updatedProfile });
+
           set({
             status: 'checked_in',
             currentLog: log,
@@ -290,6 +294,9 @@ export const useAttendanceStore = create<AttendanceState>()(
             validation: validation.validation,
             autoCheckout,
           });
+
+          const updatedProfile = await attendanceService.getProfileTrustScore(user.id);
+          useAuthStore.getState().updateUser({ trust_score: updatedProfile });
 
           get().stopLocationMonitoring();
           set({

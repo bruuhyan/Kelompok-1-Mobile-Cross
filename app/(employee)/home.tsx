@@ -31,7 +31,6 @@ export default function EmployeeHomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const updateUser = useAuthStore((state) => state.updateUser);
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
   const {
     status: todayStatus,
@@ -74,7 +73,6 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckIn(user);
-      if (user.trust_score > 50) updateUser({ trust_score: 50 });
       Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-in saved and will sync when online.' : 'Check-in successful.');
     } catch {
       // Error state is already surfaced by the attendance store.

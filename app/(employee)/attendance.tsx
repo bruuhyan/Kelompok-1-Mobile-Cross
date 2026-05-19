@@ -2,7 +2,7 @@
  * Employee Attendance History
  */
 
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
@@ -48,12 +49,14 @@ export default function EmployeeAttendanceScreen() {
   const { history, pendingSyncLogs, isLoading, isSyncing, error, loadHistory, processSyncQueue } =
     useAttendanceStore();
 
-  useEffect(() => {
-    if (user) {
-      loadHistory(user);
-      processSyncQueue();
-    }
-  }, [loadHistory, processSyncQueue, user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadHistory(user);
+        processSyncQueue();
+      }
+    }, [loadHistory, processSyncQueue, user]),
+  );
 
   const refresh = async () => {
     if (!user) return;

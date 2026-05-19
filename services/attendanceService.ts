@@ -29,7 +29,7 @@ import {
 const DEFAULT_WORK_START_TIME = '09:00';
 const GRACE_PERIOD_MINUTES = 15;
 const OFFLINE_MAX_AGE_HOURS = 24;
-const TRUST_SCORE_MAX = 50;
+const TRUST_SCORE_MAX = 100;
 
 type AttendanceNotes = {
   validation_flags?: AttendanceValidation;
@@ -227,6 +227,11 @@ async function setStoredQueue(queue: OfflineAttendanceLog[]) {
 }
 
 export const attendanceService = {
+  async getProfileTrustScore(userId: string): Promise<number> {
+    const profile = await profileService.getProfile(userId);
+    return profile?.trust_score ?? 50;
+  },
+
   async getOrgSettings(organizationId: string): Promise<OrganizationSettings | null> {
     const { data, error } = await supabase
       .from('org_settings')
