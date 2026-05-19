@@ -113,11 +113,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleForgotPassword = () => {
-    // TODO: Implement forgot password flow
-    alert('Forgot password feature coming soon');
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -167,10 +162,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             }
           />
-
-          <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
 
           <Button
             title="Sign In"
@@ -252,15 +243,6 @@ const createStyles = (colors: ThemeColors) =>
   },
   formCard: {
     marginBottom: Spacing.lg,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: Spacing.lg,
-  },
-  forgotPasswordText: {
-    fontSize: Typography.sm,
-    color: colors.primary,
-    fontWeight: '600',
   },
   loginButton: {
     marginTop: Spacing.sm,
