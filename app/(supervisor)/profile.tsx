@@ -122,26 +122,24 @@ export default function SupervisorProfileScreen() {
   };
 
   const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!user?.id) return;
+  if (!user?.id) return;
 
-    setUploadingImage(true);
-    try {
-      const response = await fetch(asset.uri);
-      const arrayBuffer = await response.arrayBuffer();
-      const contentType = asset.mimeType || 'image/jpeg';
-      const fileExt = getFileExtension(asset.uri, contentType);
-      const imageUrl = await profileService.uploadProfileImage(user.id, arrayBuffer, fileExt, contentType);
-      const updatedProfile = await profileService.updateProfile(user.id, { image_url: imageUrl });
+  setUploadingImage(true);
+  try {
+    const contentType = asset.mimeType || 'image/jpeg';
+    const fileExt = getFileExtension(asset.uri, contentType);
+    const imageUrl = await profileService.uploadProfileImage(user.id, asset.uri, fileExt, contentType);
+    const updatedProfile = await profileService.updateProfile(user.id, { image_url: imageUrl });
 
-      setUser(updatedProfile);
-      Alert.alert('Success', 'Profile picture updated successfully');
-    } catch (error) {
-      console.error('Upload supervisor profile image error:', error);
-      Alert.alert('Error', 'Failed to upload profile picture');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
+    setUser(updatedProfile);
+    Alert.alert('Success', 'Profile picture updated successfully');
+  } catch (error) {
+    console.error('Upload supervisor profile image error:', error);
+    Alert.alert('Error', 'Failed to upload profile picture');
+  } finally {
+    setUploadingImage(false);
+  }
+};
 
   if (loading) {
     return (
@@ -167,7 +165,7 @@ export default function SupervisorProfileScreen() {
           onPress={handleChangePhoto}>
           <View style={styles.avatar}>
             {user?.image_url ? (
-              <Image source={{ uri: user.image_url }} style={styles.avatarImage} />
+              <Image source={{ uri: user.image_url, cache: 'reload', }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>{getInitials(user?.name || 'Supervisor')}</Text>
             )}

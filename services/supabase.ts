@@ -175,25 +175,44 @@ export const profileService = {
   /**
    * Upload profile image to Supabase Storage and return its public URL
    */
-  async uploadProfileImage(userId: string, image: ArrayBuffer, fileExt: string, contentType: string) {
-    const sanitizedExt = fileExt.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
-    const filePath = `${userId}/${Date.now()}.${sanitizedExt}`;
+  async uploadProfileImage(userId: string, uri: string, fileExt: string, contentType: string) {
+  const sanitizedExt = fileExt.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
+  const filePath = `${userId}/avatar.${sanitizedExt}`;
 
-    const { error } = await supabase.storage
-      .from('profile-pictures')
-      .upload(filePath, image, {
-        contentType,
-        upsert: true,
-      });
+  // Hapus file lama
+  const { data: existingFiles } = await supabase.storage
+    .from('profile-pictures')
+    .list(userId);
 
-    if (error) throw error;
+  if (existingFiles && existingFiles.length > 0) {
+    const filesToDelete = existingFiles
+      .filter(f => f.name !== '.emptyFolderPlaceholder') // skip placeholder
+      .map(f => `${userId}/${f.name}`);
+    if (filesToDelete.length > 0) {
+      await supabase.storage.from('profile-pictures').remove(filesToDelete);
+    }
+  }
 
-    const { data } = supabase.storage
-      .from('profile-pictures')
-      .getPublicUrl(filePath);
+  // Upload pakai FormData
+  const formData = new FormData();
+  formData.append('file', {
+    uri,
+    name: `avatar.${sanitizedExt}`,
+    type: contentType,
+  } as any);
 
-    return data.publicUrl;
-  },
+  const { error } = await supabase.storage
+    .from('profile-pictures')
+    .upload(filePath, formData, { contentType, upsert: true });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from('profile-pictures')
+    .getPublicUrl(filePath);
+
+  return `${data.publicUrl}?t=${Date.now()}`;
+},
 };
 
 /**

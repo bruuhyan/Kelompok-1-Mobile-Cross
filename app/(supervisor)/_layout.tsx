@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SupervisorTabsLayout() {
   const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom || 34;
 
   return (
     <Tabs
@@ -22,7 +23,7 @@ export default function SupervisorTabsLayout() {
           borderTopColor: Colors.dark.border,
           borderTopWidth: 1,
           height: 60,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8, // Use safe area inset or default 8px
+          paddingBottom: bottomInset + 8, // ← pakai bottomInset
           paddingTop: 8,
         },
         headerShown: false,
