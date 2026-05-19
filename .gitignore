@@ -9,6 +9,8 @@ dist/
 web-build/
 expo-env.d.ts
 .vscode
+CLAUDE.md
+trustend-workflow
 
 # Native
 .kotlin/
@@ -31,9 +33,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
-.env
+# # local env files
+# .env*.local
+# .env
 
 # typescript
 *.tsbuildinfo

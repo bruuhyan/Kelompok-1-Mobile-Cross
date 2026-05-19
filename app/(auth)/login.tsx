@@ -14,7 +14,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -28,6 +29,8 @@ const MISSING_PROFILE_MESSAGE =
   'Your login exists, but no profile is linked to this account. Please register again or contact an admin.';
 
 export default function LoginScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -78,6 +81,7 @@ export default function LoginScreen() {
 
       // Check account status
       if (profile.status === 'pending') {
+        setUser(profile);
         router.replace('/(auth)/waiting-approval');
         return;
       }
@@ -117,7 +121,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
@@ -141,7 +145,7 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="email"
             error={errors.email}
-            leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="envelope" size={20} color={colors.textMuted} />}
           />
 
           <Input
@@ -152,13 +156,13 @@ export default function LoginScreen() {
             secureTextEntry={!showPassword}
             autoComplete="password"
             error={errors.password}
-            leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="lock" size={20} color={colors.textMuted} />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <IconSymbol
                   name={showPassword ? 'eye.slash' : 'eye'}
                   size={20}
-                  color={BrandColors.textMuted}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
             }
@@ -201,10 +205,11 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -218,11 +223,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
-    shadowColor: BrandColors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -231,18 +236,18 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 32,
     fontWeight: '800',
-    color: BrandColors.background,
+    color: colors.background,
     letterSpacing: 1,
   },
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   formCard: {
@@ -254,7 +259,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: Typography.sm,
-    color: BrandColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   loginButton: {
@@ -267,11 +272,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   linkText: {
     fontSize: Typography.base,
-    color: BrandColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   orgOptions: {
@@ -283,6 +288,6 @@ const styles = StyleSheet.create({
   },
   orgOptionsText: {
     fontSize: Typography.sm,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
 });

@@ -15,7 +15,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BrandColors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -26,6 +27,8 @@ import { ERROR_MESSAGES } from '@/utils/constants';
 import { isValidEmail, isValidPassword } from '@/utils/helpers';
 
 export default function RegisterScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -108,7 +111,7 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
@@ -129,7 +132,7 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             autoComplete="email"
             error={errors.email}
-            leftIcon={<IconSymbol name="envelope" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="envelope" size={20} color={colors.textMuted} />}
           />
 
           <Input
@@ -140,13 +143,13 @@ export default function RegisterScreen() {
             secureTextEntry={!showPassword}
             autoComplete="new-password"
             error={errors.password}
-            leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="lock" size={20} color={colors.textMuted} />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <IconSymbol
                   name={showPassword ? 'eye.slash' : 'eye'}
                   size={20}
-                  color={BrandColors.textMuted}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
             }
@@ -160,13 +163,13 @@ export default function RegisterScreen() {
             secureTextEntry={!showConfirmPassword}
             autoComplete="new-password"
             error={errors.confirmPassword}
-            leftIcon={<IconSymbol name="lock" size={20} color={BrandColors.textMuted} />}
+            leftIcon={<IconSymbol name="lock" size={20} color={colors.textMuted} />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                 <IconSymbol
                   name={showConfirmPassword ? 'eye.slash' : 'eye'}
                   size={20}
-                  color={BrandColors.textMuted}
+                  color={colors.textMuted}
                 />
               </TouchableOpacity>
             }
@@ -193,10 +196,11 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -208,12 +212,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography['3xl'],
     fontWeight: '700',
-    color: BrandColors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   formCard: {
     marginBottom: Spacing.lg,
@@ -228,11 +232,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: Typography.base,
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
   },
   linkText: {
     fontSize: Typography.base,
-    color: BrandColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

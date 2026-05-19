@@ -48,9 +48,12 @@ export interface Organization {
 export interface OrganizationSettings {
   id: string;
   organization_id: string;
-  gps_lat: number;
-  gps_lng: number;
-  gps_radius_meters: number;
+  gps_lat?: number | null;
+  gps_lng?: number | null;
+  gps_radius?: number | null;
+  gps_radius_meters?: number | null;
+  workplace_lat?: number | null;
+  workplace_lng?: number | null;
   wifi_ssid?: string;
   wifi_bssid?: string;
   ip_range?: string;
@@ -65,14 +68,21 @@ export interface AttendanceLog {
   id: string;
   user_id: string;
   organization_id: string;
-  type: 'check_in' | 'check_out';
-  timestamp: string;
-  gps_lat: number;
-  gps_lng: number;
-  wifi_ssid?: string;
-  wifi_bssid?: string;
-  ip_address?: string;
-  is_synced: boolean;
+  check_in_time: string;
+  check_out_time?: string | null;
+  check_in_lat?: number | null;
+  check_in_lng?: number | null;
+  check_out_lat?: number | null;
+  check_out_lng?: number | null;
+  check_in_wifi_ssid?: string | null;
+  check_in_wifi_bssid?: string | null;
+  check_out_wifi_ssid?: string | null;
+  check_out_wifi_bssid?: string | null;
+  check_in_ip?: string | null;
+  check_out_ip?: string | null;
+  is_late?: boolean | null;
+  trust_score_impact?: number | null;
+  notes?: string | null;
   created_at: string;
 }
 
@@ -80,7 +90,112 @@ export interface AttendanceValidation {
   gps_valid: boolean;
   wifi_valid: boolean;
   ip_valid: boolean;
+  spoofing_detected?: boolean;
+  requires_review?: boolean;
   errors: string[];
+  warnings?: string[];
+}
+
+export interface AttendanceValidationStep {
+  status: 'idle' | 'pending' | 'valid' | 'invalid' | 'warning';
+  message?: string;
+}
+
+export interface AttendanceValidationState {
+  gps: AttendanceValidationStep;
+  wifi: AttendanceValidationStep;
+  ip: AttendanceValidationStep;
+  spoofing: AttendanceValidationStep;
+}
+
+export interface AttendanceLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  mocked?: boolean;
+  timestamp?: number;
+}
+
+export interface AttendanceNetworkInfo {
+  ssid?: string | null;
+  bssid?: string | null;
+  ipAddress?: string | null;
+  type?: string | null;
+}
+
+export interface AttendanceValidationResult {
+  isValid: boolean;
+  isSuspicious?: boolean;
+  distanceMeters?: number;
+  message: string;
+}
+
+export interface AttendanceValidationFlowResult {
+  canSubmit: boolean;
+  requiresReview: boolean;
+  location: AttendanceLocation;
+  network: AttendanceNetworkInfo;
+  ipAddress?: string | null;
+  validation: AttendanceValidation;
+}
+
+export interface CheckInData {
+  userId: string;
+  organizationId: string;
+  location: AttendanceLocation;
+  network: AttendanceNetworkInfo;
+  validation: AttendanceValidation;
+  offlineId?: string;
+  clientTimestamp?: string;
+}
+
+export interface CheckOutData {
+  userId: string;
+  organizationId: string;
+  logId: string;
+  location: AttendanceLocation;
+  network: AttendanceNetworkInfo;
+  validation: AttendanceValidation;
+  autoCheckout?: boolean;
+  offlineId?: string;
+  clientTimestamp?: string;
+}
+
+export interface AttendanceHistoryStats {
+  totalLogs: number;
+  lateCheckIns: number;
+  averageDurationMinutes: number;
+  reviewLogs: number;
+}
+
+export interface AttendanceHistoryResult {
+  logs: AttendanceLog[];
+  stats: AttendanceHistoryStats;
+}
+
+export interface OfflineAttendanceLog {
+  id: string;
+  action: 'check_in' | 'check_out';
+  user_id: string;
+  organization_id: string;
+  log_id?: string;
+  timestamp: string;
+  location: AttendanceLocation;
+  network: AttendanceNetworkInfo;
+  validation: AttendanceValidation;
+  integrity_hash: string;
+  nonce: string;
+  sequence_number: number;
+  retry_count: number;
+}
+
+export interface TrustScoreCalculation {
+  score: number;
+  label: 'Okay' | 'Needs Review' | 'Urgent Review';
+  offenseCount: number;
+  penalty: number;
+  reviewRequired: boolean;
+  urgentReviewRequired: boolean;
 }
 
 // Request Types
@@ -93,7 +208,7 @@ export interface Request {
   end_date?: string;
   hours?: number;
   reason: string;
-  status: 'pending' | 'approved' | 'disapproved';
+  status: 'pending' | 'approved' | 'rejected' | 'disapproved';
   reviewer_id?: string;
   reviewer_note?: string;
   created_at: string;
@@ -115,9 +230,10 @@ export interface Report {
   id: string;
   user_id: string;
   organization_id: string;
+  title: string;
   content: string;
   photo_url?: string;
-  status: 'submitted' | 'reviewed';
+  status: 'pending' | 'reviewed' | 'resolved' | 'submitted';
   created_at: string;
   updated_at: string;
 }
@@ -185,6 +301,7 @@ export interface OvertimeRequestFormData {
 }
 
 export interface ReportFormData {
+  title: string;
   content: string;
   photo?: string;
 }

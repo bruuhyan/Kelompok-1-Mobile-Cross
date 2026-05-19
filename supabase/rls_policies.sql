@@ -37,6 +37,60 @@ AS $$
   SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
 $$;
 
+CREATE OR REPLACE FUNCTION create_organization_with_admin(
+  p_name TEXT,
+  p_address TEXT,
+  p_code TEXT,
+  p_admin_name TEXT,
+  p_admin_email TEXT
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  new_org_id UUID;
+  current_user_id UUID;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = current_user_id) THEN
+    RAISE EXCEPTION 'Profile already exists for this user';
+  END IF;
+
+  INSERT INTO public.organizations (name, address, code)
+  VALUES (p_name, p_address, p_code)
+  RETURNING id INTO new_org_id;
+
+  INSERT INTO public.profiles (
+    id,
+    name,
+    email,
+    organization_id,
+    role,
+    status
+  )
+  VALUES (
+    current_user_id,
+    p_admin_name,
+    p_admin_email,
+    new_org_id,
+    'admin',
+    'active'
+  );
+
+  RETURN new_org_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
+
 -- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -44,6 +98,7 @@ ALTER TABLE org_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Organizations policies
 -- Allow public read for organization lookup by code
@@ -51,10 +106,14 @@ CREATE POLICY "Organizations are viewable by everyone"
   ON organizations FOR SELECT
   USING (true);
 
--- Allow anyone to create organizations (org codes are unique, no sensitive data)
-CREATE POLICY "Anyone can create organizations"
+DROP POLICY IF EXISTS "Anyone can create organizations" ON organizations;
+DROP POLICY IF EXISTS "Authenticated users can create organizations" ON organizations;
+
+-- Allow authenticated users to create organizations.
+-- The app uses create_organization_with_admin() so the first admin profile is created atomically.
+CREATE POLICY "Authenticated users can create organizations"
   ON organizations FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() IS NOT NULL);
 
 -- Profiles policies
 -- Users can read their own profile
@@ -62,10 +121,16 @@ CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can create own profile" ON profiles;
+
 -- Users can create their own profile (must come before admin policies to avoid recursion)
 CREATE POLICY "Users can create own profile"
   ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (
+    auth.uid() = id
+    AND role = 'employee'
+    AND status = 'pending'
+  );
 
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile"
@@ -80,11 +145,18 @@ CREATE POLICY "Admins and supervisors can view org profiles"
     AND get_user_organization_id() = organization_id
   );
 
--- Admins can update any profile in their organization
-CREATE POLICY "Admins can update org profiles"
+DROP POLICY IF EXISTS "Admins can update org profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins and supervisors can update org profiles" ON profiles;
+
+-- Admins and supervisors can update profiles in their organization
+CREATE POLICY "Admins and supervisors can update org profiles"
   ON profiles FOR UPDATE
   USING (
-    is_user_admin()
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  )
+  WITH CHECK (
+    is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
 
@@ -98,7 +170,7 @@ CREATE POLICY "Users can view org settings"
 CREATE POLICY "Admins can update org settings"
   ON org_settings FOR ALL
   USING (
-    is_user_admin()
+    is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
 
@@ -111,6 +183,12 @@ CREATE POLICY "Users can view own attendance"
 -- Users can create their own attendance logs
 CREATE POLICY "Users can create own attendance"
   ON attendance_logs FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+-- Users can update their own attendance logs (for check-out)
+CREATE POLICY "Users can update own attendance"
+  ON attendance_logs FOR UPDATE
+  USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- Admins and supervisors can view all attendance in their organization
@@ -181,6 +259,47 @@ CREATE POLICY "Admins and supervisors can view org reports"
 CREATE POLICY "Admins and supervisors can review reports"
   ON reports FOR UPDATE
   USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  );
+
+-- Tasks policies
+-- Employees can view their assigned tasks
+CREATE POLICY "Employees can view own tasks"
+  ON tasks FOR SELECT
+  USING (assigned_to = auth.uid());
+
+-- Employees can update tasks they need to submit
+CREATE POLICY "Employees can submit own assigned tasks"
+  ON tasks FOR UPDATE
+  USING (assigned_to = auth.uid() AND status IN ('assigned', 'rejected'))
+  WITH CHECK (assigned_to = auth.uid());
+
+-- Admins and supervisors can view all tasks in their organization
+CREATE POLICY "Supervisors can view org tasks"
+  ON tasks FOR SELECT
+  USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  );
+
+-- Admins and supervisors can assign tasks in their organization
+CREATE POLICY "Supervisors can create org tasks"
+  ON tasks FOR INSERT
+  WITH CHECK (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+    AND created_by = auth.uid()
+  );
+
+-- Admins and supervisors can review tasks in their organization
+CREATE POLICY "Supervisors can review org tasks"
+  ON tasks FOR UPDATE
+  USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  )
+  WITH CHECK (
     is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );

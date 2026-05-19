@@ -3,72 +3,118 @@
  * Bottom tab navigation for supervisor role
  */
 
-import { Tabs } from 'expo-router';
-import { Colors, BrandColors } from '@/constants/theme';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { HapticTab } from '@/components/haptic-tab';
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { HapticTab } from "../../components/haptic-tab";
+import { IconSymbol } from "../../components/ui/icon-symbol";
 
 export default function SupervisorTabsLayout() {
+  const colors = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom || 34;
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: BrandColors.primary,
-        tabBarInactiveTintColor: Colors.dark.textMuted,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.dark.background,
-          borderTopColor: Colors.dark.border,
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 60,
-          paddingBottom: 8,
+          paddingBottom: bottomInset + 8,
           paddingTop: 8,
         },
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="attendance-logs"
-        options={{
-          title: 'Attendance',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="list.bullet.rectangle" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="request-review"
-        options={{
-          title: 'Requests',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="checkmark.seal.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="report-review"
-        options={{
-          title: 'Reports',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="doc.text.magnifyingglass" color={color} />,
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="house.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="team"
         options={{
-          title: 'Team',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.2.fill" color={color} />,
+          title: "Team",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="person.2.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="request-review"
+        options={{
+          title: "Request",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              size={24}
+              name="checkmark.circle.fill"
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="task"
+        options={{
+          title: "Task",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="doc.text.fill" color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="person.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="attendance-logs"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="report-review"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="report-detail/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="request-detail/[id]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

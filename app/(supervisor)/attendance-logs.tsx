@@ -3,33 +3,10 @@
  * Will be implemented in Phase 11
  */
 
-import { View, StyleSheet, Text } from 'react-native';
-import { BrandColors } from '@/constants/theme';
+import { PlaceholderScreen } from "@/components/PlaceholderScreen";
 
 export default function SupervisorAttendanceLogsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Attendance Logs</Text>
-      <Text style={styles.subtitle}>Coming in Phase 11</Text>
-    </View>
+    <PlaceholderScreen title="Attendance Logs" subtitle="Coming in Phase 11" />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BrandColors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: BrandColors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: BrandColors.textSecondary,
-  },
-});
