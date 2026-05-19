@@ -109,9 +109,7 @@ export default function EmployeeProfileScreen() {
 
       if (!picked) return;
 
-      if (user.avatar_url) {
-        await storageService.deleteAvatar(user.id);
-      }
+      const oldAvatarUrl = user.avatar_url;
 
       const publicUrl = await storageService.uploadAvatar(
         user.id,
@@ -123,6 +121,12 @@ export default function EmployeeProfileScreen() {
       const updatedProfile = await profileService.getProfile(user.id);
       setUser(updatedProfile);
       updateUser({ avatar_url: publicUrl });
+
+      if (oldAvatarUrl) {
+        storageService.deleteAvatar(user.id, oldAvatarUrl).catch((error) => {
+          console.warn('Failed to delete old avatar:', error);
+        });
+      }
 
       Alert.alert('Success', 'Profile picture updated successfully');
     } catch (error: any) {
@@ -138,7 +142,7 @@ export default function EmployeeProfileScreen() {
 
     try {
       setIsUploadingAvatar(true);
-      await storageService.deleteAvatar(user.id);
+      await storageService.deleteAvatar(user.id, user.avatar_url);
       await profileService.updateProfile(user.id, { avatar_url: null });
 
       const updatedProfile = await profileService.getProfile(user.id);
@@ -281,6 +285,8 @@ export default function EmployeeProfileScreen() {
                 source={{ uri: user.avatar_url }}
                 style={styles.avatarImage}
                 contentFit="cover"
+                cachePolicy="none"
+                recyclingKey={user.avatar_url}
                 transition={200}
               />
             ) : (

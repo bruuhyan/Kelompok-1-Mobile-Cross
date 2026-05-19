@@ -13,6 +13,21 @@ export interface PickedImage {
   base64: string;
 }
 
+const getAvatarPathFromUrl = (userId: string, avatarUrl?: string | null) => {
+  if (!avatarUrl) {
+    return userId + '/avatar.jpg';
+  }
+
+  const marker = '/' + AVATARS_BUCKET + '/';
+  const markerIndex = avatarUrl.indexOf(marker);
+  if (markerIndex === -1) {
+    return userId + '/avatar.jpg';
+  }
+
+  const encodedPath = avatarUrl.slice(markerIndex + marker.length).split('?')[0];
+  return decodeURIComponent(encodedPath);
+};
+
 
 export const storageService = {
   async pickImageFromCamera(): Promise<PickedImage | null> {
@@ -66,7 +81,7 @@ export const storageService = {
   },
 
   async uploadAvatar(userId: string, base64: string): Promise<string> {
-    const filePath = userId + '/avatar.jpg';
+    const filePath = userId + '/avatar-' + Date.now() + '.jpg';
 
     const binaryStr = atob(base64);
     const bytes = new Uint8Array(binaryStr.length);
@@ -92,8 +107,8 @@ export const storageService = {
     return urlData.publicUrl;
   },
 
-  async deleteAvatar(userId: string): Promise<void> {
-    const filePath = userId + '/avatar.jpg';
+  async deleteAvatar(userId: string, avatarUrl?: string | null): Promise<void> {
+    const filePath = getAvatarPathFromUrl(userId, avatarUrl);
 
     const { error } = await supabase.storage
       .from(AVATARS_BUCKET)
