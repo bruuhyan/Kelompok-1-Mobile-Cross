@@ -44,6 +44,12 @@
           "photosPermission": "Allow TrustEnd to access your photos so you can update your profile picture.",
           "cameraPermission": "Allow TrustEnd to use the camera so you can take a profile picture."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow TrustEnd to use your location."
+        }
       ]
     ],
     "experiments": {

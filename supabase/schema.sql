@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS org_settings (
   wifi_ssid TEXT,
   wifi_bssid TEXT,
   ip_range TEXT,
+  work_start_time TIME DEFAULT '09:00',
+  work_end_time TIME DEFAULT '17:00',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

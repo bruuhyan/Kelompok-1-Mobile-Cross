@@ -1,11 +1,12 @@
 /**
  * Employee Reports Screen
- * Submit employee reports.
+ * Submit employee reports with optional photo attachment.
  */
 
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,6 +22,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { reportService } from '@/services/supabase';
+import { storageService } from '@/services/storageService';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/utils/constants';
 import type { Report } from '@/utils/types';
@@ -53,6 +55,8 @@ export default function EmployeeReportsScreen() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ uri: string; base64: string } | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const loadReports = useCallback(async () => {
     if (!user?.id) return;
@@ -100,21 +104,48 @@ export default function EmployeeReportsScreen() {
 
     setIsLoading(true);
     try {
+      let photoUrl: string | undefined;
+
+      if (selectedPhoto) {
+        setIsUploadingPhoto(true);
+        const tempReportId = 'temp_' + Date.now();
+        photoUrl = await storageService.uploadReportPhoto(user.id, tempReportId, selectedPhoto.base64);
+        setIsUploadingPhoto(false);
+      }
+
       await reportService.submitReport(user.id, user.organization_id, {
         title,
         content,
+        photo: photoUrl,
       });
 
       setTitle('');
       setContent('');
+      setSelectedPhoto(null);
       Alert.alert('Success', SUCCESS_MESSAGES.REPORT_SUBMITTED);
       await loadReports();
     } catch (error: any) {
       console.error('Submit report error:', error);
+      setIsUploadingPhoto(false);
       Alert.alert('Error', error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const image = await storageService.pickReportPhoto();
+      if (image) {
+        setSelectedPhoto(image);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhoto(null);
   };
 
   const getStatusColor = (status: Report['status']) => {
@@ -176,11 +207,25 @@ export default function EmployeeReportsScreen() {
             numberOfLines={6}
             error={errors.content}
           />
+
+          {selectedPhoto ? (
+            <View style={styles.photoPreview}>
+              <Image source={{ uri: selectedPhoto.uri }} style={styles.photoImage} />
+              <TouchableOpacity style={styles.removePhotoBtn} onPress={handleRemovePhoto}>
+                <Text style={styles.removePhotoText}>Remove Photo</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.attachPhotoBtn} onPress={handlePickPhoto}>
+              <Text style={styles.attachPhotoText}>Attach Photo</Text>
+            </TouchableOpacity>
+          )}
+
           <Button
             title="Submit Report"
             onPress={handleSubmitReport}
-            loading={isLoading}
-            disabled={isLoading}
+            loading={isLoading || isUploadingPhoto}
+            disabled={isLoading || isUploadingPhoto}
             size="large"
           />
         </Card>
@@ -306,5 +351,37 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       marginTop: Spacing.md,
       lineHeight: 20,
+    },
+    attachPhotoBtn: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    attachPhotoText: {
+      fontSize: Typography.sm,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    photoPreview: {
+      marginBottom: Spacing.md,
+    },
+    photoImage: {
+      width: '100%',
+      height: 200,
+      borderRadius: BorderRadius.md,
+      marginBottom: Spacing.sm,
+    },
+    removePhotoBtn: {
+      alignItems: 'center',
+      padding: Spacing.sm,
+    },
+    removePhotoText: {
+      fontSize: Typography.sm,
+      fontWeight: '600',
+      color: colors.error,
     },
   });

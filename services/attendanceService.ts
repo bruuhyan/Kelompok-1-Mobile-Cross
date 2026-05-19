@@ -107,6 +107,14 @@ function getSettingsRadius(settings: OrganizationSettings | null) {
   );
 }
 
+function getSettingsLatitude(settings: OrganizationSettings | null) {
+  return settings?.gps_lat ?? settings?.workplace_lat ?? null;
+}
+
+function getSettingsLongitude(settings: OrganizationSettings | null) {
+  return settings?.gps_lng ?? settings?.workplace_lng ?? null;
+}
+
 function getReviewStatus(score: number): AttendanceNotes['review_status'] {
   if (score <= 19) return 'urgent_review';
   if (score <= 35) return 'needs_review';
@@ -278,7 +286,10 @@ export const attendanceService = {
     location: AttendanceLocation,
     settings: OrganizationSettings | null
   ): Promise<AttendanceValidationResult> {
-    if (settings?.gps_lat == null || settings?.gps_lng == null) {
+    const settingsLat = getSettingsLatitude(settings);
+    const settingsLng = getSettingsLongitude(settings);
+
+    if (settingsLat == null || settingsLng == null) {
       return {
         isValid: true,
         message: 'Workplace GPS is not configured yet',
@@ -288,8 +299,8 @@ export const attendanceService = {
     const distanceMeters = calculateDistance(
       location.latitude,
       location.longitude,
-      Number(settings.gps_lat),
-      Number(settings.gps_lng)
+      Number(settingsLat),
+      Number(settingsLng)
     );
     const radius = getSettingsRadius(settings);
     const isValid = distanceMeters <= radius;

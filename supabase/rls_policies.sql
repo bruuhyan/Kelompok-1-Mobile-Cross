@@ -170,7 +170,7 @@ CREATE POLICY "Users can view org settings"
 CREATE POLICY "Admins can update org settings"
   ON org_settings FOR ALL
   USING (
-    is_user_admin()
+    is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
 

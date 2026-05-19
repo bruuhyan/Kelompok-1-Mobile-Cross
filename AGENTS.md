@@ -114,3 +114,108 @@ npm run reset-project  # Clear app directory (use with caution)
   ```
 - Check-out runs the full validation flow (GPS, WiFi, IP, spoofing) before submitting
 - If `currentLog` is null, check-out fails with "No active check-in found"
+
+## Bottom Navigation
+
+### Employee Tabs (5 tabs)
+- **Home** — Dashboard with trust score, check-in/out, My Tasks preview, quick actions
+- **Attendance** — History and status
+- **Requests** — Holiday/overtime submission and history
+- **Reports** — Report submission with photo attachment
+- **Profile** — Account info, avatar upload, Settings link, logout
+- Settings and Tasks are accessible from within Profile and Home respectively (not separate tabs)
+
+### Supervisor Tabs (5 tabs)
+- **Home** — Dashboard with org stats, My Attendance card (check-in/out with validation), and pending items
+- **Team** — Team management, attendance logs, registration approvals
+- **Request** — Review and approve employee requests
+- **Task** — Create and review employee tasks
+- **Profile** — Account info, avatar upload, Settings link, logout
+- Organization Settings accessible from within Profile
+
+## Employee Tasks Screen
+
+- `app/(employee)/tasks.tsx` — View assigned tasks grouped by status (To Do, In Review, Needs Revision, Completed)
+- Expandable cards with submission form for assigned/rejected tasks
+- `useFocusEffect` for auto-refresh
+- Service: `taskService.getMyTasks(userId)` and `taskService.submitTask(taskId, submissionNote)` in `services/supabase.ts`
+
+## Organization Settings
+
+- `app/(supervisor)/settings.tsx` — Configure attendance validation rules:
+  - GPS coordinates (with "Use Current Location" via `expo-location`)
+  - GPS radius (10-1000m)
+  - WiFi SSID/BSSID
+  - IP range
+  - Work start/end time
+- Service: `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` in `services/supabase.ts`
+  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
+- Upserts into `organization_settings` table with `onConflict: 'organization_id'`
+- Accessible from Supervisor Profile screen via Settings button
+- `expo-location` plugin must be configured in `app.json` with location permissions
+- Android emulator requires: Location enabled in Quick Settings + mock location set via Extended Controls (three dots → Location)
+
+## Report Photo Upload
+
+### Storage Setup
+- Bucket: `report-photos` (public)
+- File path: `{userId}/{reportId}.jpg`
+- RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
+
+### Upload Service
+- `services/storageService.ts` — `pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`
+- Uses `expo-image-picker` with `base64: true` (avoids React Native's buggy `fetch().blob()`)
+- Converts base64 → `Uint8Array` → Supabase Storage upload
+- Image settings: 4:3 aspect ratio, quality 0.7
+- `app/(employee)/reports.tsx` — Photo picker with preview and remove button
+
+### Gotchas
+- `reports` table must have `photo_url` TEXT column (run `ALTER TABLE reports ADD COLUMN IF NOT EXISTS photo_url TEXT;`)
+- Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
+
+## Supervisor Check-In/Check-Out
+
+- `app/(supervisor)/home.tsx` — "My Attendance" card with same check-in/out flow as employees
+- Uses the shared `attendanceStore` and `attendanceService` — role-agnostic, no separate logic needed
+- Validation flow: GPS, WiFi, IP, spoofing detection (same as employee)
+- Trust score recalculated after supervisor check-in/out
+- UI states: Not checked in (green button) → Checked in (blue button) → Completed (checkmark)
+- Offline sync and location monitoring work identically for supervisors
+
+## expo-location Plugin
+
+- Configured in `app.json` with `locationAlwaysAndWhenInUsePermission`
+- Android requires a native rebuild after adding the plugin: `npx expo run:android`
+- Android emulator needs: Location enabled in Quick Settings + mock location set via Extended Controls (three dots → Location)
+- Used by "Use Current Location" button in `app/(supervisor)/settings.tsx`
+
+## Required Supabase Migrations
+
+Run these in Supabase SQL Editor before testing new features:
+
+```sql
+-- Add photo_url column to reports
+ALTER TABLE reports ADD COLUMN IF NOT EXISTS photo_url TEXT;
+
+-- Create report-photos storage bucket
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('report-photos', 'report-photos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- RLS policies for report photos
+CREATE POLICY "Users can upload own report photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Users can update own report photos"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Users can delete own report photos"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Anyone can view report photos"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'report-photos');
+```
