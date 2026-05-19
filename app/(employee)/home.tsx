@@ -3,27 +3,32 @@
  * Dashboard showing today's status, trust score, and quick actions
  */
 
-import React, { useEffect, useState } from 'react';
+import { Card } from "@/components/Card";
+import { TrustScoreBadge } from "@/components/TrustScoreBadge";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
-  TouchableOpacity,
+  BorderRadius,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { authService, taskService } from "@/services/supabase";
+import { useAttendanceStore } from "@/store/attendanceStore";
+import { useAuthStore } from "@/store/authStore";
+import { formatTime } from "@/utils/helpers";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
   ActivityIndicator,
   Alert,
   Pressable,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Card } from '@/components/Card';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { TrustScoreBadge } from '@/components/TrustScoreBadge';
-import { useAuthStore } from '@/store/authStore';
-import { useAttendanceStore } from '@/store/attendanceStore';
-import { authService, taskService } from '@/services/supabase';
-import { formatTime } from '@/utils/helpers';
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function EmployeeHomeScreen() {
   const colors = useAppTheme();
@@ -60,9 +65,11 @@ export default function EmployeeHomeScreen() {
       setTasksLoading(true);
       try {
         const data = await taskService.getMyTasks(user.id);
-        setMyTasks((data as any[]).filter((t) => t.status !== 'approved').slice(0, 3));
+        setMyTasks(
+          (data as any[]).filter((t) => t.status !== "approved").slice(0, 3),
+        );
       } catch (error) {
-        console.error('Load tasks error:', error);
+        console.error("Load tasks error:", error);
       } finally {
         setTasksLoading(false);
       }
@@ -72,7 +79,7 @@ export default function EmployeeHomeScreen() {
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Attendance', error);
+      Alert.alert("Attendance", error);
     }
   }, [error]);
 
@@ -80,9 +87,9 @@ export default function EmployeeHomeScreen() {
     try {
       await authService.signOut();
       logout();
-      router.replace('/(auth)/login');
+      router.replace("/(auth)/login");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -91,7 +98,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckIn(user);
-      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-in saved and will sync when online.' : 'Check-in successful.');
+      Alert.alert(
+        "Success",
+        pendingSyncLogs.length > 0
+          ? "Check-in saved and will sync when online."
+          : "Check-in successful.",
+      );
     } catch {
       // Error state is already surfaced by the attendance store.
     }
@@ -102,7 +114,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckOut(user);
-      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-out saved and will sync when online.' : 'Check-out successful.');
+      Alert.alert(
+        "Success",
+        pendingSyncLogs.length > 0
+          ? "Check-out saved and will sync when online."
+          : "Check-out successful.",
+      );
     } catch {
       // Error state is already surfaced by the attendance store.
     }
@@ -110,26 +127,26 @@ export default function EmployeeHomeScreen() {
 
   const getStatusText = () => {
     switch (todayStatus) {
-      case 'not_checked_in':
-        return 'Not checked in yet';
-      case 'checked_in':
+      case "not_checked_in":
+        return "Not checked in yet";
+      case "checked_in":
         return currentLog?.check_in_time
           ? `Checked in at ${formatTime(new Date(currentLog.check_in_time))}`
-          : 'Checked in';
-      case 'checked_out':
+          : "Checked in";
+      case "checked_out":
         return currentLog?.check_out_time
           ? `Checked out at ${formatTime(new Date(currentLog.check_out_time))}`
-          : 'Checked out';
+          : "Checked out";
     }
   };
 
   const getStatusColor = () => {
     switch (todayStatus) {
-      case 'not_checked_in':
+      case "not_checked_in":
         return colors.textSecondary;
-      case 'checked_in':
+      case "checked_in":
         return colors.success;
-      case 'checked_out':
+      case "checked_out":
         return colors.info;
     }
   };
@@ -141,10 +158,14 @@ export default function EmployeeHomeScreen() {
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.greeting}>Good morning,</Text>
-            <Text style={styles.userName}>{user?.name || 'Loading...'}</Text>
+            <Text style={styles.userName}>{user?.name || "Loading..."}</Text>
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.textMuted} />
+            <IconSymbol
+              name="rectangle.portrait.and.arrow.right"
+              size={20}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -158,7 +179,11 @@ export default function EmployeeHomeScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.trustScoreContent}>
-          <TrustScoreBadge score={user?.trust_score || 50} size="large" showLabel />
+          <TrustScoreBadge
+            score={user?.trust_score || 50}
+            size="large"
+            showLabel
+          />
         </View>
         <Text style={styles.trustScoreDescription}>
           Keep your attendance consistent to improve your score
@@ -169,7 +194,9 @@ export default function EmployeeHomeScreen() {
       <Card style={styles.statusCard}>
         <Text style={styles.statusTitle}>Today Status</Text>
         <View style={styles.statusContent}>
-          <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+          <View
+            style={[styles.statusDot, { backgroundColor: getStatusColor() }]}
+          />
           <Text style={[styles.statusText, { color: getStatusColor() }]}>
             {getStatusText()}
           </Text>
@@ -177,110 +204,142 @@ export default function EmployeeHomeScreen() {
 
         {pendingSyncLogs.length > 0 ? (
           <View style={styles.offlineBanner}>
-            <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={colors.warning} />
+            <IconSymbol
+              name="arrow.triangle.2.circlepath"
+              size={16}
+              color={colors.warning}
+            />
             <Text style={styles.offlineText}>
-              {pendingSyncLogs.length} offline attendance item{pendingSyncLogs.length > 1 ? 's' : ''} pending sync
+              {pendingSyncLogs.length} offline attendance item
+              {pendingSyncLogs.length > 1 ? "s" : ""} pending sync
             </Text>
           </View>
         ) : null}
 
-        {validationStatus.gps.status !== 'idle' ? (
+        {validationStatus.gps.status !== "idle" ? (
           <View style={styles.validationList}>
-            {(['gps', 'wifi', 'ip', 'spoofing'] as const).map((key) => (
+            {(["gps", "wifi", "ip", "spoofing"] as const).map((key) => (
               <View key={key} style={styles.validationItem}>
                 <View
                   style={[
                     styles.validationDot,
                     {
                       backgroundColor:
-                        validationStatus[key].status === 'valid'
+                        validationStatus[key].status === "valid"
                           ? colors.success
-                          : validationStatus[key].status === 'invalid'
+                          : validationStatus[key].status === "invalid"
                             ? colors.error
-                            : validationStatus[key].status === 'warning'
+                            : validationStatus[key].status === "warning"
                               ? colors.warning
                               : colors.textMuted,
                     },
                   ]}
                 />
-                <Text style={styles.validationText}>{validationStatus[key].message}</Text>
+                <Text style={styles.validationText}>
+                  {validationStatus[key].message}
+                </Text>
               </View>
             ))}
           </View>
         ) : null}
 
-        {todayStatus === 'not_checked_in' ? (
+        {todayStatus === "not_checked_in" ? (
           <TouchableOpacity
             style={styles.checkInButton}
             onPress={handleCheckIn}
-            disabled={isLoading}>
+            disabled={isLoading}
+          >
             {isLoading ? (
               <ActivityIndicator color={colors.background} />
             ) : (
               <>
-                <IconSymbol name="location.fill" size={20} color={colors.background} />
+                <IconSymbol
+                  name="location.fill"
+                  size={20}
+                  color={colors.background}
+                />
                 <Text style={styles.checkInButtonText}>Check In</Text>
               </>
             )}
           </TouchableOpacity>
-        ) : todayStatus === 'checked_in' ? (
+        ) : todayStatus === "checked_in" ? (
           <TouchableOpacity
             style={styles.checkOutButton}
             onPress={handleCheckOut}
-            disabled={isLoading}>
+            disabled={isLoading}
+          >
             {isLoading ? (
               <ActivityIndicator color={colors.background} />
             ) : (
               <>
-                <IconSymbol name="location.slash" size={20} color={colors.background} />
+                <IconSymbol
+                  name="location.slash"
+                  size={20}
+                  color={colors.background}
+                />
                 <Text style={styles.checkOutButtonText}>Check Out</Text>
               </>
             )}
           </TouchableOpacity>
         ) : (
           <View style={styles.completedStatus}>
-            <IconSymbol name="checkmark.circle.fill" size={20} color={colors.success} />
+            <IconSymbol
+              name="checkmark.circle.fill"
+              size={20}
+              color={colors.success}
+            />
             <Text style={styles.completedText}>Completed for today</Text>
           </View>
         )}
       </Card>
 
       {/* Quick Actions */}
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActions}>
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(employee)/requests')}>
-          <View style={styles.quickActionIcon}>
-            <IconSymbol name="calendar" size={24} color={colors.primary} />
-          </View>
-          <Text style={styles.quickActionText}>Requests</Text>
-        </TouchableOpacity>
+      <View style={styles.sectionWrapper}>
+        <Text style={[styles.sectionTitle, styles.edgeAlignedSectionTitle]}>
+          Quick Actions
+        </Text>
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.quickAction}
+            onPress={() => router.push("/(employee)/requests")}
+          >
+            <View style={styles.quickActionIcon}>
+              <IconSymbol name="calendar" size={24} color={colors.primary} />
+            </View>
+            <Text style={styles.quickActionText}>Requests</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(employee)/reports')}>
-          <View style={styles.quickActionIcon}>
-            <IconSymbol name="doc.text" size={24} color={colors.info} />
-          </View>
-          <Text style={styles.quickActionText}>Reports</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickAction}
+            onPress={() => router.push("/(employee)/reports")}
+          >
+            <View style={styles.quickActionIcon}>
+              <IconSymbol name="doc.text" size={24} color={colors.info} />
+            </View>
+            <Text style={styles.quickActionText}>Reports</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.quickAction}
-          onPress={() => router.push('/(employee)/profile')}>
-          <View style={styles.quickActionIcon}>
-            <IconSymbol name="person.circle" size={24} color={colors.warning} />
-          </View>
-          <Text style={styles.quickActionText}>Profile</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickAction}
+            onPress={() => router.push("/(employee)/profile")}
+          >
+            <View style={styles.quickActionIcon}>
+              <IconSymbol
+                name="person.circle"
+                size={24}
+                color={colors.warning}
+              />
+            </View>
+            <Text style={styles.quickActionText}>Profile</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* My Tasks */}
       <View style={styles.tasksSection}>
         <View style={styles.tasksHeader}>
           <Text style={styles.sectionTitle}>My Tasks</Text>
-          <TouchableOpacity onPress={() => router.push('/(employee)/tasks')}>
+          <TouchableOpacity onPress={() => router.push("/(employee)/tasks")}>
             <Text style={styles.tasksViewAll}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -296,15 +355,33 @@ export default function EmployeeHomeScreen() {
           myTasks.map((task) => (
             <Card key={task.id} style={styles.taskItem}>
               <View style={styles.taskRow}>
-                <View style={[styles.taskDot, { backgroundColor: task.status === 'rejected' ? colors.error : colors.primary }]} />
+                <View
+                  style={[
+                    styles.taskDot,
+                    {
+                      backgroundColor:
+                        task.status === "rejected"
+                          ? colors.error
+                          : colors.primary,
+                    },
+                  ]}
+                />
                 <View style={styles.taskInfo}>
-                  <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
+                  <Text style={styles.taskTitle} numberOfLines={1}>
+                    {task.title}
+                  </Text>
                   <Text style={styles.taskMeta}>
-                    {task.status === 'rejected' ? 'Needs revision' : 'To Do'}
-                    {task.due_date ? ` · Due ${new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                    {task.status === "rejected" ? "Needs revision" : "To Do"}
+                    {task.due_date
+                      ? ` · Due ${new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                      : ""}
                   </Text>
                 </View>
-                <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.textMuted}
+                />
               </View>
             </Card>
           ))
@@ -312,42 +389,57 @@ export default function EmployeeHomeScreen() {
       </View>
 
       {/* Recent Activity */}
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
-      <Card style={styles.activityCard}>
-        <View style={styles.activityItem}>
-          <View style={styles.activityIcon}>
-            <IconSymbol name="clock" size={16} color={colors.textMuted} />
+      <View style={styles.sectionWrapper}>
+        <Text style={[styles.sectionTitle, styles.edgeAlignedSectionTitle]}>
+          Recent Activity
+        </Text>
+        <Card style={styles.activityCard}>
+          <View style={styles.activityItem}>
+            <View style={styles.activityIcon}>
+              <IconSymbol name="clock" size={16} color={colors.textMuted} />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityTitle}>
+                {currentLog ? "Today attendance updated" : "No recent activity"}
+              </Text>
+              <Text style={styles.activitySubtitle}>
+                {currentLog?.check_in_time
+                  ? `Last check-in ${formatTime(new Date(currentLog.check_in_time))}`
+                  : "Check in to start tracking"}
+              </Text>
+            </View>
           </View>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              {currentLog ? 'Today attendance updated' : 'No recent activity'}
-            </Text>
-            <Text style={styles.activitySubtitle}>
-              {currentLog?.check_in_time
-                ? `Last check-in ${formatTime(new Date(currentLog.check_in_time))}`
-                : 'Check in to start tracking'}
-            </Text>
-          </View>
-        </View>
-      </Card>
+        </Card>
+      </View>
 
       {/* Trust Score Modal */}
       {showTrustScoreModal && (
-        <Pressable style={styles.modalOverlay} onPress={() => setShowTrustScoreModal(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowTrustScoreModal(false)}
+        >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Understanding Your Trust Score</Text>
+              <Text style={styles.modalTitle}>
+                Understanding Your Trust Score
+              </Text>
               <TouchableOpacity onPress={() => setShowTrustScoreModal(false)}>
                 <IconSymbol name="xmark" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <View style={styles.modalContent}>
-              <Text style={styles.modalSubtitle}>How we calculate your trustworthiness</Text>
+              <Text style={styles.modalSubtitle}>
+                How we calculate your trustworthiness
+              </Text>
               <View style={styles.explanationBox}>
                 <Text style={styles.explanationTitle}>Three Key Factors:</Text>
                 <View style={styles.factorRow}>
                   <View style={styles.factorIcon}>
-                    <IconSymbol name="clock.fill" size={18} color={colors.primary} />
+                    <IconSymbol
+                      name="clock.fill"
+                      size={18}
+                      color={colors.primary}
+                    />
                   </View>
                   <View style={styles.factorText}>
                     <Text style={styles.factorTitle}>Punctuality</Text>
@@ -358,7 +450,11 @@ export default function EmployeeHomeScreen() {
                 </View>
                 <View style={styles.factorRow}>
                   <View style={styles.factorIcon}>
-                    <IconSymbol name="location.fill" size={18} color={colors.info} />
+                    <IconSymbol
+                      name="location.fill"
+                      size={18}
+                      color={colors.info}
+                    />
                   </View>
                   <View style={styles.factorText}>
                     <Text style={styles.factorTitle}>Location Consistency</Text>
@@ -369,12 +465,17 @@ export default function EmployeeHomeScreen() {
                 </View>
                 <View style={styles.factorRow}>
                   <View style={styles.factorIcon}>
-                    <IconSymbol name="exclamationmark.triangle.fill" size={18} color={colors.warning} />
+                    <IconSymbol
+                      name="exclamationmark.triangle.fill"
+                      size={18}
+                      color={colors.warning}
+                    />
                   </View>
                   <View style={styles.factorText}>
                     <Text style={styles.factorTitle}>Activity Patterns</Text>
                     <Text style={styles.factorDescription}>
-                      Monitoring for suspicious activity like duplicate check-ins
+                      Monitoring for suspicious activity like duplicate
+                      check-ins
                     </Text>
                   </View>
                 </View>
@@ -382,20 +483,27 @@ export default function EmployeeHomeScreen() {
               <View style={styles.scoreTiers}>
                 <Text style={styles.scoreTiersTitle}>Trust Score Tiers:</Text>
                 <View style={styles.tierRow}>
-                  <View style={[styles.tierDot, { backgroundColor: '#00F5A0' }]} />
+                  <View
+                    style={[styles.tierDot, { backgroundColor: "#00F5A0" }]}
+                  />
                   <Text style={styles.tierLabel}>80-100: Trusted (Green)</Text>
                 </View>
                 <View style={styles.tierRow}>
-                  <View style={[styles.tierDot, { backgroundColor: '#FFAA00' }]} />
+                  <View
+                    style={[styles.tierDot, { backgroundColor: "#FFAA00" }]}
+                  />
                   <Text style={styles.tierLabel}>50-79: Moderate (Yellow)</Text>
                 </View>
                 <View style={styles.tierRow}>
-                  <View style={[styles.tierDot, { backgroundColor: '#FF4757' }]} />
+                  <View
+                    style={[styles.tierDot, { backgroundColor: "#FF4757" }]}
+                  />
                   <Text style={styles.tierLabel}>0-49: At Risk (Red)</Text>
                 </View>
               </View>
               <Text style={styles.modalFooterText}>
-                Your score is recalculated after each check-in/check-out to reflect your recent behavior patterns.
+                Your score is recalculated after each check-in/check-out to
+                reflect your recent behavior patterns.
               </Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
@@ -419,20 +527,20 @@ const createStyles = (colors: ThemeColors) =>
     },
     header: {
       padding: Spacing.lg,
-      paddingTop: Spacing['2xl'],
+      paddingTop: Spacing["2xl"],
     },
     headerTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
     },
     greeting: {
       fontSize: Typography.base,
       color: colors.textSecondary,
     },
     userName: {
-      fontSize: Typography['2xl'],
-      fontWeight: '700',
+      fontSize: Typography["2xl"],
+      fontWeight: "700",
       color: colors.text,
     },
     logoutButton: {
@@ -441,16 +549,16 @@ const createStyles = (colors: ThemeColors) =>
     trustScoreCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
-      alignItems: 'center',
+      alignItems: "center",
     },
     trustScoreHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       marginBottom: Spacing.md,
     },
     trustScoreTitle: {
       fontSize: Typography.lg,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
       marginRight: Spacing.xs,
     },
@@ -460,7 +568,7 @@ const createStyles = (colors: ThemeColors) =>
     trustScoreDescription: {
       fontSize: Typography.sm,
       color: colors.textSecondary,
-      textAlign: 'center',
+      textAlign: "center",
     },
     statusCard: {
       marginHorizontal: Spacing.lg,
@@ -468,13 +576,13 @@ const createStyles = (colors: ThemeColors) =>
     },
     statusTitle: {
       fontSize: Typography.lg,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
       marginBottom: Spacing.md,
     },
     statusContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       marginBottom: Spacing.lg,
     },
     statusDot: {
@@ -485,12 +593,12 @@ const createStyles = (colors: ThemeColors) =>
     },
     statusText: {
       fontSize: Typography.base,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     checkInButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       backgroundColor: colors.primary,
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
@@ -499,12 +607,12 @@ const createStyles = (colors: ThemeColors) =>
     checkInButtonText: {
       color: colors.background,
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     checkOutButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       backgroundColor: colors.info,
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
@@ -513,23 +621,23 @@ const createStyles = (colors: ThemeColors) =>
     checkOutButtonText: {
       color: colors.background,
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     completedStatus: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       paddingVertical: Spacing.md,
       gap: Spacing.sm,
     },
     completedText: {
       color: colors.success,
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     offlineBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       backgroundColor: colors.backgroundLighter,
       borderRadius: BorderRadius.md,
       padding: Spacing.sm,
@@ -546,8 +654,8 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.xs,
     },
     validationItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: Spacing.sm,
     },
     validationDot: {
@@ -562,30 +670,37 @@ const createStyles = (colors: ThemeColors) =>
     },
     sectionTitle: {
       fontSize: Typography.lg,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
+    },
+    edgeAlignedSectionTitle: {
+      marginLeft: Spacing.xs,
+      marginBottom: Spacing.md,
+    },
+    sectionWrapper: {
+      paddingHorizontal: Spacing.lg,
     },
     tasksSection: {
       paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing['2xl'],
+      marginBottom: Spacing["2xl"],
     },
     tasksHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: Spacing.md,
     },
     tasksViewAll: {
       fontSize: Typography.sm,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.primary,
     },
     taskItem: {
       marginBottom: Spacing.sm,
     },
     taskRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: Spacing.sm,
     },
     taskDot: {
@@ -599,7 +714,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     taskTitle: {
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
     taskMeta: {
@@ -610,18 +725,17 @@ const createStyles = (colors: ThemeColors) =>
     taskEmpty: {
       fontSize: Typography.sm,
       color: colors.textSecondary,
-      textAlign: 'center',
+      textAlign: "center",
       paddingVertical: Spacing.sm,
     },
     quickActions: {
-      flexDirection: 'row',
-      paddingHorizontal: Spacing.lg,
-      marginBottom: Spacing['2xl'],
+      flexDirection: "row",
+      marginBottom: Spacing["2xl"],
       gap: Spacing.md,
     },
     quickAction: {
       flex: 1,
-      alignItems: 'center',
+      alignItems: "center",
       backgroundColor: colors.card,
       padding: Spacing.md,
       borderRadius: BorderRadius.lg,
@@ -633,30 +747,29 @@ const createStyles = (colors: ThemeColors) =>
       height: 48,
       borderRadius: BorderRadius.md,
       backgroundColor: colors.backgroundLighter,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: Spacing.sm,
     },
     quickActionText: {
       fontSize: Typography.sm,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
     activityCard: {
-      marginHorizontal: Spacing.lg,
-      marginBottom: Spacing['2xl'],
+      marginBottom: Spacing["2xl"],
     },
     activityItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
     },
     activityIcon: {
       width: 32,
       height: 32,
       borderRadius: BorderRadius.full,
       backgroundColor: colors.backgroundLighter,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       marginRight: Spacing.md,
     },
     activityContent: {
@@ -664,7 +777,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     activityTitle: {
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
     activitySubtitle: {
@@ -672,32 +785,32 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
     },
     modalOverlay: {
-      position: 'absolute',
+      position: "absolute",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
     },
     modalContainer: {
-      width: '90%',
+      width: "90%",
       maxWidth: 350,
       backgroundColor: colors.card,
       borderRadius: BorderRadius.lg,
       padding: Spacing.lg,
-      maxHeight: '80%',
+      maxHeight: "80%",
     },
     modalHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: Spacing.md,
     },
     modalTitle: {
       fontSize: Typography.lg,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
     modalContent: {
@@ -705,7 +818,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     modalSubtitle: {
       fontSize: Typography.base,
-      fontWeight: '500',
+      fontWeight: "500",
       color: colors.textSecondary,
     },
     explanationBox: {
@@ -713,27 +826,27 @@ const createStyles = (colors: ThemeColors) =>
     },
     explanationTitle: {
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
       marginBottom: Spacing.xs,
     },
     factorRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
+      flexDirection: "row",
+      alignItems: "flex-start",
       gap: Spacing.sm,
     },
     factorIcon: {
       width: 24,
       height: 24,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
     factorText: {
       flex: 1,
     },
     factorTitle: {
       fontSize: Typography.sm,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
     factorDescription: {
@@ -746,13 +859,13 @@ const createStyles = (colors: ThemeColors) =>
     },
     scoreTiersTitle: {
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
       marginBottom: Spacing.xs,
     },
     tierRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: Spacing.sm,
       marginVertical: 4,
     },
@@ -768,20 +881,20 @@ const createStyles = (colors: ThemeColors) =>
     modalFooterText: {
       fontSize: Typography.sm,
       color: colors.textSecondary,
-      textAlign: 'center',
+      textAlign: "center",
       marginTop: Spacing.md,
-      fontStyle: 'italic',
+      fontStyle: "italic",
     },
     modalCloseButton: {
       backgroundColor: colors.primary,
       borderRadius: BorderRadius.md,
       paddingVertical: Spacing.md,
-      alignItems: 'center',
+      alignItems: "center",
       marginTop: Spacing.sm,
     },
     modalCloseButtonText: {
       color: colors.background,
       fontSize: Typography.base,
-      fontWeight: '600',
+      fontWeight: "600",
     },
   });
