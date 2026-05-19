@@ -13,6 +13,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
+import { LocationPicker, LocationData } from '@/components/LocationPicker';
 import { supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
 import { useAuthStore } from '@/store/authStore';
