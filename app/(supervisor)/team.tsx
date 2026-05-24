@@ -14,12 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type TeamMember = {
   id: string;
@@ -32,6 +33,8 @@ type TeamMember = {
 };
 
 export default function SupervisorTeamScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const user = useAuthStore((state) => state.user);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +100,7 @@ export default function SupervisorTeamScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading employees...</Text>
       </View>
     );
@@ -107,7 +110,7 @@ export default function SupervisorTeamScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={BrandColors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Employee Management</Text>
@@ -134,7 +137,7 @@ export default function SupervisorTeamScreen() {
       <View style={styles.list}>
         {pendingMembers.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <IconSymbol name="checkmark.circle.fill" size={30} color={BrandColors.primary} />
+            <IconSymbol name="checkmark.circle.fill" size={30} color={colors.primary} />
             <Text style={styles.emptyTitle}>No pending registrations</Text>
             <Text style={styles.emptyText}>New employees who join your organization will appear here.</Text>
           </Card>
@@ -142,6 +145,8 @@ export default function SupervisorTeamScreen() {
           pendingMembers.map((member) => (
             <MemberApprovalCard
               key={member.id}
+              styles={styles}
+              colors={colors}
               member={member}
               updating={updatingId === member.id}
               onApprove={() => handleStatusUpdate(member.id, 'active')}
@@ -158,7 +163,7 @@ export default function SupervisorTeamScreen() {
             <Text style={styles.emptyTitle}>No active employees yet</Text>
           </Card>
         ) : (
-          activeMembers.map((member) => <TrustScoreRow key={member.id} member={member} />)
+          activeMembers.map((member) => <TrustScoreRow key={member.id} member={member} styles={styles} />)
         )}
       </View>
     </ScrollView>
@@ -166,11 +171,15 @@ export default function SupervisorTeamScreen() {
 }
 
 function MemberApprovalCard({
+  styles,
+  colors,
   member,
   updating,
   onApprove,
   onReject,
 }: {
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
   member: TeamMember;
   updating: boolean;
   onApprove: () => void;
@@ -179,7 +188,7 @@ function MemberApprovalCard({
   return (
     <Card style={styles.memberCard}>
       <View style={styles.memberTop}>
-        <Avatar name={member.name} />
+        <Avatar name={member.name} styles={styles} />
         <View style={styles.memberInfo}>
           <Text style={styles.memberName}>{member.name}</Text>
           <Text style={styles.memberEmail}>{member.email}</Text>
@@ -191,16 +200,16 @@ function MemberApprovalCard({
           style={[styles.actionButton, styles.rejectButton]}
           disabled={updating}
           onPress={onReject}>
-          <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+          <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.approveButton]}
           disabled={updating}
           onPress={onApprove}>
           {updating ? (
-            <ActivityIndicator color={BrandColors.background} />
+            <ActivityIndicator color={colors.background} />
           ) : (
-            <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+            <Text style={[styles.actionText, { color: colors.background }]}>Approve</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -208,11 +217,11 @@ function MemberApprovalCard({
   );
 }
 
-function TrustScoreRow({ member }: { member: TeamMember }) {
+function TrustScoreRow({ member, styles }: { member: TeamMember; styles: ReturnType<typeof createStyles> }) {
   return (
     <Card style={styles.trustRow}>
       <View style={styles.trustLeft}>
-        <Avatar name={member.name} small />
+        <Avatar name={member.name} styles={styles} small />
         <View style={styles.memberInfo}>
           <Text style={styles.memberName}>{member.name}</Text>
           <Text style={styles.memberEmail}>{member.role === 'supervisor' ? 'Supervisor' : 'Employee'}</Text>
@@ -223,7 +232,7 @@ function TrustScoreRow({ member }: { member: TeamMember }) {
   );
 }
 
-function Avatar({ name, small = false }: { name: string; small?: boolean }) {
+function Avatar({ name, styles, small = false }: { name: string; styles: ReturnType<typeof createStyles>; small?: boolean }) {
   const initials = name
     .split(' ')
     .map((part) => part[0])
@@ -246,20 +255,21 @@ function formatDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     gap: Spacing.md,
   },
   loadingText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
   },
   header: {
@@ -267,18 +277,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing['2xl'],
   },
   headerEyebrow: {
-    color: BrandColors.primary,
+    color: colors.primary,
     fontSize: Typography.sm,
     fontWeight: '800',
     marginBottom: Spacing.xs,
   },
   headerTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography['3xl'],
     fontWeight: '800',
   },
   headerSubtitle: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.base,
     marginTop: Spacing.xs,
   },
@@ -295,18 +305,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   summaryValue: {
-    color: BrandColors.primary,
+    color: colors.primary,
     fontSize: Typography['2xl'],
     fontWeight: '800',
   },
   summaryLabel: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.xs,
     textAlign: 'center',
     marginTop: Spacing.xs,
   },
   sectionTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.lg,
     fontWeight: '700',
     marginHorizontal: Spacing.lg,
@@ -329,7 +339,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -339,7 +349,7 @@ const styles = StyleSheet.create({
     height: 42,
   },
   avatarText: {
-    color: BrandColors.background,
+    color: colors.background,
     fontSize: Typography.lg,
     fontWeight: '800',
   },
@@ -350,17 +360,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.base,
     fontWeight: '700',
   },
   memberEmail: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     marginTop: 2,
   },
   memberMeta: {
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
     fontSize: Typography.xs,
     marginTop: Spacing.xs,
   },
@@ -376,12 +386,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: BrandColors.borderLight,
+    borderColor: colors.borderLight,
   },
   approveButton: {
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
   },
   actionText: {
     fontSize: Typography.sm,
@@ -403,16 +413,17 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
   },
   emptyTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.lg,
     fontWeight: '700',
     marginTop: Spacing.sm,
     textAlign: 'center',
   },
   emptyText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     textAlign: 'center',
     marginTop: Spacing.xs,
   },
-});
+  });
+}

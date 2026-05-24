@@ -3,7 +3,7 @@
  * Dashboard for pending requests, registrations, and team health.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,12 +15,13 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type DashboardSummary = {
   pendingRegistrations: number;
@@ -49,6 +50,8 @@ const emptySummary: DashboardSummary = {
 };
 
 export default function SupervisorHomeScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -101,7 +104,7 @@ export default function SupervisorHomeScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading supervisor dashboard...</Text>
       </View>
     );
@@ -114,7 +117,7 @@ export default function SupervisorHomeScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={BrandColors.primary}
+          tintColor={colors.primary}
         />
       }>
       <View style={styles.header}>
@@ -123,46 +126,54 @@ export default function SupervisorHomeScreen() {
           <Text style={styles.userName}>{user?.name || 'Supervisor'}</Text>
         </View>
         <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={22} color={BrandColors.textMuted} />
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={22} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.metricsGrid}>
         <MetricCard
+          styles={styles}
           label="Pending Requests"
           value={summary.pendingRequests}
           icon="hourglass"
-          color={BrandColors.warning}
+          color={colors.warning}
         />
         <MetricCard
+          styles={styles}
           label="New Registrations"
           value={summary.pendingRegistrations}
           icon="person.badge.plus"
-          color={BrandColors.primary}
+          color={colors.primary}
         />
         <MetricCard
+          styles={styles}
           label="Active Employees"
           value={summary.activeEmployees}
           icon="person.2.fill"
-          color={BrandColors.info}
+          color={colors.info}
         />
         <MetricCard
+          styles={styles}
           label="Pending Reports"
           value={summary.pendingReports}
           icon="doc.text.magnifyingglass"
-          color={BrandColors.error}
+          color={colors.error}
         />
       </View>
 
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickActions}>
         <ActionCard
+          styles={styles}
+          colors={colors}
           title="Review Requests"
           subtitle={`${summary.pendingRequests} waiting`}
           icon="checkmark.seal.fill"
           onPress={() => router.push('/(supervisor)/request-review')}
         />
         <ActionCard
+          styles={styles}
+          colors={colors}
           title="Manage Employees"
           subtitle={`${summary.pendingRegistrations} new accounts`}
           icon="person.crop.circle.badge.checkmark"
@@ -179,7 +190,7 @@ export default function SupervisorHomeScreen() {
 
       <Card style={styles.listCard}>
         {recentRequests.length === 0 ? (
-          <EmptyState text="No pending requests right now" />
+          <EmptyState text="No pending requests right now" styles={styles} colors={colors} />
         ) : (
           recentRequests.map((request) => (
             <View key={request.id} style={styles.requestRow}>
@@ -204,11 +215,13 @@ export default function SupervisorHomeScreen() {
 }
 
 function MetricCard({
+  styles,
   label,
   value,
   icon,
   color,
 }: {
+  styles: ReturnType<typeof createStyles>;
   label: string;
   value: number;
   icon: React.ComponentProps<typeof IconSymbol>['name'];
@@ -226,11 +239,15 @@ function MetricCard({
 }
 
 function ActionCard({
+  styles,
+  colors,
   title,
   subtitle,
   icon,
   onPress,
 }: {
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
   title: string;
   subtitle: string;
   icon: React.ComponentProps<typeof IconSymbol>['name'];
@@ -239,21 +256,21 @@ function ActionCard({
   return (
     <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.75}>
       <View style={styles.actionIcon}>
-        <IconSymbol name={icon} size={24} color={BrandColors.primary} />
+        <IconSymbol name={icon} size={24} color={colors.primary} />
       </View>
       <View style={styles.actionText}>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionSubtitle}>{subtitle}</Text>
       </View>
-      <IconSymbol name="chevron.right" size={22} color={BrandColors.textMuted} />
+      <IconSymbol name="chevron.right" size={22} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text, styles, colors }: { text: string; styles: ReturnType<typeof createStyles>; colors: ThemeColors }) {
   return (
     <View style={styles.emptyState}>
-      <IconSymbol name="checkmark.circle.fill" size={26} color={BrandColors.primary} />
+      <IconSymbol name="checkmark.circle.fill" size={26} color={colors.primary} />
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
@@ -270,20 +287,21 @@ function formatDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     gap: Spacing.md,
   },
   loadingText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
   },
   header: {
@@ -294,11 +312,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing['2xl'],
   },
   greeting: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.base,
   },
   userName: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography['2xl'],
     fontWeight: '700',
   },
@@ -325,12 +343,12 @@ metricCard: {
     marginBottom: Spacing.md,
   },
   metricValue: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography['3xl'],
     fontWeight: '800',
   },
   metricLabel: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     marginTop: Spacing.xs,
   },
@@ -342,14 +360,14 @@ metricCard: {
     marginBottom: Spacing.md,
   },
   sectionTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.lg,
     fontWeight: '700',
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   linkText: {
-    color: BrandColors.primary,
+    color: colors.primary,
     fontSize: Typography.sm,
     fontWeight: '700',
   },
@@ -361,9 +379,9 @@ metricCard: {
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BrandColors.card,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: BrandColors.border,
+    borderColor: colors.border,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
   },
@@ -371,7 +389,7 @@ metricCard: {
     width: 48,
     height: 48,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -380,12 +398,12 @@ metricCard: {
     flex: 1,
   },
   actionTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.base,
     fontWeight: '700',
   },
   actionSubtitle: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     marginTop: 2,
   },
@@ -398,24 +416,24 @@ metricCard: {
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.border,
+    borderBottomColor: colors.border,
   },
   requestContent: {
     flex: 1,
     marginRight: Spacing.md,
   },
   requestTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.base,
     fontWeight: '700',
   },
   requestMeta: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     marginTop: 2,
   },
   requestReason: {
-    color: BrandColors.textMuted,
+    color: colors.textMuted,
     fontSize: Typography.sm,
     marginTop: Spacing.xs,
   },
@@ -425,7 +443,8 @@ metricCard: {
     gap: Spacing.sm,
   },
   emptyText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
   },
-});
+  });
+}

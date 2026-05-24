@@ -43,6 +43,8 @@ export const BrandColors = {
   trustLow: '#EF4444', // 0-49
 };
 
+const LightGreen = '#1fa961';
+
 export const Colors = {
   light: {
     text: '#11181C',
@@ -51,24 +53,24 @@ export const Colors = {
     background: '#F8FAFC',
     backgroundLight: '#FFFFFF',
     backgroundLighter: '#E2E8F0',
-    tint: BrandColors.primary,
+    tint: LightGreen,
     icon: '#687076',
     tabIconDefault: '#687076',
-    tabIconSelected: BrandColors.primary,
-    primary: BrandColors.primary,
-    primaryDark: BrandColors.primaryDark,
-    primaryLight: BrandColors.primaryLight,
-    secondary: BrandColors.primaryDark,
-    accent: BrandColors.primaryLight,
+    tabIconSelected: LightGreen,
+    primary: LightGreen,
+    primaryDark: LightGreen,
+    primaryLight: LightGreen,
+    secondary: LightGreen,
+    accent: LightGreen,
     card: '#FFFFFF',
     cardLight: '#F1F5F9',
     border: '#CBD5E1',
     borderLight: '#E2E8F0',
-    success: '#059669',
+    success: LightGreen,
     warning: '#D97706',
     error: '#DC2626',
     info: '#2563EB',
-    trustHigh: '#059669',
+    trustHigh: LightGreen,
     trustMedium: '#D97706',
     trustLow: '#DC2626',
   },

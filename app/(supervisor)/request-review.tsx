@@ -4,7 +4,7 @@
  */
 
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,12 +15,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { BorderRadius, BrandColors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type ReviewRequest = {
   id: string;
@@ -37,6 +38,8 @@ type ReviewRequest = {
 };
 
 export default function SupervisorRequestReviewScreen() {
+  const colors = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const user = useAuthStore((state) => state.user);
   const [requests, setRequests] = useState<ReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +89,7 @@ export default function SupervisorRequestReviewScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading pending requests...</Text>
       </View>
     );
@@ -96,7 +99,7 @@ export default function SupervisorRequestReviewScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={BrandColors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
       }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Requests</Text>
@@ -107,7 +110,7 @@ export default function SupervisorRequestReviewScreen() {
       <View style={styles.list}>
         {requests.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <IconSymbol name="checkmark.circle.fill" size={32} color={BrandColors.primary} />
+            <IconSymbol name="checkmark.circle.fill" size={32} color={colors.primary} />
             <Text style={styles.emptyTitle}>All caught up</Text>
             <Text style={styles.emptyText}>New holiday and overtime requests will appear here.</Text>
           </Card>
@@ -127,7 +130,7 @@ export default function SupervisorRequestReviewScreen() {
               </View>
 
               <View style={styles.dateRow}>
-                <IconSymbol name="calendar" size={16} color={BrandColors.textMuted} />
+                <IconSymbol name="calendar" size={16} color={colors.textMuted} />
                 <Text style={styles.dateText}>
                   {formatLongDate(request.start_date)} to {formatLongDate(request.end_date)}
                 </Text>
@@ -140,19 +143,19 @@ export default function SupervisorRequestReviewScreen() {
                   style={[styles.actionButton, styles.rejectButton]}
                   disabled={reviewingId === request.id}
                   onPress={() => handleReview(request.id, 'rejected')}>
-                  <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={BrandColors.error} />
-                  <Text style={[styles.actionText, { color: BrandColors.error }]}>Reject</Text>
+                  <IconSymbol name="person.crop.circle.badge.xmark" size={18} color={colors.error} />
+                  <Text style={[styles.actionText, { color: colors.error }]}>Reject</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.approveButton]}
                   disabled={reviewingId === request.id}
                   onPress={() => handleReview(request.id, 'approved')}>
                   {reviewingId === request.id ? (
-                    <ActivityIndicator color={BrandColors.background} />
+                    <ActivityIndicator color={colors.background} />
                   ) : (
                     <>
-                      <IconSymbol name="checkmark.seal.fill" size={18} color={BrandColors.background} />
-                      <Text style={[styles.actionText, { color: BrandColors.background }]}>Approve</Text>
+                      <IconSymbol name="checkmark.seal.fill" size={18} color={colors.background} />
+                      <Text style={[styles.actionText, { color: colors.background }]}>Approve</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -173,20 +176,21 @@ function formatLongDate(date: string) {
   });
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: BrandColors.background,
+    backgroundColor: colors.background,
     gap: Spacing.md,
   },
   loadingText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
   },
   header: {
@@ -194,18 +198,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing['2xl'],
   },
   headerEyebrow: {
-    color: BrandColors.primary,
+    color: colors.primary,
     fontSize: Typography.sm,
     fontWeight: '800',
     marginBottom: Spacing.xs,
   },
   headerTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography['3xl'],
     fontWeight: '800',
   },
   headerSubtitle: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.base,
     marginTop: Spacing.xs,
   },
@@ -226,24 +230,24 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   employeeName: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.lg,
     fontWeight: '700',
   },
   employeeEmail: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     marginTop: 2,
   },
   typeBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: BrandColors.backgroundLighter,
+    backgroundColor: colors.backgroundLighter,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
   },
   typeText: {
-    color: BrandColors.primary,
+    color: colors.primary,
     fontSize: Typography.xs,
     fontWeight: '800',
   },
@@ -253,11 +257,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   dateText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
   },
   reason: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.base,
     lineHeight: 22,
   },
@@ -275,12 +279,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   rejectButton: {
-    backgroundColor: BrandColors.backgroundLight,
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: BrandColors.borderLight,
+    borderColor: colors.borderLight,
   },
   approveButton: {
-    backgroundColor: BrandColors.primary,
+    backgroundColor: colors.primary,
   },
   actionText: {
     fontSize: Typography.sm,
@@ -291,15 +295,16 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing['2xl'],
   },
   emptyTitle: {
-    color: BrandColors.text,
+    color: colors.text,
     fontSize: Typography.lg,
     fontWeight: '700',
     marginTop: Spacing.md,
   },
   emptyText: {
-    color: BrandColors.textSecondary,
+    color: colors.textSecondary,
     fontSize: Typography.sm,
     textAlign: 'center',
     marginTop: Spacing.xs,
   },
-});
+  });
+}
