@@ -2,7 +2,7 @@
  * Reusable Input Component
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput,
@@ -33,16 +33,31 @@ export function Input({
 }: InputProps) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, props.multiline && styles.multilineContainer, error && styles.inputError]}>
+      <View
+        style={[
+          styles.inputContainer,
+          isFocused && styles.inputFocused,
+          props.multiline && styles.multilineContainer,
+          error && styles.inputError,
+        ]}>
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         <TextInput
           style={[styles.input, props.multiline && styles.multilineInput, style]}
           placeholderTextColor={colors.textMuted}
           {...props}
+          onFocus={(event) => {
+            setIsFocused(true);
+            props.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setIsFocused(false);
+            props.onBlur?.(event);
+          }}
         />
         {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
       </View>
@@ -59,18 +74,21 @@ StyleSheet.create({
   label: {
     fontSize: Typography.sm,
     fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: Spacing.xs,
+    color: colors.text,
+    marginBottom: Spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.cardLight,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     paddingHorizontal: Spacing.md,
-    height: 50,
+    minHeight: 52,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
   },
   multilineContainer: {
     minHeight: 112,
@@ -86,6 +104,7 @@ StyleSheet.create({
     fontSize: Typography.base,
     color: colors.text,
     paddingVertical: 0,
+    lineHeight: Typography.lineHeightBase,
   },
   multilineInput: {
     minHeight: 92,
@@ -102,6 +121,7 @@ StyleSheet.create({
   errorText: {
     fontSize: Typography.xs,
     color: colors.error,
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
+    fontWeight: '600',
   },
 });

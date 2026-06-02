@@ -1,6 +1,6 @@
 /**
  * TrustEnd Theme Configuration
- * Color Palette: Dark navy background, electric green accent
+ * Color Palette: professional cyan/green workforce SaaS system
  */
 
 import { Platform } from 'react-native';
@@ -8,34 +8,36 @@ import { Platform } from 'react-native';
 // TrustEnd Brand Colors
 export const BrandColors = {
   // Primary Colors
-  primary: '#00F5A0', // Electric Green
-  primaryDark: '#00C080',
-  primaryLight: '#4DFFC8',
+  primary: '#10B981',
+  primaryDark: '#059669',
+  primaryLight: '#6EE7B7',
+  cyan: '#0891B2',
+  cyanLight: '#22D3EE',
 
   // Background Colors
-  background: '#0D1B2A', // Dark Navy
-  backgroundLight: '#1B263B',
-  backgroundLighter: '#2D3E50',
+  background: '#07111F',
+  backgroundLight: '#0F2033',
+  backgroundLighter: '#18324A',
 
   // Text Colors
-  text: '#FFFFFF',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  text: '#F8FAFC',
+  textSecondary: '#B6C6D8',
+  textMuted: '#7F92A8',
 
   // Card Colors
-  card: '#1B263B',
-  cardLight: '#2D3E50',
+  card: '#102235',
+  cardLight: '#18324A',
 
   // Border Colors
-  border: '#2D3E50',
-  borderLight: '#3D4E60',
+  border: '#223A52',
+  borderLight: '#34546E',
 
   // Status Colors
   success: '#00F5A0',
   warning: '#F59E0B',
   error: '#EF4444',
   danger: '#EF4444',
-  info: '#3B82F6',
+  info: '#0891B2',
 
   // Trust Score Colors
   trustHigh: '#00F5A0', // 80-100
@@ -45,25 +47,25 @@ export const BrandColors = {
 
 export const Colors = {
   light: {
-    text: '#11181C',
+    text: '#0F172A',
     textSecondary: '#475569',
     textMuted: '#64748B',
-    background: '#F8FAFC',
+    background: '#F4FBFC',
     backgroundLight: '#FFFFFF',
-    backgroundLighter: '#E2E8F0',
+    backgroundLighter: '#E6F3F6',
     tint: BrandColors.primary,
-    icon: '#687076',
+    icon: '#52677A',
     tabIconDefault: '#687076',
     tabIconSelected: BrandColors.primary,
     primary: BrandColors.primary,
     primaryDark: BrandColors.primaryDark,
     primaryLight: BrandColors.primaryLight,
-    secondary: BrandColors.primaryDark,
-    accent: BrandColors.primaryLight,
+    secondary: BrandColors.cyan,
+    accent: BrandColors.cyanLight,
     card: '#FFFFFF',
-    cardLight: '#F1F5F9',
-    border: '#CBD5E1',
-    borderLight: '#E2E8F0',
+    cardLight: '#F8FEFF',
+    border: '#D6E7ED',
+    borderLight: '#E6F0F4',
     success: '#059669',
     warning: '#D97706',
     error: '#DC2626',
@@ -86,8 +88,8 @@ export const Colors = {
     primary: BrandColors.primary,
     primaryDark: BrandColors.primaryDark,
     primaryLight: BrandColors.primaryLight,
-    secondary: BrandColors.primaryDark,
-    accent: BrandColors.primaryLight,
+    secondary: BrandColors.cyan,
+    accent: BrandColors.cyanLight,
     card: BrandColors.card,
     cardLight: BrandColors.cardLight,
     border: BrandColors.border,
@@ -137,12 +139,18 @@ export const Typography = {
   semibold: '600',
   bold: '700',
   extrabold: '800',
+
+  // Line Heights
+  lineHeightTight: 20,
+  lineHeightBase: 24,
+  lineHeightRelaxed: 28,
 };
 
 // Spacing
 export const Spacing = {
   xs: 4,
   sm: 8,
+  smd: 12,
   md: 16,
   lg: 24,
   xl: 32,
@@ -152,10 +160,11 @@ export const Spacing = {
 
 // Border Radius
 export const BorderRadius = {
+  xs: 6,
   sm: 8,
   md: 12,
-  lg: 16,
-  xl: 24,
+  lg: 14,
+  xl: 20,
   full: 9999,
 };
 
@@ -164,29 +173,29 @@ export const Shadows = {
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
     elevation: 4,
   },
   lg: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.16,
+    shadowRadius: 28,
     elevation: 8,
   },
   glow: {
     shadowColor: BrandColors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
     elevation: 12,
   },
 };

@@ -152,7 +152,7 @@ export default function EmployeeHomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -171,7 +171,7 @@ export default function EmployeeHomeScreen() {
       </View>
 
       {/* Trust Score Card */}
-      <Card style={styles.trustScoreCard}>
+      <Card style={styles.trustScoreCard} variant="elevated">
         <View style={styles.trustScoreHeader}>
           <Text style={styles.trustScoreTitle}>Your Trust Score</Text>
           <TouchableOpacity onPress={() => setShowTrustScoreModal(true)}>
@@ -191,7 +191,7 @@ export default function EmployeeHomeScreen() {
       </Card>
 
       {/* Today Status Card */}
-      <Card style={styles.statusCard}>
+      <Card style={styles.statusCard} variant="elevated">
         <Text style={styles.statusTitle}>Today Status</Text>
         <View style={styles.statusContent}>
           <View
@@ -256,7 +256,7 @@ export default function EmployeeHomeScreen() {
                 <IconSymbol
                   name="location.fill"
                   size={20}
-                  color={colors.background}
+                  color="#FFFFFF"
                 />
                 <Text style={styles.checkInButtonText}>Check In</Text>
               </>
@@ -275,7 +275,7 @@ export default function EmployeeHomeScreen() {
                 <IconSymbol
                   name="location.slash"
                   size={20}
-                  color={colors.background}
+                  color="#FFFFFF"
                 />
                 <Text style={styles.checkOutButtonText}>Check Out</Text>
               </>
@@ -525,9 +525,13 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    content: {
+      paddingBottom: Spacing["2xl"],
+    },
     header: {
       padding: Spacing.lg,
       paddingTop: Spacing["2xl"],
+      paddingBottom: Spacing.md,
     },
     headerTop: {
       flexDirection: "row",
@@ -535,21 +539,32 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: "center",
     },
     greeting: {
-      fontSize: Typography.base,
+      fontSize: Typography.sm,
       color: colors.textSecondary,
+      fontWeight: "700",
+      textTransform: "uppercase",
     },
     userName: {
       fontSize: Typography["2xl"],
-      fontWeight: "700",
+      fontWeight: "800",
       color: colors.text,
+      marginTop: Spacing.xs,
     },
     logoutButton: {
-      padding: Spacing.sm,
+      width: 42,
+      height: 42,
+      borderRadius: BorderRadius.full,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     trustScoreCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
       alignItems: "center",
+      borderColor: `${colors.primary}55`,
     },
     trustScoreHeader: {
       flexDirection: "row",
@@ -558,7 +573,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     trustScoreTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
       marginRight: Spacing.xs,
     },
@@ -573,10 +588,11 @@ const createStyles = (colors: ThemeColors) =>
     statusCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
+      borderColor: `${colors.secondary}55`,
     },
     statusTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
       marginBottom: Spacing.md,
     },
@@ -603,9 +619,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkInButtonText: {
-      color: colors.background,
+      color: "#FFFFFF",
       fontSize: Typography.base,
       fontWeight: "600",
     },
@@ -617,9 +634,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkOutButtonText: {
-      color: colors.background,
+      color: "#FFFFFF",
       fontSize: Typography.base,
       fontWeight: "600",
     },
@@ -670,7 +688,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     sectionTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
     },
     edgeAlignedSectionTitle: {
@@ -740,7 +758,9 @@ const createStyles = (colors: ThemeColors) =>
       padding: Spacing.md,
       borderRadius: BorderRadius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderLight,
+      minHeight: 110,
+      justifyContent: "center",
     },
     quickActionIcon: {
       width: 48,
@@ -753,8 +773,9 @@ const createStyles = (colors: ThemeColors) =>
     },
     quickActionText: {
       fontSize: Typography.sm,
-      fontWeight: "600",
+      fontWeight: "700",
       color: colors.text,
+      textAlign: "center",
     },
     activityCard: {
       marginBottom: Spacing["2xl"],

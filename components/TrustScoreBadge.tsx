@@ -47,7 +47,7 @@ export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: T
         style={[
           styles.badge,
           sizeStyles[size].container,
-          { borderColor: tier.color },
+          { borderColor: tier.color, backgroundColor: `${tier.color}14` },
         ]}>
         <Text
           style={[
@@ -74,17 +74,16 @@ StyleSheet.create({
   },
   badge: {
     borderRadius: BorderRadius.full,
-    borderWidth: 3,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.card,
   },
   score: {
     fontWeight: '800',
   },
   label: {
     fontSize: Typography.xs,
-    fontWeight: '600',
-    marginTop: Spacing.xs,
+    fontWeight: '700',
+    marginTop: Spacing.sm,
   },
 });

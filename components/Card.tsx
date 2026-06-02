@@ -11,7 +11,7 @@ interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   onPress?: () => void;
-  variant?: 'default' | 'elevated' | 'outlined';
+  variant?: 'default' | 'elevated' | 'outlined' | 'soft';
 }
 
 export function Card({ children, style, onPress, variant = 'default' }: CardProps) {
@@ -40,15 +40,23 @@ StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: BorderRadius.lg,
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
+    ...Shadows.sm,
   },
   elevated: {
-    ...Shadows.md,
+    borderColor: colors.borderLight,
+    ...Shadows.lg,
   },
   outlined: {
     backgroundColor: 'transparent',
+    borderColor: colors.borderLight,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  soft: {
+    backgroundColor: colors.cardLight,
     borderColor: colors.borderLight,
   },
 });
