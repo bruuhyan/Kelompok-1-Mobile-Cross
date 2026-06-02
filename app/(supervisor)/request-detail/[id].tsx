@@ -18,6 +18,7 @@ import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type RequestDetail = {
   id: string;
@@ -139,7 +140,8 @@ export default function RequestDetailScreen() {
   const status = statusConfig[request.status];
 
   return (
-    <>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.header}>
@@ -196,7 +198,7 @@ export default function RequestDetailScreen() {
           />
         </View>
       </ScrollView>
-    </>
+    </View>
   );
 }
 

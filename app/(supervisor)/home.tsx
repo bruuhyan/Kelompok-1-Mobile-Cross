@@ -24,6 +24,7 @@ import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatTime } from '@/utils/helpers';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type DashboardSummary = {
   pendingRegistrations: number;
@@ -218,16 +219,18 @@ export default function SupervisorHomeScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Supervisor Dashboard</Text>
@@ -400,6 +403,7 @@ export default function SupervisorHomeScreen() {
         )}
       </Card>
     </ScrollView>
+    </View>
   );
 }
 

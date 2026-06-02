@@ -27,6 +27,7 @@ import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import DecorativeShapes from '@/components/DecorativeShapes';
 
 type Organization = {
   name?: string;
@@ -248,6 +249,7 @@ export default function EmployeeProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DecorativeShapes variant="employee" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity

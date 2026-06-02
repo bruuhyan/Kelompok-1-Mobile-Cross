@@ -23,6 +23,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { LocationPicker, LocationData } from '@/components/LocationPicker';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
@@ -119,6 +120,7 @@ export default function CreateOrganizationScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="auth" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">

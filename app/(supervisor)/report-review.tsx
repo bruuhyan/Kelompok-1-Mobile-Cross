@@ -24,6 +24,7 @@ import {
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supabase } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type ReportSubmission = {
   id: string;
@@ -152,6 +153,7 @@ export default function SupervisorReportReviewScreen() {
 
   return (
     <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
       <View style={styles.header}>
         <Text style={styles.title}>Reports</Text>
         <Text style={styles.subtitle}>Review employee report submissions.</Text>

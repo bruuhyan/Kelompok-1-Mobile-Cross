@@ -30,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 export default function EmployeeHomeScreen() {
   const colors = useAppTheme();
@@ -179,6 +180,7 @@ export default function EmployeeHomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DecorativeShapes variant="employee" />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>

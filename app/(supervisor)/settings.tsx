@@ -21,6 +21,7 @@ import { supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
+import DecorativeShapes from "@/components/DecorativeShapes";
 import { isValidBssid, isValidIpRange, isValidWorkTime } from '@/utils/helpers';
 
 export default function SupervisorSettingsScreen() {
@@ -255,7 +256,9 @@ export default function SupervisorSettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -402,6 +405,7 @@ export default function SupervisorSettingsScreen() {
         </Card>
       </View>
     </ScrollView>
+    </View>
   );
 }
 

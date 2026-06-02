@@ -1,10 +1,6 @@
-/**
- * Login Screen
- * User authentication with email and password
- */
-
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import DecorativeShapes from "@/components/DecorativeShapes";
 import { Input } from "@/components/Input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";
@@ -68,21 +64,18 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // Sign in with Supabase
       const { user } = await authService.signIn(email, password);
 
       if (!user) {
         throw new Error(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
-      // Get user profile
       const profile = await profileService.getProfile(user.id);
 
       if (!profile) {
         throw new Error(MISSING_PROFILE_MESSAGE);
       }
 
-      // Check account status
       if (profile.status === "pending") {
         setUser(profile);
         router.replace("/(auth)/waiting-approval");
@@ -93,10 +86,8 @@ export default function LoginScreen() {
         throw new Error(ERROR_MESSAGES.ACCOUNT_SUSPENDED);
       }
 
-      // Set user in store
       setUser(profile);
 
-      // Route based on role
       if (profile.role === "supervisor" || profile.role === "admin") {
         router.replace("/(supervisor)/home");
       } else {
@@ -104,7 +95,6 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      // Show error message (in real app, use toast/snackbar)
       if (error?.code === "PGRST116") {
         alert(MISSING_PROFILE_MESSAGE);
       } else {
@@ -121,23 +111,28 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <DecorativeShapes variant="auth" />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo and Title */}
         <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/android-icon-foreground.png")}
-            style={styles.logo}
-            contentFit="contain"
-          />
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require("@/assets/images/android-icon-foreground.png")}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
           <Text style={styles.eyebrow}>TrustEnd Workforce</Text>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>
             Sign in to manage attendance, requests, and workplace trust signals.
           </Text>
         </View>
+
         {/* Login Form */}
         <Card style={styles.formCard} variant="elevated">
           <Input
@@ -184,6 +179,7 @@ export default function LoginScreen() {
             style={styles.loginButton}
           />
         </Card>
+
         {/* Register Link */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Do not have an account? </Text>
@@ -191,21 +187,6 @@ export default function LoginScreen() {
             <Text style={styles.linkText}>Sign Up</Text>
           </TouchableOpacity>
         </View>
-        {/* Organization Options
-        <View style={styles.orgOptions}>
-          <Text style={styles.orgOptionsText}>New to TrustEnd? </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/(auth)/create-organization")}
-          >
-            <Text style={styles.linkText}>Create Organization</Text>
-          </TouchableOpacity>
-          <Text style={styles.orgOptionsText}> or </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/(auth)/join-organization")}
-          >
-            <Text style={styles.linkText}>Join with Code</Text>
-          </TouchableOpacity>
-        </View> */}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -228,20 +209,30 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: "flex-start",
       marginBottom: Spacing.xl,
     },
-    logo: {
-      width: 64,
-      height: 64,
-      borderRadius: BorderRadius.lg,
+    logoWrapper: {
+      width: 72,
+      height: 72,
+      borderRadius: BorderRadius.xl,
+      backgroundColor: colors.card,
+      alignItems: "center",
+      justifyContent: "center",
       marginBottom: Spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    logo: {
+      width: 48,
+      height: 48,
     },
     eyebrow: {
       color: colors.primary,
       fontSize: Typography.sm,
       fontWeight: "800",
+      letterSpacing: 1.2,
       marginBottom: Spacing.sm,
     },
     title: {
-      fontSize: Typography["3xl"],
+      fontSize: Typography["4xl"],
       fontWeight: "800",
       color: colors.text,
       marginBottom: Spacing.xs,
@@ -272,16 +263,5 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.base,
       color: colors.primary,
       fontWeight: "800",
-    },
-    orgOptions: {
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      flexWrap: "wrap",
-      marginTop: Spacing.sm,
-    },
-    orgOptionsText: {
-      fontSize: Typography.sm,
-      color: colors.textSecondary,
     },
   });

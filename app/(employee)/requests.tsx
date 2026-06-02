@@ -30,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type RequestMode = "holiday" | "overtime";
 
@@ -277,6 +278,7 @@ export default function EmployeeRequestsScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <DecorativeShapes variant="employee" />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"

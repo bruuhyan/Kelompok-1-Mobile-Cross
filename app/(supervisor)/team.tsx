@@ -11,6 +11,7 @@ import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/them
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supervisorService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
+import DecorativeShapes from "@/components/DecorativeShapes";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -146,16 +147,18 @@ export default function SupervisorTeamScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Employee Management</Text>
         <Text style={styles.headerTitle}>Team Overview</Text>
@@ -240,6 +243,7 @@ export default function SupervisorTeamScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
 

@@ -23,6 +23,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type AssignableEmployee = {
   id: string;
@@ -168,11 +169,13 @@ export default function SupervisorTaskScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-      }>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+        }>
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Task Management</Text>
         <Text style={styles.headerTitle}>Assign & Review</Text>
@@ -267,6 +270,7 @@ export default function SupervisorTaskScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
 

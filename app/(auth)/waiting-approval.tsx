@@ -17,6 +17,7 @@ import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/them
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { UserStatus } from '@/utils/types';
@@ -86,7 +87,9 @@ export default function WaitingApprovalScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <DecorativeShapes variant="auth" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
         <Image
@@ -157,6 +160,7 @@ export default function WaitingApprovalScreen() {
         </Text>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
