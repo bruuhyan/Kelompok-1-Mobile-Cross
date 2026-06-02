@@ -3,6 +3,7 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -36,6 +37,7 @@ export default function SupervisorSettingsScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGettingNetwork, setIsGettingNetwork] = useState(false);
+  const [ignoreCheckinTime, setIgnoreCheckinTime] = useState(false);
 
   const validateSettings = () => {
     const latitude = gpsLat.trim() ? Number(gpsLat) : null;
@@ -95,6 +97,7 @@ export default function SupervisorSettingsScreen() {
         setIpRange(data.ip_range || '');
         setWorkStart(data.work_start_time?.slice(0, 5) || '09:00');
         setWorkEnd(data.work_end_time?.slice(0, 5) || '17:00');
+        setIgnoreCheckinTime(data.ignore_checkin_time ?? false);
       }
     } catch (error) {
       console.error('Load settings error:', error);
@@ -235,6 +238,7 @@ export default function SupervisorSettingsScreen() {
         ip_range: ipRange.trim() || null,
         work_start_time: workStart.trim() || null,
         work_end_time: workEnd.trim() || null,
+        ignore_checkin_time: ignoreCheckinTime,
       });
 
       Alert.alert('Success', 'Organization settings saved');
@@ -360,11 +364,26 @@ export default function SupervisorSettingsScreen() {
             </View>
           </View>
 
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleLabel}>Ignore Check-in Time</Text>
+              <Text style={styles.toggleDescription}>
+                When enabled, employees will not be marked late regardless of check-in time,
+                and late penalties will not affect trust scores.
+              </Text>
+            </View>
+            <Switch
+              value={ignoreCheckinTime}
+              onValueChange={setIgnoreCheckinTime}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={ignoreCheckinTime ? colors.primary : colors.textMuted}
+            />
+          </View>
+
           <Button
             title="Save Settings"
             onPress={handleSave}
             loading={isSaving}
-            disabled={isSaving}
             size="large"
           />
         </Card>
@@ -441,5 +460,24 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.sm,
       fontWeight: '600',
       color: colors.primary,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginTop: Spacing.md,
+    },
+    toggleInfo: {
+      flex: 1,
+    },
+    toggleLabel: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '600',
+    },
+    toggleDescription: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: Spacing.xs,
     },
   });

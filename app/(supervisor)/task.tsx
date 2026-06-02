@@ -18,6 +18,7 @@ import {
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
+import { DatePickerInput } from '@/components/DatePickerInput';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { supervisorService } from '@/services/supabase';
@@ -224,7 +225,7 @@ export default function SupervisorTaskScreen() {
           multiline
           minHeight={96}
         />
-        <TaskInput label="Due Date" value={dueDate} onChangeText={setDueDate} placeholder="YYYY-MM-DD, optional" />
+        <DatePickerInput label="Due Date" value={dueDate} onChange={setDueDate} placeholder="Select due date (optional)" />
 
         <TouchableOpacity
           style={[styles.primaryButton, (creating || employees.length === 0) && styles.disabledButton]}

@@ -491,6 +491,7 @@ export const supervisorService = {
     ip_range?: string | null;
     work_start_time?: string | null;
     work_end_time?: string | null;
+    ignore_checkin_time?: boolean | null;
   }) {
     const { data, error } = await supabase
       .from('org_settings')
@@ -504,6 +505,7 @@ export const supervisorService = {
         ip_range: settings.ip_range,
         work_start_time: settings.work_start_time,
         work_end_time: settings.work_end_time,
+        ignore_checkin_time: settings.ignore_checkin_time,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'organization_id',

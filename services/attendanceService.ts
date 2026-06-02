@@ -529,7 +529,8 @@ export const attendanceService = {
   async performCheckIn(data: CheckInData): Promise<AttendanceLog> {
     const timestamp = data.clientTimestamp ?? new Date().toISOString();
     const settings = await this.getOrgSettings(data.organizationId);
-    const late = isLate(timestamp, settings?.work_start_time);
+    const ignoreCheckinTime = settings?.ignore_checkin_time === true;
+    const late = ignoreCheckinTime ? false : isLate(timestamp, settings?.work_start_time);
 
     const { data: log, error } = await supabase
       .from('attendance_logs')
@@ -640,7 +641,7 @@ export const attendanceService = {
     };
   },
 
-  calculateTrustScore(logs: AttendanceLog[]): TrustScoreCalculation {
+  calculateTrustScore(logs: AttendanceLog[], ignoreCheckinTime = false): TrustScoreCalculation {
     const recentLogs = logs.filter((log) => {
       const ageMs = Date.now() - new Date(log.check_in_time).getTime();
       return ageMs <= THIRTY_DAYS_MS;
@@ -665,7 +666,7 @@ export const attendanceService = {
       const hasSpoofingViolation = flags.some((validation) => !!validation.spoofing_detected);
 
       const offenseWeights = [
-        log.is_late ? 1 : 0,
+        !ignoreCheckinTime && log.is_late ? 1 : 0,
         hasGpsViolation ? 4 : 0,
         hasWifiViolation ? 3 : 0,
         hasIpViolation ? 1 : 0,
@@ -700,7 +701,9 @@ export const attendanceService = {
 
   async recalculateTrustScore(userId: string): Promise<TrustScoreCalculation> {
     const { logs } = await this.fetchAttendanceHistory(userId, { limit: 60 });
-    const result = this.calculateTrustScore(logs);
+    const profile = await profileService.getProfile(userId);
+    const settings = profile ? await this.getOrgSettings(profile.organization_id) : null;
+    const result = this.calculateTrustScore(logs, settings?.ignore_checkin_time === true);
     await profileService.updateProfile(userId, { trust_score: result.score });
 
     const newestLog = logs[0];

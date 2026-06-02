@@ -3,7 +3,23 @@
  * Submit holiday and overtime requests.
  */
 
-import React, { useCallback, useState } from 'react';
+import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { DatePickerInput } from "@/components/DatePickerInput";
+import { Input } from "@/components/Input";
+import {
+  BorderRadius,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { requestService } from "@/services/supabase";
+import { useAuthStore } from "@/store/authStore";
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from "@/utils/constants";
+import type { Request as EmployeeRequest } from "@/utils/types";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -13,19 +29,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { Input } from '@/components/Input';
-import { requestService } from '@/services/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/utils/constants';
-import type { Request as EmployeeRequest } from '@/utils/types';
+} from "react-native";
 
-type RequestMode = 'holiday' | 'overtime';
+type RequestMode = "holiday" | "overtime";
 
 type HolidayErrors = {
   startDate?: string;
@@ -42,8 +48,8 @@ type OvertimeErrors = {
 const getTodayInputValue = () => {
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
@@ -60,12 +66,12 @@ const isEndDateBeforeStartDate = (startDate: string, endDate: string) => {
 };
 
 const formatDate = (value: string) => {
-  if (!value) return '-';
+  if (!value) return "-";
 
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
@@ -74,13 +80,14 @@ export default function EmployeeRequestsScreen() {
   const styles = createStyles(colors);
   const user = useAuthStore((state) => state.user);
 
-  const [mode, setMode] = useState<RequestMode>('holiday');
-  const [holidayStartDate, setHolidayStartDate] = useState(getTodayInputValue());
+  const [mode, setMode] = useState<RequestMode>("holiday");
+  const [holidayStartDate, setHolidayStartDate] =
+    useState(getTodayInputValue());
   const [holidayEndDate, setHolidayEndDate] = useState(getTodayInputValue());
-  const [holidayReason, setHolidayReason] = useState('');
+  const [holidayReason, setHolidayReason] = useState("");
   const [overtimeDate, setOvertimeDate] = useState(getTodayInputValue());
-  const [overtimeHours, setOvertimeHours] = useState('');
-  const [overtimeReason, setOvertimeReason] = useState('');
+  const [overtimeHours, setOvertimeHours] = useState("");
+  const [overtimeReason, setOvertimeReason] = useState("");
   const [holidayErrors, setHolidayErrors] = useState<HolidayErrors>({});
   const [overtimeErrors, setOvertimeErrors] = useState<OvertimeErrors>({});
   const [requests, setRequests] = useState<EmployeeRequest[]>([]);
@@ -95,7 +102,7 @@ export default function EmployeeRequestsScreen() {
       const data = await requestService.getUserRequests(user.id);
       setRequests(data as EmployeeRequest[]);
     } catch (error) {
-      console.error('Load requests error:', error);
+      console.error("Load requests error:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -113,13 +120,13 @@ export default function EmployeeRequestsScreen() {
     if (!holidayStartDate.trim()) {
       nextErrors.startDate = ERROR_MESSAGES.REQUIRED_FIELD;
     } else if (!isValidDateInput(holidayStartDate.trim())) {
-      nextErrors.startDate = 'Use YYYY-MM-DD format';
+      nextErrors.startDate = "Use YYYY-MM-DD format";
     }
 
     if (!holidayEndDate.trim()) {
       nextErrors.endDate = ERROR_MESSAGES.REQUIRED_FIELD;
     } else if (!isValidDateInput(holidayEndDate.trim())) {
-      nextErrors.endDate = 'Use YYYY-MM-DD format';
+      nextErrors.endDate = "Use YYYY-MM-DD format";
     }
 
     if (
@@ -127,7 +134,7 @@ export default function EmployeeRequestsScreen() {
       isValidDateInput(holidayEndDate.trim()) &&
       isEndDateBeforeStartDate(holidayStartDate.trim(), holidayEndDate.trim())
     ) {
-      nextErrors.endDate = 'End date cannot be before start date';
+      nextErrors.endDate = "End date cannot be before start date";
     }
 
     if (!holidayReason.trim()) {
@@ -145,15 +152,15 @@ export default function EmployeeRequestsScreen() {
     if (!overtimeDate.trim()) {
       nextErrors.date = ERROR_MESSAGES.REQUIRED_FIELD;
     } else if (!isValidDateInput(overtimeDate.trim())) {
-      nextErrors.date = 'Use YYYY-MM-DD format';
+      nextErrors.date = "Use YYYY-MM-DD format";
     }
 
     if (!overtimeHours.trim()) {
       nextErrors.hours = ERROR_MESSAGES.REQUIRED_FIELD;
     } else if (Number.isNaN(hours) || hours <= 0) {
-      nextErrors.hours = 'Hours must be greater than 0';
+      nextErrors.hours = "Hours must be greater than 0";
     } else if (hours > 24) {
-      nextErrors.hours = 'Hours cannot be more than 24';
+      nextErrors.hours = "Hours cannot be more than 24";
     }
 
     if (!overtimeReason.trim()) {
@@ -167,7 +174,7 @@ export default function EmployeeRequestsScreen() {
   const handleSubmitHoliday = async () => {
     if (!validateHoliday()) return;
     if (!user?.id || !user.organization_id) {
-      Alert.alert('Error', 'User profile is not ready yet');
+      Alert.alert("Error", "User profile is not ready yet");
       return;
     }
 
@@ -179,12 +186,12 @@ export default function EmployeeRequestsScreen() {
         reason: holidayReason,
       });
 
-      setHolidayReason('');
-      Alert.alert('Success', SUCCESS_MESSAGES.REQUEST_SUBMITTED);
+      setHolidayReason("");
+      Alert.alert("Success", SUCCESS_MESSAGES.REQUEST_SUBMITTED);
       await loadRequests();
     } catch (error: any) {
-      console.error('Submit holiday request error:', error);
-      Alert.alert('Error', error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
+      console.error("Submit holiday request error:", error);
+      Alert.alert("Error", error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
     } finally {
       setIsLoading(false);
     }
@@ -193,36 +200,40 @@ export default function EmployeeRequestsScreen() {
   const handleSubmitOvertime = async () => {
     if (!validateOvertime()) return;
     if (!user?.id || !user.organization_id) {
-      Alert.alert('Error', 'User profile is not ready yet');
+      Alert.alert("Error", "User profile is not ready yet");
       return;
     }
 
     setIsLoading(true);
     try {
-      await requestService.submitOvertimeRequest(user.id, user.organization_id, {
-        date: overtimeDate.trim(),
-        hours: Number(overtimeHours),
-        reason: overtimeReason,
-      });
+      await requestService.submitOvertimeRequest(
+        user.id,
+        user.organization_id,
+        {
+          date: overtimeDate.trim(),
+          hours: Number(overtimeHours),
+          reason: overtimeReason,
+        },
+      );
 
-      setOvertimeHours('');
-      setOvertimeReason('');
-      Alert.alert('Success', SUCCESS_MESSAGES.REQUEST_SUBMITTED);
+      setOvertimeHours("");
+      setOvertimeReason("");
+      Alert.alert("Success", SUCCESS_MESSAGES.REQUEST_SUBMITTED);
       await loadRequests();
     } catch (error: any) {
-      console.error('Submit overtime request error:', error);
-      Alert.alert('Error', error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
+      console.error("Submit overtime request error:", error);
+      Alert.alert("Error", error.message || ERROR_MESSAGES.UNKNOWN_ERROR);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStatusColor = (status: EmployeeRequest['status']) => {
+  const getStatusColor = (status: EmployeeRequest["status"]) => {
     switch (status) {
-      case 'approved':
+      case "approved":
         return colors.success;
-      case 'rejected':
-      case 'disapproved':
+      case "rejected":
+      case "disapproved":
         return colors.error;
       default:
         return colors.warning;
@@ -230,22 +241,27 @@ export default function EmployeeRequestsScreen() {
   };
 
   const renderRequestItem = (request: EmployeeRequest) => {
-    const isHoliday = request.type === 'holiday';
+    const isHoliday = request.type === "holiday";
 
     return (
       <Card key={request.id} style={styles.historyItem}>
         <View style={styles.historyHeader}>
           <View>
             <Text style={styles.historyTitle}>
-              {isHoliday ? 'Holiday Request' : 'Overtime Request'}
+              {isHoliday ? "Holiday Request" : "Overtime Request"}
             </Text>
             <Text style={styles.historyDate}>
               {isHoliday
                 ? `${formatDate(request.start_date)} - ${formatDate(request.end_date || request.start_date)}`
-                : `${formatDate(request.start_date)}${request.hours ? `, ${request.hours} hours` : ''}`}
+                : `${formatDate(request.start_date)}${request.hours ? `, ${request.hours} hours` : ""}`}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusColor(request.status) },
+            ]}
+          >
             <Text style={styles.statusText}>{request.status}</Text>
           </View>
         </View>
@@ -259,52 +275,72 @@ export default function EmployeeRequestsScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Requests</Text>
-          <Text style={styles.subtitle}>Submit holiday or overtime requests</Text>
+          <Text style={styles.subtitle}>
+            Submit holiday or overtime requests
+          </Text>
         </View>
 
         <View style={styles.segmentedControl}>
           <TouchableOpacity
-            style={[styles.segmentButton, mode === 'holiday' && styles.segmentButtonActive]}
-            onPress={() => setMode('holiday')}>
-            <Text style={[styles.segmentText, mode === 'holiday' && styles.segmentTextActive]}>
+            style={[
+              styles.segmentButton,
+              mode === "holiday" && styles.segmentButtonActive,
+            ]}
+            onPress={() => setMode("holiday")}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                mode === "holiday" && styles.segmentTextActive,
+              ]}
+            >
               Holiday
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentButton, mode === 'overtime' && styles.segmentButtonActive]}
-            onPress={() => setMode('overtime')}>
-            <Text style={[styles.segmentText, mode === 'overtime' && styles.segmentTextActive]}>
+            style={[
+              styles.segmentButton,
+              mode === "overtime" && styles.segmentButtonActive,
+            ]}
+            onPress={() => setMode("overtime")}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                mode === "overtime" && styles.segmentTextActive,
+              ]}
+            >
               Overtime
             </Text>
           </TouchableOpacity>
         </View>
 
         <Card style={styles.formCard}>
-          {mode === 'holiday' ? (
+          {mode === "holiday" ? (
             <>
               <Text style={styles.formTitle}>Holiday Request</Text>
-              <Input
+              <DatePickerInput
                 label="Start Date"
-                placeholder="YYYY-MM-DD"
                 value={holidayStartDate}
-                onChangeText={setHolidayStartDate}
-                autoCapitalize="none"
+                onChange={setHolidayStartDate}
                 error={holidayErrors.startDate}
               />
-              <Input
+
+              <DatePickerInput
                 label="End Date"
-                placeholder="YYYY-MM-DD"
                 value={holidayEndDate}
-                onChangeText={setHolidayEndDate}
-                autoCapitalize="none"
+                onChange={setHolidayEndDate}
                 error={holidayErrors.endDate}
               />
+
               <Input
                 label="Reason"
                 placeholder="Tell your supervisor why you need leave"
@@ -325,12 +361,10 @@ export default function EmployeeRequestsScreen() {
           ) : (
             <>
               <Text style={styles.formTitle}>Overtime Request</Text>
-              <Input
+              <DatePickerInput
                 label="Date"
-                placeholder="YYYY-MM-DD"
                 value={overtimeDate}
-                onChangeText={setOvertimeDate}
-                autoCapitalize="none"
+                onChange={setOvertimeDate}
                 error={overtimeErrors.date}
               />
               <Input
@@ -364,14 +398,18 @@ export default function EmployeeRequestsScreen() {
         <View style={styles.historySectionHeader}>
           <Text style={styles.sectionTitle}>Recent Requests</Text>
           <TouchableOpacity onPress={loadRequests} disabled={isRefreshing}>
-            <Text style={styles.refreshText}>{isRefreshing ? 'Loading...' : 'Refresh'}</Text>
+            <Text style={styles.refreshText}>
+              {isRefreshing ? "Loading..." : "Refresh"}
+            </Text>
           </TouchableOpacity>
         </View>
 
         {requests.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No requests yet</Text>
-            <Text style={styles.emptySubtitle}>Submitted requests will appear here.</Text>
+            <Text style={styles.emptySubtitle}>
+              Submitted requests will appear here.
+            </Text>
           </Card>
         ) : (
           requests.map(renderRequestItem)
@@ -389,15 +427,15 @@ const createStyles = (colors: ThemeColors) =>
     },
     content: {
       padding: Spacing.lg,
-      paddingTop: Spacing['2xl'],
-      paddingBottom: Spacing['3xl'],
+      paddingTop: Spacing["2xl"],
+      paddingBottom: Spacing["3xl"],
     },
     header: {
       marginBottom: Spacing.lg,
     },
     title: {
-      fontSize: Typography['3xl'],
-      fontWeight: '700',
+      fontSize: Typography["3xl"],
+      fontWeight: "700",
       color: colors.text,
     },
     subtitle: {
@@ -406,7 +444,7 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: Spacing.xs,
     },
     segmentedControl: {
-      flexDirection: 'row',
+      flexDirection: "row",
       backgroundColor: colors.backgroundLight,
       borderRadius: BorderRadius.md,
       borderWidth: 1,
@@ -416,7 +454,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     segmentButton: {
       flex: 1,
-      alignItems: 'center',
+      alignItems: "center",
       paddingVertical: Spacing.sm,
       borderRadius: BorderRadius.sm,
     },
@@ -425,7 +463,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     segmentText: {
       fontSize: Typography.sm,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.textSecondary,
     },
     segmentTextActive: {
@@ -436,52 +474,52 @@ const createStyles = (colors: ThemeColors) =>
     },
     formTitle: {
       fontSize: Typography.xl,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.text,
       marginBottom: Spacing.lg,
     },
     historySectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: Spacing.md,
     },
     sectionTitle: {
       fontSize: Typography.lg,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.text,
     },
     refreshText: {
       fontSize: Typography.sm,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.primary,
     },
     emptyCard: {
-      alignItems: 'center',
+      alignItems: "center",
     },
     emptyTitle: {
       fontSize: Typography.base,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.text,
       marginBottom: Spacing.xs,
     },
     emptySubtitle: {
       fontSize: Typography.sm,
       color: colors.textSecondary,
-      textAlign: 'center',
+      textAlign: "center",
     },
     historyItem: {
       marginBottom: Spacing.md,
     },
     historyHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
       gap: Spacing.md,
     },
     historyTitle: {
       fontSize: Typography.base,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.text,
     },
     historyDate: {
@@ -496,9 +534,9 @@ const createStyles = (colors: ThemeColors) =>
     },
     statusText: {
       fontSize: Typography.xs,
-      fontWeight: '800',
+      fontWeight: "800",
       color: colors.background,
-      textTransform: 'capitalize',
+      textTransform: "capitalize",
     },
     historyReason: {
       fontSize: Typography.sm,

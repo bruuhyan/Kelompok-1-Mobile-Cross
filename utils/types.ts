@@ -59,6 +59,7 @@ export interface OrganizationSettings {
   ip_range?: string;
   work_start_time?: string;
   work_end_time?: string;
+  ignore_checkin_time?: boolean;
   created_at: string;
   updated_at: string;
 }

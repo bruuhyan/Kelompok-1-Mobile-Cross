@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { attendanceService } from "@/services/attendanceService";
 import { authService, taskService } from "@/services/supabase";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { useAuthStore } from "@/store/authStore";
@@ -39,6 +40,7 @@ export default function EmployeeHomeScreen() {
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [workHours, setWorkHours] = useState({ start: '', end: '' });
   const {
     status: todayStatus,
     currentLog,
@@ -49,7 +51,6 @@ export default function EmployeeHomeScreen() {
     initializeToday,
     performCheckIn,
     performCheckOut,
-    deleteTodayAttendance,
     processSyncQueue,
   } = useAttendanceStore();
 
@@ -65,6 +66,18 @@ export default function EmployeeHomeScreen() {
       Alert.alert("Attendance", error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (!user?.organization_id) return;
+    attendanceService.getOrgSettings(user.organization_id).then((settings) => {
+      if (settings) {
+        setWorkHours({
+          start: settings.work_start_time?.slice(0, 5) || '09:00',
+          end: settings.work_end_time?.slice(0, 5) || '17:00',
+        });
+      }
+    });
+  }, [user?.organization_id]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -136,30 +149,6 @@ export default function EmployeeHomeScreen() {
     } catch {
       // Error state is already surfaced by the attendance store.
     }
-  };
-
-  const handleDebugDeleteTodayAttendance = () => {
-    if (!user) return;
-
-    Alert.alert(
-      "Delete today's attendance?",
-      "Debug only: this will remove today's attendance logs and reset today's status.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const deletedCount = await deleteTodayAttendance(user);
-              Alert.alert("Debug", `Deleted ${deletedCount} attendance log(s) for today.`);
-            } catch {
-              // Error state is already surfaced by the attendance store.
-            }
-          },
-        },
-      ],
-    );
   };
 
   const getStatusText = () => {
@@ -238,6 +227,12 @@ export default function EmployeeHomeScreen() {
             {getStatusText()}
           </Text>
         </View>
+
+        {workHours.start ? (
+          <Text style={styles.workHoursText}>
+            Work hours: {workHours.start} — {workHours.end}
+          </Text>
+        ) : null}
 
         {pendingSyncLogs.length > 0 ? (
           <View style={styles.offlineBanner}>
@@ -329,18 +324,6 @@ export default function EmployeeHomeScreen() {
           </View>
         )}
 
-        {__DEV__ ? (
-          <TouchableOpacity
-            style={styles.debugDeleteButton}
-            onPress={handleDebugDeleteTodayAttendance}
-            disabled={isLoading}
-          >
-            <IconSymbol name="trash" size={18} color={colors.error} />
-            <Text style={styles.debugDeleteButtonText}>
-              Debug: Delete Today Attendance
-            </Text>
-          </TouchableOpacity>
-        ) : null}
       </Card>
 
       {/* Quick Actions */}
@@ -703,21 +686,10 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.base,
       fontWeight: "600",
     },
-    debugDeleteButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: `${colors.error}66`,
-      borderRadius: BorderRadius.md,
-      paddingVertical: Spacing.sm,
-      marginTop: Spacing.md,
-      gap: Spacing.sm,
-    },
-    debugDeleteButtonText: {
-      color: colors.error,
+    workHoursText: {
+      color: colors.textSecondary,
       fontSize: Typography.sm,
-      fontWeight: "700",
+      marginBottom: Spacing.md,
     },
     offlineBanner: {
       flexDirection: "row",
