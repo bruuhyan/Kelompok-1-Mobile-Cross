@@ -8,6 +8,7 @@ import NetInfo from '@react-native-community/netinfo';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { TRUST_SCORE_MAX, getTrustScoreTier } from '@/constants/theme';
 import { supabase, profileService } from '@/services/supabase';
 import { STORAGE_KEYS, VALIDATION } from '@/utils/constants';
 import { calculateDistance } from '@/utils/helpers';
@@ -29,10 +30,12 @@ import {
 const DEFAULT_WORK_START_TIME = '09:00';
 const GRACE_PERIOD_MINUTES = 15;
 const OFFLINE_MAX_AGE_HOURS = 24;
-const TRUST_SCORE_MAX = 50;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 type AttendanceNotes = {
   validation_flags?: AttendanceValidation;
+  check_in_validation_flags?: AttendanceValidation;
+  check_out_validation_flags?: AttendanceValidation;
   review_status?: 'none' | 'needs_review' | 'urgent_review';
   review_reasons?: string[];
   offline?: {
@@ -116,15 +119,11 @@ function getSettingsLongitude(settings: OrganizationSettings | null) {
 }
 
 function getReviewStatus(score: number): AttendanceNotes['review_status'] {
-  if (score <= 19) return 'urgent_review';
-  if (score <= 35) return 'needs_review';
-  return 'none';
+  return getTrustScoreTier(score).reviewStatus;
 }
 
 function getTrustScoreLabel(score: number): TrustScoreCalculation['label'] {
-  if (score <= 19) return 'Urgent Review';
-  if (score <= 35) return 'Needs Review';
-  return 'Okay';
+  return getTrustScoreTier(score).label;
 }
 
 function getMinutesBetween(start?: string | null, end?: string | null) {
@@ -141,6 +140,14 @@ function isSameLocalDay(left: string, right: string) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+function isBeforeToday(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return date.getTime() < today.getTime();
 }
 
 function isLate(checkInTime: string, workStartTime?: string | null) {
@@ -202,20 +209,41 @@ function getValidationReviewReasons(validation: AttendanceValidation) {
   return reasons;
 }
 
-function buildNotes(validation: AttendanceValidation, extra?: Partial<AttendanceNotes>): string {
-  const reasons = getValidationReviewReasons(validation);
-  const score = extra?.review_status ? undefined : null;
+function getNoteValidationFlags(notes: AttendanceNotes): AttendanceValidation[] {
+  return [
+    notes.check_in_validation_flags,
+    notes.check_out_validation_flags,
+    notes.validation_flags,
+  ].filter((validation): validation is AttendanceValidation => !!validation);
+}
 
-  return JSON.stringify({
-    validation_flags: validation,
-    review_status: extra?.review_status ?? (reasons.length > 0 ? 'needs_review' : 'none'),
-    review_reasons: reasons,
+function getNotesReviewReasons(notes: AttendanceNotes) {
+  return Array.from(new Set(getNoteValidationFlags(notes).flatMap(getValidationReviewReasons)));
+}
+
+function buildNotes(
+  validation: AttendanceValidation,
+  phase: 'check_in' | 'check_out',
+  existingNotes?: AttendanceNotes,
+  extra?: Partial<AttendanceNotes>
+): string {
+  const nextNotes: AttendanceNotes = {
+    ...existingNotes,
+    ...(phase === 'check_in'
+      ? { check_in_validation_flags: validation }
+      : { check_out_validation_flags: validation }),
     client: {
       platform: Platform.OS,
       app_version: Constants.expoConfig?.version,
     },
-    ...(score === null ? {} : { score }),
     ...extra,
+  };
+  const reasons = getNotesReviewReasons(nextNotes);
+
+  return JSON.stringify({
+    ...nextNotes,
+    review_status: extra?.review_status ?? (reasons.length > 0 ? 'needs_review' : 'none'),
+    review_reasons: reasons,
   });
 }
 
@@ -413,13 +441,13 @@ export const attendanceService = {
       wifi_valid: wifi.isValid,
       ip_valid: ip.isValid,
       spoofing_detected: !!spoofing.isSuspicious,
-      requires_review: warnings.length > 0 || !!spoofing.isSuspicious,
+      requires_review: errors.length > 0 || warnings.length > 0 || !!spoofing.isSuspicious,
       errors,
       warnings,
     };
 
     return {
-      canSubmit: errors.length === 0,
+      canSubmit: true,
       requiresReview: !!validation.requires_review,
       location,
       network,
@@ -467,7 +495,7 @@ export const attendanceService = {
         check_in_ip: data.network.ipAddress,
         is_late: late,
         trust_score_impact: 0,
-        notes: buildNotes(data.validation, {
+        notes: buildNotes(data.validation, 'check_in', undefined, {
           offline: data.offlineId
             ? {
                 id: data.offlineId,
@@ -487,6 +515,14 @@ export const attendanceService = {
 
   async performCheckOut(data: CheckOutData): Promise<AttendanceLog> {
     const timestamp = data.clientTimestamp ?? new Date().toISOString();
+    const { data: currentLog, error: currentLogError } = await supabase
+      .from('attendance_logs')
+      .select('notes')
+      .eq('id', data.logId)
+      .eq('user_id', data.userId)
+      .maybeSingle();
+
+    if (currentLogError) throw currentLogError;
 
     const { data: log, error } = await supabase
       .from('attendance_logs')
@@ -497,7 +533,7 @@ export const attendanceService = {
         check_out_wifi_ssid: data.network.ssid,
         check_out_wifi_bssid: data.network.bssid,
         check_out_ip: data.network.ipAddress,
-        notes: buildNotes(data.validation, {
+        notes: buildNotes(data.validation, 'check_out', parseNotes(currentLog?.notes), {
           auto_checkout: data.autoCheckout,
           offline: data.offlineId
             ? {
@@ -558,7 +594,7 @@ export const attendanceService = {
   calculateTrustScore(logs: AttendanceLog[]): TrustScoreCalculation {
     const recentLogs = logs.filter((log) => {
       const ageMs = Date.now() - new Date(log.check_in_time).getTime();
-      return ageMs <= 30 * 24 * 60 * 60 * 1000;
+      return ageMs <= THIRTY_DAYS_MS;
     });
 
     const sorted = [...recentLogs].sort(
@@ -569,18 +605,22 @@ export const attendanceService = {
 
     sorted.forEach((log, index) => {
       const notes = parseNotes(log.notes);
-      const flags = notes.validation_flags;
+      const flags = getNoteValidationFlags(notes);
       const duplicateSameDay = sorted
         .slice(0, index)
         .some((previous) => isSameLocalDay(previous.check_in_time, log.check_in_time));
-      const missingCheckout = !log.check_out_time;
+      const missingCheckout = !log.check_out_time && isBeforeToday(log.check_in_time);
+      const hasGpsViolation = flags.some((validation) => validation.gps_valid === false);
+      const hasWifiViolation = flags.some((validation) => validation.wifi_valid === false);
+      const hasIpViolation = flags.some((validation) => validation.ip_valid === false);
+      const hasSpoofingViolation = flags.some((validation) => !!validation.spoofing_detected);
 
       const offenseWeights = [
         log.is_late ? 1 : 0,
-        flags?.gps_valid === false ? 4 : 0,
-        flags?.wifi_valid === false ? 3 : 0,
-        flags?.ip_valid === false ? 1 : 0,
-        flags?.spoofing_detected ? 6 : 0,
+        hasGpsViolation ? 4 : 0,
+        hasWifiViolation ? 3 : 0,
+        hasIpViolation ? 1 : 0,
+        hasSpoofingViolation ? 6 : 0,
         duplicateSameDay ? 2 : 0,
         missingCheckout ? 2 : 0,
       ].filter((weight) => weight > 0);
@@ -597,14 +637,15 @@ export const attendanceService = {
 
     const roundedPenalty = Math.round(penalty);
     const score = Math.max(0, TRUST_SCORE_MAX - roundedPenalty);
+    const reviewStatus = getReviewStatus(score);
 
     return {
       score,
       label: getTrustScoreLabel(score),
       offenseCount,
       penalty: roundedPenalty,
-      reviewRequired: score <= 35,
-      urgentReviewRequired: score <= 19,
+      reviewRequired: reviewStatus !== 'none',
+      urgentReviewRequired: reviewStatus === 'urgent_review',
     };
   },
 

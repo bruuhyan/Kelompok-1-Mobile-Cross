@@ -6,7 +6,7 @@ A React Native mobile app for smart employee attendance tracking with trust scor
 
 ### Core
 - **Role-Based Access**: Employee and Supervisor dashboards with separate navigation flows
-- **Trust Score System**: 0-100 scale with three tiers — Trusted (80-100), Moderate (50-79), At Risk (0-49)
+- **Trust Score System**: 0-50 scale with three tiers - Trusted (36-50), Moderate (20-35), At Risk (0-19)
 - **Security Validation**: GPS radius, WiFi SSID/BSSID, and IP address verification on check-in/check-out
 - **Offline Mode**: Local storage with integrity-hash validation and automatic sync when online
 - **Multi-Tenant**: Organization-based data isolation with Row Level Security (RLS) policies
@@ -156,7 +156,7 @@ Row Level Security policies use helper functions to avoid recursion:
 
 ## Trust Score System
 
-Trust scores (0-100) are recalculated after every check-in and check-out based on:
+Trust scores (0-50) are recalculated after every check-in and check-out based on:
 
 | Offense | Penalty |
 |---------|---------|

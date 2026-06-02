@@ -191,7 +191,7 @@ export interface OfflineAttendanceLog {
 
 export interface TrustScoreCalculation {
   score: number;
-  label: 'Okay' | 'Needs Review' | 'Urgent Review';
+  label: 'Trusted' | 'Moderate' | 'At Risk';
   offenseCount: number;
   penalty: number;
   reviewRequired: boolean;

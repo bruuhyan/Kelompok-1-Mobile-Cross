@@ -43,9 +43,10 @@ npm run reset-project  # Clear app directory (use with caution)
 - **ALWAYS use `useAppTheme()`** hook + `createStyles(colors)` pattern for dynamic light/dark switching
 - `BrandColors` is only used as the source of truth in `constants/theme.ts` for defining `Colors.dark` and `Colors.light`
 - Pattern:
+
   ```tsx
-  import { Spacing, ThemeColors, Typography } from '@/constants/theme';
-  import { useAppTheme } from '@/hooks/use-app-theme';
+  import { Spacing, ThemeColors, Typography } from "@/constants/theme";
+  import { useAppTheme } from "@/hooks/use-app-theme";
 
   export default function MyScreen() {
     const colors = useAppTheme();
@@ -59,17 +60,20 @@ npm run reset-project  # Clear app directory (use with caution)
       // replace all BrandColors.* with colors.*
     });
   ```
+
 - Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
 
 ## Profile Picture Upload
 
 ### Storage Setup
+
 - Bucket: `profile-pictures` (public)
 - File path: `{userId}/avatar.jpg`
 - RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
 - Field name in profiles table: `avatar_url` (TEXT)
 
 ### Upload Service
+
 - `services/storageService.ts` handles all avatar operations
 - Uses `expo-image-picker` with `base64: true` option (avoids React Native's buggy `fetch().blob()`)
 - Converts base64 → `Uint8Array` → Supabase Storage upload
@@ -77,6 +81,7 @@ npm run reset-project  # Clear app directory (use with caution)
 - Old avatars are deleted before uploading new ones
 
 ### Gotchas
+
 - Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
 - Do NOT use `expo-file-system` for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
 - Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
@@ -87,7 +92,7 @@ npm run reset-project  # Clear app directory (use with caution)
 - Applied to: `app/(supervisor)/home.tsx`, `app/(supervisor)/request-review.tsx`, and `app/(employee)/attendance.tsx`
 - Pattern:
   ```tsx
-  import { useFocusEffect } from 'expo-router';
+  import { useFocusEffect } from "expo-router";
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -97,8 +102,8 @@ npm run reset-project  # Clear app directory (use with caution)
 
 ## Trust Score System
 
-- Scale: 0-100 (max defined by `TRUST_SCORE_MAX` in `services/attendanceService.ts`)
-- Tiers: 80-100 = Trusted (green), 50-79 = Moderate (yellow), 0-49 = At Risk (red)
+- Scale: 0-50 (max defined by `TRUST_SCORE_MAX` in `constants/theme.ts`)
+- Tiers: 36-50 = Trusted (green), 20-35 = Moderate (yellow), 0-19 = At Risk (red)
 - Recalculated server-side after every check-in and check-out via `attendanceService.recalculateTrustScore()`
 - Local UI sync: after check-in/out, `attendanceStore` fetches the updated score and calls `useAuthStore.getState().updateUser({ trust_score: newScore })`
 - Penalties: late check-in (1), GPS outside (4), WiFi mismatch (3), IP anomaly (1), spoofing (6), duplicate same-day (2), missing checkout (2) — with stacking multipliers
@@ -118,6 +123,7 @@ npm run reset-project  # Clear app directory (use with caution)
 ## Bottom Navigation
 
 ### Employee Tabs (5 tabs)
+
 - **Home** — Dashboard with trust score, check-in/out, My Tasks preview, quick actions
 - **Attendance** — History and status
 - **Requests** — Holiday/overtime submission and history
@@ -126,6 +132,7 @@ npm run reset-project  # Clear app directory (use with caution)
 - Settings and Tasks are accessible from within Profile and Home respectively (not separate tabs)
 
 ### Supervisor Tabs (5 tabs)
+
 - **Home** — Dashboard with org stats, My Attendance card (check-in/out with validation), and pending items
 - **Team** — Team management, attendance logs, registration approvals
 - **Request** — Review and approve employee requests
@@ -158,11 +165,13 @@ npm run reset-project  # Clear app directory (use with caution)
 ## Report Photo Upload
 
 ### Storage Setup
+
 - Bucket: `report-photos` (public)
 - File path: `{userId}/{reportId}.jpg`
 - RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
 
 ### Upload Service
+
 - `services/storageService.ts` — `pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`
 - Uses `expo-image-picker` with `base64: true` (avoids React Native's buggy `fetch().blob()`)
 - Converts base64 → `Uint8Array` → Supabase Storage upload
@@ -170,6 +179,7 @@ npm run reset-project  # Clear app directory (use with caution)
 - `app/(employee)/reports.tsx` — Photo picker with preview and remove button
 
 ### Gotchas
+
 - `reports` table must have `photo_url` TEXT column (run `ALTER TABLE reports ADD COLUMN IF NOT EXISTS photo_url TEXT;`)
 - Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
 
