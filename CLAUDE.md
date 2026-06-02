@@ -381,3 +381,12 @@ After Qwen produces output, Claude reviews for:
 - Supervisor: already at 5 tabs (Home, Team, Request, Task, Profile) — no changes needed
 - Supervisor Profile now has Settings button navigating to `/(supervisor)/settings`
 - Supervisor Home now has "My Attendance" card with check-in/out functionality
+
+#### Decorative Shapes (Global Background)
+- `components/DecorativeShapes.tsx` — Reusable background component with circles/ovals of low opacity
+- 4 variants: `"auth"`, `"employee"`, `"supervisor"`, `"splash"` — each has different shape positions/sizes
+- Applied to all 24 screens across the app as first child inside root container View
+- Uses `colors.primary` and `colors.secondary` with opacity 0.04–0.08
+- `pointerEvents="none"` so shapes don't interfere with touch
+- Import: `import DecorativeShapes from "@/components/DecorativeShapes";`
+- Usage: `<DecorativeShapes variant="auth" />`

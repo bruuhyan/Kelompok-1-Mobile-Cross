@@ -63,6 +63,16 @@ npm run reset-project  # Clear app directory (use with caution)
 
 - Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
 
+## Decorative Shapes
+
+- `components/DecorativeShapes.tsx` — Reusable background component with circles/ovals of low opacity
+- 4 variants: `"auth"`, `"employee"`, `"supervisor"`, `"splash"` — each has different shape positions/sizes
+- Applied to all 24 screens across the app as first child inside root container View
+- Uses `colors.primary` and `colors.secondary` with opacity 0.04–0.08
+- `pointerEvents="none"` so shapes don't interfere with touch
+- Import: `import DecorativeShapes from "@/components/DecorativeShapes";`
+- Usage: `<DecorativeShapes variant="auth" />`
+
 ## Profile Picture Upload
 
 ### Storage Setup
