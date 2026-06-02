@@ -118,6 +118,9 @@ npm run reset-project  # Clear app directory (use with caution)
     WITH CHECK (user_id = auth.uid());
   ```
 - Check-out runs the full validation flow (GPS, WiFi, IP, spoofing) before submitting
+- GPS/WiFi/IP/spoofing mismatches submit the attendance log but flag it for supervisor review and trust score penalties
+- IP range validation uses the device's local LAN IP from NetInfo, not a public internet IP
+- If WiFi SSID/BSSID is configured but unavailable from the device, the log is flagged as "WiFi info unavailable"
 - If `currentLog` is null, check-out fails with "No active check-in found"
 
 ## Bottom Navigation

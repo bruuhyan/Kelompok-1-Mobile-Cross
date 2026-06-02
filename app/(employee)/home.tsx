@@ -49,6 +49,7 @@ export default function EmployeeHomeScreen() {
     initializeToday,
     performCheckIn,
     performCheckOut,
+    deleteTodayAttendance,
     processSyncQueue,
   } = useAttendanceStore();
 
@@ -58,6 +59,12 @@ export default function EmployeeHomeScreen() {
       processSyncQueue();
     }
   }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Attendance", error);
+    }
+  }, [error]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -98,9 +105,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckIn(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-in submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-in saved and will sync when online."
           : "Check-in successful.",
       );
@@ -114,15 +124,42 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckOut(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-out submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-out saved and will sync when online."
           : "Check-out successful.",
       );
     } catch {
       // Error state is already surfaced by the attendance store.
     }
+  };
+
+  const handleDebugDeleteTodayAttendance = () => {
+    if (!user) return;
+
+    Alert.alert(
+      "Delete today's attendance?",
+      "Debug only: this will remove today's attendance logs and reset today's status.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const deletedCount = await deleteTodayAttendance(user);
+              Alert.alert("Debug", `Deleted ${deletedCount} attendance log(s) for today.`);
+            } catch {
+              // Error state is already surfaced by the attendance store.
+            }
+          },
+        },
+      ],
+    );
   };
 
   const getStatusText = () => {
@@ -291,6 +328,19 @@ export default function EmployeeHomeScreen() {
             <Text style={styles.completedText}>Completed for today</Text>
           </View>
         )}
+
+        {__DEV__ ? (
+          <TouchableOpacity
+            style={styles.debugDeleteButton}
+            onPress={handleDebugDeleteTodayAttendance}
+            disabled={isLoading}
+          >
+            <IconSymbol name="trash" size={18} color={colors.error} />
+            <Text style={styles.debugDeleteButtonText}>
+              Debug: Delete Today Attendance
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </Card>
 
       {/* Quick Actions */}
@@ -652,6 +702,22 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.success,
       fontSize: Typography.base,
       fontWeight: "600",
+    },
+    debugDeleteButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: `${colors.error}66`,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.sm,
+      marginTop: Spacing.md,
+      gap: Spacing.sm,
+    },
+    debugDeleteButtonText: {
+      color: colors.error,
+      fontSize: Typography.sm,
+      fontWeight: "700",
     },
     offlineBanner: {
       flexDirection: "row",

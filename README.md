@@ -7,13 +7,13 @@ A React Native mobile app for smart employee attendance tracking with trust scor
 ### Core
 - **Role-Based Access**: Employee and Supervisor dashboards with separate navigation flows
 - **Trust Score System**: 0-50 scale with three tiers - Trusted (36-50), Moderate (20-35), At Risk (0-19)
-- **Security Validation**: GPS radius, WiFi SSID/BSSID, and IP address verification on check-in/check-out
+- **Security Validation**: GPS radius, WiFi SSID/BSSID, and local LAN IP verification on check-in/check-out
 - **Offline Mode**: Local storage with integrity-hash validation and automatic sync when online
 - **Multi-Tenant**: Organization-based data isolation with Row Level Security (RLS) policies
 - **Dark/Light Theme**: Dynamic theme switching with `useAppTheme()` hook
 
 ### Employee Features
-- **Check-in / Check-out**: GPS + WiFi + IP + spoofing detection validation flow
+- **Check-in / Check-out**: GPS + WiFi + local LAN IP + spoofing detection validation flow
 - **Attendance History**: View past records with duration, status pills, and late flags
 - **Holiday Requests**: Submit date-range leave requests with validation
 - **Overtime Requests**: Submit overtime with hours and reason

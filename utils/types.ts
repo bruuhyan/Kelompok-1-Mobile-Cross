@@ -92,6 +92,12 @@ export interface AttendanceValidation {
   ip_valid: boolean;
   spoofing_detected?: boolean;
   requires_review?: boolean;
+  details?: {
+    gps?: AttendanceValidationResult;
+    wifi?: AttendanceValidationResult;
+    ip?: AttendanceValidationResult;
+    spoofing?: AttendanceValidationResult;
+  };
   errors: string[];
   warnings?: string[];
 }

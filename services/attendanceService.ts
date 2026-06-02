@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
 import { TRUST_SCORE_MAX, getTrustScoreTier } from '@/constants/theme';
 import { supabase, profileService } from '@/services/supabase';
 import { STORAGE_KEYS, VALIDATION } from '@/utils/constants';
-import { calculateDistance } from '@/utils/helpers';
+import { calculateDistance, isIpInRange } from '@/utils/helpers';
 import {
   AttendanceHistoryResult,
   AttendanceLog,
@@ -160,51 +160,21 @@ function isLate(checkInTime: string, workStartTime?: string | null) {
   return checkInDate.getTime() > expected.getTime();
 }
 
-function isIpInRange(ipAddress?: string | null, range?: string | null) {
-  if (!range || !ipAddress) return true;
-
-  const normalizedRange = range.trim();
-  if (normalizedRange.includes('/')) {
-    const [baseIp, cidrText] = normalizedRange.split('/');
-    const cidr = Number(cidrText);
-    const ipNumber = ipv4ToNumber(ipAddress);
-    const baseNumber = ipv4ToNumber(baseIp);
-
-    if (ipNumber === null || baseNumber === null || Number.isNaN(cidr)) return false;
-
-    const mask = cidr === 0 ? 0 : (0xffffffff << (32 - cidr)) >>> 0;
-    return (ipNumber & mask) === (baseNumber & mask);
-  }
-
-  if (normalizedRange.includes('-')) {
-    const [startIp, endIp] = normalizedRange.split('-').map((part) => part.trim());
-    const ipNumber = ipv4ToNumber(ipAddress);
-    const startNumber = ipv4ToNumber(startIp);
-    const endNumber = ipv4ToNumber(endIp);
-
-    if (ipNumber === null || startNumber === null || endNumber === null) return false;
-    return ipNumber >= startNumber && ipNumber <= endNumber;
-  }
-
-  return ipAddress === normalizedRange;
-}
-
-function ipv4ToNumber(ipAddress: string) {
-  const parts = ipAddress.split('.').map(Number);
-  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part) || part < 0 || part > 255)) {
-    return null;
-  }
-
-  return parts.reduce((acc, part) => ((acc << 8) + part) >>> 0, 0);
-}
-
 function getValidationReviewReasons(validation: AttendanceValidation) {
   const reasons: string[] = [];
 
-  if (validation.gps_valid === false) reasons.push('GPS outside workplace radius');
-  if (validation.wifi_valid === false) reasons.push('WiFi network mismatch');
-  if (validation.ip_valid === false) reasons.push('Unusual IP address');
-  if (validation.spoofing_detected) reasons.push('Location anomaly detected');
+  if (validation.gps_valid === false) {
+    reasons.push(validation.details?.gps?.message || 'GPS outside workplace radius');
+  }
+  if (validation.wifi_valid === false) {
+    reasons.push(validation.details?.wifi?.message || 'WiFi network mismatch');
+  }
+  if (validation.ip_valid === false) {
+    reasons.push(validation.details?.ip?.message || 'Unusual IP address');
+  }
+  if (validation.spoofing_detected) {
+    reasons.push(validation.details?.spoofing?.message || 'Location anomaly detected');
+  }
 
   return reasons;
 }
@@ -353,8 +323,23 @@ export const attendanceService = {
       };
     }
 
-    const ssidValid = !settings.wifi_ssid || network.ssid === settings.wifi_ssid;
-    const bssidValid = !settings.wifi_bssid || network.bssid === settings.wifi_bssid;
+    const requiredSsid = settings.wifi_ssid?.trim();
+    const requiredBssid = settings.wifi_bssid?.trim().toLowerCase();
+    const currentSsid = network.ssid?.trim();
+    const currentBssid = network.bssid?.trim().toLowerCase();
+    const missingRequiredSsid = !!requiredSsid && !currentSsid;
+    const missingRequiredBssid = !!requiredBssid && !currentBssid;
+
+    if (missingRequiredSsid || missingRequiredBssid) {
+      return {
+        isValid: false,
+        isSuspicious: true,
+        message: 'WiFi info unavailable on this device. Attendance will be flagged for review.',
+      };
+    }
+
+    const ssidValid = !requiredSsid || currentSsid === requiredSsid;
+    const bssidValid = !requiredBssid || currentBssid === requiredBssid;
     const isValid = ssidValid && bssidValid;
 
     return {
@@ -369,12 +354,21 @@ export const attendanceService = {
     network: AttendanceNetworkInfo,
     settings: OrganizationSettings | null
   ): Promise<AttendanceValidationResult> {
-    const isValid = isIpInRange(network.ipAddress, settings?.ip_range);
+    const configuredRange = settings?.ip_range?.trim();
+    if (configuredRange && !network.ipAddress) {
+      return {
+        isValid: false,
+        isSuspicious: true,
+        message: 'Local IP address unavailable for configured IP range',
+      };
+    }
+
+    const isValid = isIpInRange(network.ipAddress, configuredRange);
 
     return {
       isValid,
       isSuspicious: !isValid,
-      message: isValid ? 'IP address verified' : 'Unusual IP address detected',
+      message: isValid ? 'Local IP address verified' : 'Local IP address is outside the configured range',
     };
   },
 
@@ -442,6 +436,12 @@ export const attendanceService = {
       ip_valid: ip.isValid,
       spoofing_detected: !!spoofing.isSuspicious,
       requires_review: errors.length > 0 || warnings.length > 0 || !!spoofing.isSuspicious,
+      details: {
+        gps,
+        wifi,
+        ip,
+        spoofing,
+      },
       errors,
       warnings,
     };
@@ -475,6 +475,55 @@ export const attendanceService = {
 
     if (error) throw error;
     return data;
+  },
+
+  async deleteTodayAttendance(userId: string, organizationId: string): Promise<{ deletedCount: number; trustScore: number }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const from = today.toISOString();
+    const to = tomorrow.toISOString();
+
+    const { count, error: countError } = await supabase
+      .from('attendance_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .gte('check_in_time', from)
+      .lt('check_in_time', to);
+
+    if (countError) throw countError;
+
+    const { error: deleteError } = await supabase
+      .from('attendance_logs')
+      .delete()
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .gte('check_in_time', from)
+      .lt('check_in_time', to);
+
+    if (deleteError) throw deleteError;
+
+    const queue = await getStoredQueue();
+    const remainingQueue = queue.filter((item) => {
+      if (item.user_id !== userId) return true;
+      const timestamp = new Date(item.timestamp);
+      return timestamp < today || timestamp >= tomorrow;
+    });
+
+    if (remainingQueue.length !== queue.length) {
+      await setStoredQueue(remainingQueue);
+    }
+
+    const trustScore = await this.recalculateTrustScore(userId);
+
+    return {
+      deletedCount: count ?? 0,
+      trustScore: trustScore.score,
+    };
   },
 
   async performCheckIn(data: CheckInData): Promise<AttendanceLog> {

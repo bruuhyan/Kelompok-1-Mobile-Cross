@@ -25,7 +25,7 @@ import { LocationPicker, LocationData } from '@/components/LocationPicker';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
-import { generateOrgCode } from '@/utils/helpers';
+import { generateOrgCode, isValidBssid } from '@/utils/helpers';
 
 export default function CreateOrganizationScreen() {
   const colors = useAppTheme();
@@ -68,7 +68,7 @@ export default function CreateOrganizationScreen() {
   // Optional BSSID validation
   if (
     wifiBssid.trim() &&
-    !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(wifiBssid.trim())
+    !isValidBssid(wifiBssid.trim())
   ) {
     newErrors.wifiBssid = 'Invalid BSSID format';
   }
