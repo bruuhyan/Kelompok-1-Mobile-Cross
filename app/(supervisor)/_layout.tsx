@@ -12,7 +12,7 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 export default function SupervisorTabsLayout() {
   const colors = useAppTheme();
   const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom || 34;
+  const bottomInset = insets.bottom;
 
   return (
     <Tabs
@@ -20,18 +20,23 @@ export default function SupervisorTabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          backgroundColor: colors.card,
+          borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: bottomInset + 8,
-          paddingTop: 8,
+          height: 68 + bottomInset,
+          paddingBottom: bottomInset > 0 ? bottomInset + 8 : 10,
+          paddingTop: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.08,
+          shadowRadius: 18,
+          elevation: 12,
         },
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "600",
+          fontWeight: "700",
         },
       }}
     >

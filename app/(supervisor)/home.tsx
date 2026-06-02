@@ -191,6 +191,7 @@ export default function SupervisorHomeScreen() {
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -236,7 +237,7 @@ export default function SupervisorHomeScreen() {
       </View>
 
       {/* My Attendance Card */}
-      <Card style={styles.attendanceCard}>
+      <Card style={styles.attendanceCard} variant="elevated">
         <Text style={styles.attendanceTitle}>My Attendance</Text>
         <View style={styles.attendanceStatus}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
@@ -288,7 +289,7 @@ export default function SupervisorHomeScreen() {
               <ActivityIndicator color={colors.background} />
             ) : (
               <>
-                <IconSymbol name="location.fill" size={20} color={colors.background} />
+                <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
                 <Text style={styles.checkInButtonText}>Check In</Text>
               </>
             )}
@@ -302,7 +303,7 @@ export default function SupervisorHomeScreen() {
               <ActivityIndicator color={colors.background} />
             ) : (
               <>
-                <IconSymbol name="location.slash" size={20} color={colors.background} />
+                <IconSymbol name="location.slash" size={20} color="#FFFFFF" />
                 <Text style={styles.checkOutButtonText}>Check Out</Text>
               </>
             )}
@@ -450,6 +451,9 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    content: {
+      paddingBottom: Spacing['2xl'],
+    },
     loadingContainer: {
       flex: 1,
       alignItems: 'center',
@@ -467,18 +471,29 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       padding: Spacing.lg,
       paddingTop: Spacing['2xl'],
+      paddingBottom: Spacing.md,
     },
     greeting: {
       color: colors.textSecondary,
-      fontSize: Typography.base,
+      fontSize: Typography.sm,
+      fontWeight: '700',
+      textTransform: 'uppercase',
     },
     userName: {
       color: colors.text,
       fontSize: Typography['2xl'],
-      fontWeight: '700',
+      fontWeight: '800',
+      marginTop: Spacing.xs,
     },
     iconButton: {
-      padding: Spacing.sm,
+      width: 42,
+      height: 42,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     metricsGrid: {
       flexDirection: 'row',
@@ -488,7 +503,8 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: Spacing.lg,
     },
     metricCard: {
-      width: 163,
+      width: '47%',
+      flexGrow: 1,
       minHeight: 120,
     },
     metricIcon: {
@@ -512,11 +528,12 @@ const createStyles = (colors: ThemeColors) =>
     attendanceCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
+      borderColor: `${colors.secondary}55`,
     },
     attendanceTitle: {
       color: colors.text,
       fontSize: Typography.lg,
-      fontWeight: '700',
+      fontWeight: '800',
       marginBottom: Spacing.md,
     },
     attendanceStatus: {
@@ -575,9 +592,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkInButtonText: {
-      color: colors.background,
+      color: '#FFFFFF',
       fontSize: Typography.base,
       fontWeight: '600',
     },
@@ -589,9 +607,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkOutButtonText: {
-      color: colors.background,
+      color: '#FFFFFF',
       fontSize: Typography.base,
       fontWeight: '600',
     },
@@ -617,7 +636,7 @@ const createStyles = (colors: ThemeColors) =>
     sectionTitle: {
       color: colors.text,
       fontSize: Typography.lg,
-      fontWeight: '700',
+      fontWeight: '800',
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.md,
     },
@@ -636,7 +655,7 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderLight,
       borderRadius: BorderRadius.lg,
       padding: Spacing.md,
     },
@@ -644,7 +663,7 @@ const createStyles = (colors: ThemeColors) =>
       width: 48,
       height: 48,
       borderRadius: BorderRadius.md,
-      backgroundColor: colors.backgroundLighter,
+      backgroundColor: colors.cardLight,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: Spacing.md,

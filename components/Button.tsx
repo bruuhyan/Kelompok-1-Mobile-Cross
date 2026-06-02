@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   TouchableOpacityProps,
 } from 'react-native';
-import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { BorderRadius, Shadows, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface ButtonProps extends TouchableOpacityProps {
@@ -52,7 +52,9 @@ export function Button({
     <TouchableOpacity
       style={buttonStyle}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.82}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       {...props}>
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? colors.background : colors.primary} />
@@ -70,33 +72,38 @@ StyleSheet.create({
     justifyContent: 'center',
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   // Variants
   primary: {
     backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+    ...Shadows.sm,
   },
   secondary: {
-    backgroundColor: colors.backgroundLighter,
+    backgroundColor: colors.cardLight,
+    borderColor: colors.border,
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
     borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   // Sizes
   small: {
-    height: 36,
+    minHeight: 38,
     paddingHorizontal: Spacing.md,
   },
   medium: {
-    height: 50,
+    minHeight: 50,
     paddingHorizontal: Spacing.lg,
   },
   large: {
-    height: 56,
+    minHeight: 56,
     paddingHorizontal: Spacing.xl,
   },
   // Disabled state
@@ -106,9 +113,10 @@ StyleSheet.create({
   // Text styles
   text: {
     fontWeight: '600',
+    letterSpacing: 0,
   },
   primaryText: {
-    color: colors.background,
+    color: '#FFFFFF',
   },
   secondaryText: {
     color: colors.text,
