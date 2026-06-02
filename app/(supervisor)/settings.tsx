@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import NetInfo from '@react-native-community/netinfo';
+import { useRouter } from 'expo-router';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Input } from '@/components/Input';
 import { supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
@@ -24,6 +26,7 @@ import { isValidBssid, isValidIpRange, isValidWorkTime } from '@/utils/helpers';
 export default function SupervisorSettingsScreen() {
   const colors = useAppTheme();
   const styles = createStyles(colors);
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
 
   const [gpsLat, setGpsLat] = useState('');
@@ -253,8 +256,18 @@ export default function SupervisorSettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Display and navigation preferences.</Text>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.subtitle}>Display and navigation preferences.</Text>
+        </View>
+      </View>
 
       <SettingsAppearance />
 
@@ -403,6 +416,19 @@ const createStyles = (colors: ThemeColors) =>
       paddingTop: Spacing.xl,
       paddingBottom: Spacing['3xl'],
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     title: {
       color: colors.text,
       fontSize: Typography['3xl'],
@@ -412,7 +438,6 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       fontSize: Typography.base,
       marginTop: Spacing.xs,
-      marginBottom: Spacing.lg,
     },
     section: {
       marginTop: Spacing.xl,

@@ -14,6 +14,7 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Spacing, Typography, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -117,6 +118,11 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
+          <Image
+            source={require("@/assets/images/android-icon-foreground.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Get started with TrustEnd</Text>
         </View>
@@ -208,6 +214,12 @@ const createStyles = (colors: ThemeColors) =>
   },
   header: {
     marginBottom: Spacing['2xl'],
+  },
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
   },
   title: {
     fontSize: Typography['3xl'],

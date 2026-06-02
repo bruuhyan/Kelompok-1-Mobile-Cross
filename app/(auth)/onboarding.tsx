@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -48,9 +49,11 @@ export default function OnboardingScreen() {
     <ScrollView contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <IconSymbol name="checkmark.circle.fill" size={48} color={colors.primary} />
-        </View>
+        <Image
+          source={require("@/assets/images/android-icon-foreground.png")}
+          style={styles.logo}
+          contentFit="contain"
+        />
         <Text style={styles.title}>Welcome to TrustEnd!</Text>
         <Text style={styles.subtitle}>
           Your account has been created. Now let&apos;s set up your organization.
@@ -120,13 +123,10 @@ const createStyles = (colors: ThemeColors) =>
     alignItems: 'center',
     marginBottom: Spacing['2xl'],
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.backgroundLighter,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.lg,
   },
   title: {

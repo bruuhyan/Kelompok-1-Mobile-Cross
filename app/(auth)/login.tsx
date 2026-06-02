@@ -7,6 +7,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { authService, profileService } from "@/services/supabase";
@@ -126,9 +127,11 @@ export default function LoginScreen() {
       >
         {/* Logo and Title */}
         <View style={styles.header}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>TE</Text>
-          </View>
+          <Image
+            source={require("@/assets/images/android-icon-foreground.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
           <Text style={styles.eyebrow}>TrustEnd Workforce</Text>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>
@@ -229,21 +232,7 @@ const createStyles = (colors: ThemeColors) =>
       width: 64,
       height: 64,
       borderRadius: BorderRadius.lg,
-      backgroundColor: colors.primary,
-      justifyContent: "center",
-      alignItems: "center",
       marginBottom: Spacing.md,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.22,
-      shadowRadius: 12,
-      elevation: 8,
-    },
-    logoText: {
-      fontSize: 26,
-      fontWeight: "800",
-      color: "#FFFFFF",
-      letterSpacing: 0,
     },
     eyebrow: {
       color: colors.primary,

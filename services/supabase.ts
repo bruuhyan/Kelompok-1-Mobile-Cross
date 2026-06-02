@@ -335,7 +335,7 @@ export const supervisorService = {
 
     const { data, error } = await supabase
       .from('attendance_logs')
-      .select('*, profiles:user_id(id, name, email)')
+      .select('*, profiles:user_id(id, name, email, avatar_url)')
       .eq('organization_id', organizationId)
       .gte('check_in_time', start.toISOString())
       .lte('check_in_time', end.toISOString())
