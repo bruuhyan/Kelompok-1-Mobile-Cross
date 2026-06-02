@@ -11,11 +11,13 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { UserStatus } from '@/utils/types';
@@ -85,12 +87,16 @@ export default function WaitingApprovalScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <DecorativeShapes variant="auth" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <IconSymbol name="clock.fill" size={48} color={colors.primary} />
-        </View>
+        <Image
+          source={require("@/assets/images/android-icon-foreground.png")}
+          style={styles.logo}
+          contentFit="contain"
+        />
         <Text style={styles.title}>Account Pending Approval</Text>
         <Text style={styles.subtitle}>
           Your account is waiting for approval from your organization administrator
@@ -154,6 +160,7 @@ export default function WaitingApprovalScreen() {
         </Text>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -169,13 +176,10 @@ const createStyles = (colors: ThemeColors) =>
     alignItems: 'center',
     marginBottom: Spacing['2xl'],
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.backgroundLighter,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
     marginBottom: Spacing.lg,
   },
   title: {

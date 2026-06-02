@@ -40,9 +40,9 @@ export const BrandColors = {
   info: '#0891B2',
 
   // Trust Score Colors
-  trustHigh: '#00F5A0', // 80-100
-  trustMedium: '#F59E0B', // 50-79
-  trustLow: '#EF4444', // 0-49
+  trustHigh: '#00F5A0', // 36-50
+  trustMedium: '#F59E0B', // 20-35
+  trustLow: '#EF4444', // 0-19
 };
 
 export const Colors = {
@@ -208,12 +208,41 @@ export const Animation = {
   slower: 800,
 };
 
+export const TRUST_SCORE_MAX = 50;
+
 // Trust Score Tiers
 export const TrustScoreTiers = {
-  high: { min: 36, max: 50, color: BrandColors.trustHigh, label: 'Trusted' },
-  medium: { min: 20, max: 35, color: BrandColors.trustMedium, label: 'Moderate' },
-  low: { min: 0, max: 19, color: BrandColors.trustLow, label: 'At Risk' },
-};
+  high: {
+    min: 36,
+    max: TRUST_SCORE_MAX,
+    color: BrandColors.trustHigh,
+    colorKey: 'trustHigh',
+    label: 'Trusted',
+    reviewStatus: 'none',
+  },
+  medium: {
+    min: 20,
+    max: 35,
+    color: BrandColors.trustMedium,
+    colorKey: 'trustMedium',
+    label: 'Moderate',
+    reviewStatus: 'needs_review',
+  },
+  low: {
+    min: 0,
+    max: 19,
+    color: BrandColors.trustLow,
+    colorKey: 'trustLow',
+    label: 'At Risk',
+    reviewStatus: 'urgent_review',
+  },
+} as const;
+
+export function getTrustScoreTier(score: number) {
+  if (score >= TrustScoreTiers.high.min) return TrustScoreTiers.high;
+  if (score >= TrustScoreTiers.medium.min) return TrustScoreTiers.medium;
+  return TrustScoreTiers.low;
+}
 
 // User Roles
 export const UserRoles = {

@@ -1,9 +1,3 @@
-/**
- * Register Screen
- * Simple registration with email and password only
- * User will be directed to onboarding after registration
- */
-
 import React, { useState } from 'react';
 import {
   View,
@@ -14,12 +8,14 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { Spacing, Typography, ThemeColors, BorderRadius } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { authService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -77,14 +73,12 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // Sign up with Supabase
       const authData = await authService.signUp(email, password);
 
       if (!authData || !authData.user) {
         throw new Error('Registration failed');
       }
 
-      // Set basic user info in store
       setUser({
         id: authData.user.id,
         email: authData.user.email || email,
@@ -97,7 +91,6 @@ export default function RegisterScreen() {
         updated_at: new Date().toISOString(),
       });
 
-      // Navigate to onboarding
       router.replace('/(auth)/onboarding');
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -112,11 +105,20 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="auth" />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require("@/assets/images/android-icon-foreground.png")}
+              style={styles.logo}
+              contentFit="contain"
+            />
+          </View>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Get started with TrustEnd</Text>
         </View>
@@ -209,9 +211,24 @@ const createStyles = (colors: ThemeColors) =>
   header: {
     marginBottom: Spacing['2xl'],
   },
+  logoWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: colors.card,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+  },
   title: {
-    fontSize: Typography['3xl'],
-    fontWeight: '700',
+    fontSize: Typography['4xl'],
+    fontWeight: '800',
     color: colors.text,
     marginBottom: Spacing.xs,
   },
@@ -237,6 +254,6 @@ const createStyles = (colors: ThemeColors) =>
   linkText: {
     fontSize: Typography.base,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '800',
   },
 });

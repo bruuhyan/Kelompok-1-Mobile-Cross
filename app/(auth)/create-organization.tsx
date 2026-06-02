@@ -14,18 +14,20 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { LocationPicker, LocationData } from '@/components/LocationPicker';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
-import { generateOrgCode } from '@/utils/helpers';
+import { generateOrgCode, isValidBssid } from '@/utils/helpers';
 
 export default function CreateOrganizationScreen() {
   const colors = useAppTheme();
@@ -68,7 +70,7 @@ export default function CreateOrganizationScreen() {
   // Optional BSSID validation
   if (
     wifiBssid.trim() &&
-    !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(wifiBssid.trim())
+    !isValidBssid(wifiBssid.trim())
   ) {
     newErrors.wifiBssid = 'Invalid BSSID format';
   }
@@ -118,11 +120,17 @@ export default function CreateOrganizationScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="auth" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
 
         <View style={styles.header}>
+          <Image
+            source={require("@/assets/images/android-icon-foreground.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
           <Text style={styles.title}>Create Organization</Text>
           <Text style={styles.subtitle}>Set up your organization and become an admin</Text>
         </View>
@@ -208,6 +216,12 @@ const createStyles = (colors: ThemeColors) =>
     },
     header: {
       marginBottom: Spacing.lg,
+    },
+    logo: {
+      width: 64,
+      height: 64,
+      borderRadius: BorderRadius.lg,
+      marginBottom: Spacing.md,
     },
     title: {
       fontSize: Typography['3xl'],

@@ -20,6 +20,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatDate, formatTime } from '@/utils/helpers';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 function parseReviewStatus(notes?: string | null) {
   if (!notes) return 'none';
@@ -73,6 +74,7 @@ export default function EmployeeAttendanceScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading || isSyncing} onRefresh={refresh} />}>
+      <DecorativeShapes variant="employee" />
       <View style={styles.header}>
         <Text style={styles.title}>Attendance</Text>
         <Text style={styles.subtitle}>Your recent check-in and check-out records</Text>

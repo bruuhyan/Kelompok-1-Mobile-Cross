@@ -10,6 +10,7 @@ import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/them
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supervisorService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
+import DecorativeShapes from "@/components/DecorativeShapes";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -114,16 +115,18 @@ export default function SupervisorRequestReviewScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Requests</Text>
         <Text style={styles.headerTitle}>Leave Requests</Text>
@@ -264,6 +267,7 @@ export default function SupervisorRequestReviewScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
 

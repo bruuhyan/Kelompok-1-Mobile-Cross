@@ -37,12 +37,19 @@ AS $$
   SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
 $$;
 
+DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION create_organization_with_admin(
   p_name TEXT,
   p_address TEXT,
   p_code TEXT,
   p_admin_name TEXT,
-  p_admin_email TEXT
+  p_admin_email TEXT,
+  p_latitude NUMERIC DEFAULT NULL,
+  p_longitude NUMERIC DEFAULT NULL,
+  p_wifi_ssid TEXT DEFAULT NULL,
+  p_wifi_bssid TEXT DEFAULT NULL
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -67,6 +74,28 @@ BEGIN
   VALUES (p_name, p_address, p_code)
   RETURNING id INTO new_org_id;
 
+  INSERT INTO public.org_settings (
+    organization_id,
+    workplace_lat,
+    workplace_lng,
+    wifi_ssid,
+    wifi_bssid
+  )
+  VALUES (
+    new_org_id,
+    p_latitude,
+    p_longitude,
+    NULLIF(TRIM(p_wifi_ssid), ''),
+    NULLIF(UPPER(TRIM(p_wifi_bssid)), '')
+  )
+  ON CONFLICT (organization_id) DO UPDATE
+  SET
+    workplace_lat = EXCLUDED.workplace_lat,
+    workplace_lng = EXCLUDED.workplace_lng,
+    wifi_ssid = EXCLUDED.wifi_ssid,
+    wifi_bssid = EXCLUDED.wifi_bssid,
+    updated_at = NOW();
+
   INSERT INTO public.profiles (
     id,
     name,
@@ -88,8 +117,8 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) FROM anon;
-GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT) TO authenticated;
 
 -- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
@@ -102,12 +131,13 @@ ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 -- Organizations policies
 -- Allow public read for organization lookup by code
+DROP POLICY IF EXISTS "Organizations are viewable by everyone" ON organizations;
+DROP POLICY IF EXISTS "Anyone can create organizations" ON organizations;
+DROP POLICY IF EXISTS "Authenticated users can create organizations" ON organizations;
+
 CREATE POLICY "Organizations are viewable by everyone"
   ON organizations FOR SELECT
   USING (true);
-
-DROP POLICY IF EXISTS "Anyone can create organizations" ON organizations;
-DROP POLICY IF EXISTS "Authenticated users can create organizations" ON organizations;
 
 -- Allow authenticated users to create organizations.
 -- The app uses create_organization_with_admin() so the first admin profile is created atomically.
@@ -117,11 +147,16 @@ CREATE POLICY "Authenticated users can create organizations"
 
 -- Profiles policies
 -- Users can read their own profile
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can create own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins and supervisors can view org profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can update org profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins and supervisors can update org profiles" ON profiles;
+
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can create own profile" ON profiles;
 
 -- Users can create their own profile (must come before admin policies to avoid recursion)
 CREATE POLICY "Users can create own profile"
@@ -132,7 +167,6 @@ CREATE POLICY "Users can create own profile"
     AND status = 'pending'
   );
 
--- Users can update their own profile
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
@@ -144,9 +178,6 @@ CREATE POLICY "Admins and supervisors can view org profiles"
     is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
-
-DROP POLICY IF EXISTS "Admins can update org profiles" ON profiles;
-DROP POLICY IF EXISTS "Admins and supervisors can update org profiles" ON profiles;
 
 -- Admins and supervisors can update profiles in their organization
 CREATE POLICY "Admins and supervisors can update org profiles"
@@ -162,6 +193,9 @@ CREATE POLICY "Admins and supervisors can update org profiles"
 
 -- Org Settings policies
 -- Users can read their organization's settings
+DROP POLICY IF EXISTS "Users can view org settings" ON org_settings;
+DROP POLICY IF EXISTS "Admins can update org settings" ON org_settings;
+
 CREATE POLICY "Users can view org settings"
   ON org_settings FOR SELECT
   USING (get_user_organization_id() = organization_id);
@@ -172,10 +206,20 @@ CREATE POLICY "Admins can update org settings"
   USING (
     is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
+  )
+  WITH CHECK (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
   );
 
 -- Attendance Logs policies
 -- Users can read their own attendance logs
+DROP POLICY IF EXISTS "Users can view own attendance" ON attendance_logs;
+DROP POLICY IF EXISTS "Users can create own attendance" ON attendance_logs;
+DROP POLICY IF EXISTS "Users can update own attendance" ON attendance_logs;
+DROP POLICY IF EXISTS "Users can delete own attendance" ON attendance_logs;
+DROP POLICY IF EXISTS "Admins and supervisors can view org attendance" ON attendance_logs;
+
 CREATE POLICY "Users can view own attendance"
   ON attendance_logs FOR SELECT
   USING (user_id = auth.uid());
@@ -191,6 +235,11 @@ CREATE POLICY "Users can update own attendance"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+-- Users can delete their own attendance logs (debug/reset flow)
+CREATE POLICY "Users can delete own attendance"
+  ON attendance_logs FOR DELETE
+  USING (user_id = auth.uid());
+
 -- Admins and supervisors can view all attendance in their organization
 CREATE POLICY "Admins and supervisors can view org attendance"
   ON attendance_logs FOR SELECT
@@ -201,6 +250,12 @@ CREATE POLICY "Admins and supervisors can view org attendance"
 
 -- Requests policies
 -- Users can read their own requests
+DROP POLICY IF EXISTS "Users can view own requests" ON requests;
+DROP POLICY IF EXISTS "Users can create own requests" ON requests;
+DROP POLICY IF EXISTS "Users can update own requests" ON requests;
+DROP POLICY IF EXISTS "Admins and supervisors can view org requests" ON requests;
+DROP POLICY IF EXISTS "Admins and supervisors can review requests" ON requests;
+
 CREATE POLICY "Users can view own requests"
   ON requests FOR SELECT
   USING (user_id = auth.uid());
@@ -233,6 +288,12 @@ CREATE POLICY "Admins and supervisors can review requests"
 
 -- Reports policies
 -- Users can read their own reports
+DROP POLICY IF EXISTS "Users can view own reports" ON reports;
+DROP POLICY IF EXISTS "Users can create own reports" ON reports;
+DROP POLICY IF EXISTS "Users can update own reports" ON reports;
+DROP POLICY IF EXISTS "Admins and supervisors can view org reports" ON reports;
+DROP POLICY IF EXISTS "Admins and supervisors can review reports" ON reports;
+
 CREATE POLICY "Users can view own reports"
   ON reports FOR SELECT
   USING (user_id = auth.uid());
@@ -265,6 +326,12 @@ CREATE POLICY "Admins and supervisors can review reports"
 
 -- Tasks policies
 -- Employees can view their assigned tasks
+DROP POLICY IF EXISTS "Employees can view own tasks" ON tasks;
+DROP POLICY IF EXISTS "Employees can submit own assigned tasks" ON tasks;
+DROP POLICY IF EXISTS "Supervisors can view org tasks" ON tasks;
+DROP POLICY IF EXISTS "Supervisors can create org tasks" ON tasks;
+DROP POLICY IF EXISTS "Supervisors can review org tasks" ON tasks;
+
 CREATE POLICY "Employees can view own tasks"
   ON tasks FOR SELECT
   USING (assigned_to = auth.uid());

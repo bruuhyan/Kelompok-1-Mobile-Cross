@@ -26,6 +26,7 @@ import { storageService } from '@/services/storageService';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/utils/constants';
 import type { Report } from '@/utils/types';
+import DecorativeShapes from '@/components/DecorativeShapes';
 
 type ReportErrors = {
   title?: string;
@@ -181,6 +182,7 @@ export default function EmployeeReportsScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="employee" />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled">

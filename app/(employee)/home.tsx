@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { attendanceService } from "@/services/attendanceService";
 import { authService, taskService } from "@/services/supabase";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { useAuthStore } from "@/store/authStore";
@@ -29,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 export default function EmployeeHomeScreen() {
   const colors = useAppTheme();
@@ -39,6 +41,7 @@ export default function EmployeeHomeScreen() {
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [workHours, setWorkHours] = useState({ start: '', end: '' });
   const {
     status: todayStatus,
     currentLog,
@@ -58,6 +61,24 @@ export default function EmployeeHomeScreen() {
       processSyncQueue();
     }
   }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Attendance", error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (!user?.organization_id) return;
+    attendanceService.getOrgSettings(user.organization_id).then((settings) => {
+      if (settings) {
+        setWorkHours({
+          start: settings.work_start_time?.slice(0, 5) || '09:00',
+          end: settings.work_end_time?.slice(0, 5) || '17:00',
+        });
+      }
+    });
+  }, [user?.organization_id]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -98,9 +119,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckIn(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-in submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-in saved and will sync when online."
           : "Check-in successful.",
       );
@@ -114,9 +138,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckOut(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-out submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-out saved and will sync when online."
           : "Check-out successful.",
       );
@@ -153,6 +180,7 @@ export default function EmployeeHomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DecorativeShapes variant="employee" />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -201,6 +229,12 @@ export default function EmployeeHomeScreen() {
             {getStatusText()}
           </Text>
         </View>
+
+        {workHours.start ? (
+          <Text style={styles.workHoursText}>
+            Work hours: {workHours.start} — {workHours.end}
+          </Text>
+        ) : null}
 
         {pendingSyncLogs.length > 0 ? (
           <View style={styles.offlineBanner}>
@@ -291,6 +325,7 @@ export default function EmployeeHomeScreen() {
             <Text style={styles.completedText}>Completed for today</Text>
           </View>
         )}
+
       </Card>
 
       {/* Quick Actions */}
@@ -652,6 +687,11 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.success,
       fontSize: Typography.base,
       fontWeight: "600",
+    },
+    workHoursText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginBottom: Spacing.md,
     },
     offlineBanner: {
       flexDirection: "row",

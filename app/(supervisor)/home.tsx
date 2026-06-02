@@ -24,6 +24,7 @@ import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatTime } from '@/utils/helpers';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 type DashboardSummary = {
   pendingRegistrations: number;
@@ -62,6 +63,7 @@ export default function SupervisorHomeScreen() {
   const [recentRequests, setRecentRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [workHours, setWorkHours] = useState({ start: '', end: '' });
 
   const {
     status: todayStatus,
@@ -88,6 +90,18 @@ export default function SupervisorHomeScreen() {
       Alert.alert('Attendance', attendanceError);
     }
   }, [attendanceError]);
+
+  useEffect(() => {
+    if (!user?.organization_id) return;
+    supervisorService.getOrganizationSettings(user.organization_id).then((data) => {
+      if (data) {
+        setWorkHours({
+          start: data.work_start_time?.slice(0, 5) || '09:00',
+          end: data.work_end_time?.slice(0, 5) || '17:00',
+        });
+      }
+    });
+  }, [user?.organization_id]);
 
   const loadDashboard = useCallback(async () => {
     if (!user?.organization_id) return;
@@ -136,7 +150,15 @@ export default function SupervisorHomeScreen() {
 
     try {
       await performCheckIn(user);
-      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-in saved and will sync when online.' : 'Check-in successful.');
+      const latestAttendance = useAttendanceStore.getState();
+      Alert.alert(
+        'Success',
+        latestAttendance.lastValidationResult?.requiresReview
+          ? 'Check-in submitted and flagged for supervisor review.'
+          : latestAttendance.pendingSyncLogs.length > 0
+            ? 'Check-in saved and will sync when online.'
+            : 'Check-in successful.',
+      );
     } catch {
       // Error state is already surfaced by the attendance store.
     }
@@ -147,7 +169,15 @@ export default function SupervisorHomeScreen() {
 
     try {
       await performCheckOut(user);
-      Alert.alert('Success', pendingSyncLogs.length > 0 ? 'Check-out saved and will sync when online.' : 'Check-out successful.');
+      const latestAttendance = useAttendanceStore.getState();
+      Alert.alert(
+        'Success',
+        latestAttendance.lastValidationResult?.requiresReview
+          ? 'Check-out submitted and flagged for supervisor review.'
+          : latestAttendance.pendingSyncLogs.length > 0
+            ? 'Check-out saved and will sync when online.'
+            : 'Check-out successful.',
+      );
     } catch {
       // Error state is already surfaced by the attendance store.
     }
@@ -189,16 +219,18 @@ export default function SupervisorHomeScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Supervisor Dashboard</Text>
@@ -245,6 +277,12 @@ export default function SupervisorHomeScreen() {
             {getStatusText()}
           </Text>
         </View>
+
+        {workHours.start ? (
+          <Text style={styles.workHoursText}>
+            Work hours: {workHours.start} — {workHours.end}
+          </Text>
+        ) : null}
 
         {pendingSyncLogs.length > 0 ? (
           <View style={styles.offlineBanner}>
@@ -314,6 +352,7 @@ export default function SupervisorHomeScreen() {
             <Text style={styles.completedText}>Completed for today</Text>
           </View>
         )}
+
       </Card>
 
       <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -364,6 +403,7 @@ export default function SupervisorHomeScreen() {
         )}
       </Card>
     </ScrollView>
+    </View>
   );
 }
 
@@ -625,6 +665,11 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.success,
       fontSize: Typography.base,
       fontWeight: '600',
+    },
+    workHoursText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginBottom: Spacing.md,
     },
     sectionHeader: {
       flexDirection: 'row',

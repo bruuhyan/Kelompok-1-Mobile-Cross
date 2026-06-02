@@ -59,6 +59,7 @@ export interface OrganizationSettings {
   ip_range?: string;
   work_start_time?: string;
   work_end_time?: string;
+  ignore_checkin_time?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -92,6 +93,12 @@ export interface AttendanceValidation {
   ip_valid: boolean;
   spoofing_detected?: boolean;
   requires_review?: boolean;
+  details?: {
+    gps?: AttendanceValidationResult;
+    wifi?: AttendanceValidationResult;
+    ip?: AttendanceValidationResult;
+    spoofing?: AttendanceValidationResult;
+  };
   errors: string[];
   warnings?: string[];
 }
@@ -191,7 +198,7 @@ export interface OfflineAttendanceLog {
 
 export interface TrustScoreCalculation {
   score: number;
-  label: 'Okay' | 'Needs Review' | 'Urgent Review';
+  label: 'Trusted' | 'Moderate' | 'At Risk';
   offenseCount: number;
   penalty: number;
   reviewRequired: boolean;

@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import {
   AttendanceLog,
   AttendanceLocation,
+  AttendanceNetworkInfo,
   AttendanceValidationFlowResult,
   AttendanceValidationState,
   OfflineAttendanceLog,
@@ -27,10 +28,41 @@ const idleValidationState: AttendanceValidationState = {
   spoofing: { status: 'idle' },
 };
 
+const pendingValidationState: AttendanceValidationState = {
+  gps: { status: 'pending', message: 'Checking workplace radius...' },
+  wifi: { status: 'pending', message: 'Checking workplace network...' },
+  ip: { status: 'pending', message: 'Checking network address...' },
+  spoofing: { status: 'pending', message: 'Checking location integrity...' },
+};
+
+function getValidationState(result: AttendanceValidationFlowResult): AttendanceValidationState {
+  return {
+    gps: {
+      status: result.validation.gps_valid ? 'valid' : 'invalid',
+      message: result.validation.details?.gps?.message || (result.validation.gps_valid ? 'Location verified' : result.validation.errors[0]),
+    },
+    wifi: {
+      status: result.validation.wifi_valid ? 'valid' : 'warning',
+      message:
+        result.validation.details?.wifi?.message ||
+        (result.validation.wifi_valid ? 'WiFi verified' : result.validation.errors.find((item) => item.includes('WiFi'))),
+    },
+    ip: {
+      status: result.validation.ip_valid ? 'valid' : 'warning',
+      message: result.validation.details?.ip?.message || (result.validation.ip_valid ? 'IP verified' : result.validation.warnings?.find((item) => item.includes('IP'))),
+    },
+    spoofing: {
+      status: result.validation.spoofing_detected ? 'warning' : 'valid',
+      message: result.validation.details?.spoofing?.message || (result.validation.spoofing_detected ? 'Location anomaly detected' : 'Location integrity verified'),
+    },
+  };
+}
+
 function createLocalAttendanceLog(
   user: UserProfile,
   action: 'check_in' | 'check_out',
   location: AttendanceLocation,
+  network?: AttendanceNetworkInfo,
   currentLog?: AttendanceLog | null
 ): AttendanceLog {
   const timestamp = new Date().toISOString();
@@ -41,6 +73,9 @@ function createLocalAttendanceLog(
       check_out_time: timestamp,
       check_out_lat: location.latitude,
       check_out_lng: location.longitude,
+      check_out_wifi_ssid: network?.ssid,
+      check_out_wifi_bssid: network?.bssid,
+      check_out_ip: network?.ipAddress,
     };
   }
 
@@ -52,6 +87,9 @@ function createLocalAttendanceLog(
     check_out_time: null,
     check_in_lat: location.latitude,
     check_in_lng: location.longitude,
+    check_in_wifi_ssid: network?.ssid,
+    check_in_wifi_bssid: network?.bssid,
+    check_in_ip: network?.ipAddress,
     is_late: false,
     trust_score_impact: 0,
     notes: null,
@@ -79,6 +117,7 @@ interface AttendanceState {
   startCheckInValidation: (user: UserProfile) => Promise<AttendanceValidationFlowResult>;
   performCheckIn: (user: UserProfile) => Promise<void>;
   performCheckOut: (user: UserProfile, autoCheckout?: boolean) => Promise<void>;
+  deleteTodayAttendance: (user: UserProfile) => Promise<number>;
   startLocationMonitoring: (user: UserProfile) => void;
   stopLocationMonitoring: () => void;
   loadOfflineQueue: () => Promise<void>;
@@ -148,12 +187,7 @@ export const useAttendanceStore = create<AttendanceState>()(
 
       startCheckInValidation: async (user) => {
         set({
-          validationStatus: {
-            gps: { status: 'pending', message: 'Checking workplace radius...' },
-            wifi: { status: 'pending', message: 'Checking workplace network...' },
-            ip: { status: 'pending', message: 'Checking network address...' },
-            spoofing: { status: 'pending', message: 'Checking location integrity...' },
-          },
+          validationStatus: pendingValidationState,
           error: null,
         });
 
@@ -162,24 +196,7 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({
           lastValidationResult: result,
           lastLocation: result.location,
-          validationStatus: {
-            gps: {
-              status: result.validation.gps_valid ? 'valid' : 'invalid',
-              message: result.validation.gps_valid ? 'Location verified' : result.validation.errors[0],
-            },
-            wifi: {
-              status: result.validation.wifi_valid ? 'valid' : 'invalid',
-              message: result.validation.wifi_valid ? 'WiFi verified' : result.validation.errors.find((item) => item.includes('WiFi')),
-            },
-            ip: {
-              status: result.validation.ip_valid ? 'valid' : 'warning',
-              message: result.validation.ip_valid ? 'IP verified' : result.validation.warnings?.find((item) => item.includes('IP')),
-            },
-            spoofing: {
-              status: result.validation.spoofing_detected ? 'warning' : 'valid',
-              message: result.validation.spoofing_detected ? 'Location anomaly detected' : 'Location integrity verified',
-            },
-          },
+          validationStatus: getValidationState(result),
         });
 
         return result;
@@ -206,7 +223,7 @@ export const useAttendanceStore = create<AttendanceState>()(
               network: validation.network,
               validation: validation.validation,
             });
-            const localLog = createLocalAttendanceLog(user, 'check_in', validation.location);
+            const localLog = createLocalAttendanceLog(user, 'check_in', validation.location, validation.network);
 
             get().addToSyncQueue(offlineLog);
             set({
@@ -258,7 +275,13 @@ export const useAttendanceStore = create<AttendanceState>()(
         set({ isLoading: true, error: null });
 
         try {
+          set({ validationStatus: pendingValidationState });
           const validation = await attendanceService.runValidationFlow(user.organization_id, get().lastLocation);
+          set({
+            lastValidationResult: validation,
+            lastLocation: validation.location,
+            validationStatus: getValidationState(validation),
+          });
           const network = await NetInfo.fetch();
           const isOnline = !!network.isConnected && !!network.isInternetReachable;
 
@@ -272,7 +295,7 @@ export const useAttendanceStore = create<AttendanceState>()(
               network: validation.network,
               validation: validation.validation,
             });
-            const localLog = createLocalAttendanceLog(user, 'check_out', validation.location, currentLog);
+            const localLog = createLocalAttendanceLog(user, 'check_out', validation.location, validation.network, currentLog);
 
             get().addToSyncQueue(offlineLog);
             get().stopLocationMonitoring();
@@ -311,6 +334,37 @@ export const useAttendanceStore = create<AttendanceState>()(
             error: error instanceof Error ? error.message : 'Check-out failed',
           });
           throw error;
+        }
+      },
+
+      deleteTodayAttendance: async (user) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          get().stopLocationMonitoring();
+          const result = await attendanceService.deleteTodayAttendance(user.id, user.organization_id);
+          const updatedQueue = await attendanceService.getOfflineQueue();
+          useAuthStore.getState().updateUser({ trust_score: result.trustScore });
+
+          set({
+            status: 'not_checked_in',
+            currentLog: null,
+            todayLog: null,
+            validationStatus: idleValidationState,
+            lastValidationResult: null,
+            lastLocationCheck: null,
+            pendingSyncLogs: updatedQueue,
+            isLoading: false,
+          });
+
+          return result.deletedCount;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to delete today attendance';
+          set({
+            isLoading: false,
+            error: message,
+          });
+          throw new Error(message);
         }
       },
 

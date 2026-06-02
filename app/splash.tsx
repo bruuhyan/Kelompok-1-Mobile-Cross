@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import DecorativeShapes from '@/components/DecorativeShapes';
 
 export default function SplashScreen() {
   const colors = useAppTheme();
@@ -58,6 +59,7 @@ export default function SplashScreen() {
 
   return (
     <Animated.View style={[styles.container, containerStyle]}>
+      <DecorativeShapes variant="splash" />
       <View style={styles.content}>
         <Animated.View style={[styles.logoContainer, logoStyle]}>
           <View style={styles.logo}>

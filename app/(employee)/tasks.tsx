@@ -23,6 +23,7 @@ import { Input } from '@/components/Input';
 import { taskService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
+import DecorativeShapes from '@/components/DecorativeShapes';
 
 type TaskStatus = 'assigned' | 'submitted' | 'approved' | 'rejected';
 
@@ -242,6 +243,7 @@ export default function EmployeeTasksScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="employee" />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled">

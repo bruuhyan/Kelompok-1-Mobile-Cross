@@ -5,6 +5,7 @@
 
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticTab } from "../../components/haptic-tab";
 import { IconSymbol } from "../../components/ui/icon-symbol";
@@ -12,7 +13,7 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 export default function SupervisorTabsLayout() {
   const colors = useAppTheme();
   const insets = useSafeAreaInsets();
-  const bottomInset = insets.bottom;
+  const bottomInset = Platform.OS === "android" ? Math.max(insets.bottom, 16) : insets.bottom;
 
   return (
     <Tabs
@@ -24,7 +25,7 @@ export default function SupervisorTabsLayout() {
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
           height: 68 + bottomInset,
-          paddingBottom: bottomInset > 0 ? bottomInset + 8 : 10,
+          paddingBottom: bottomInset + 8,
           paddingTop: 10,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -8 },

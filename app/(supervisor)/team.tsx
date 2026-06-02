@@ -3,6 +3,7 @@
  * Employee approvals and TrustScore overview.
  */
 
+import { Image } from "expo-image";
 import { Card } from "@/components/Card";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -10,6 +11,7 @@ import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/them
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { supervisorService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
+import DecorativeShapes from "@/components/DecorativeShapes";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -29,6 +31,7 @@ type TeamMember = {
   role: "employee" | "supervisor" | "admin";
   status: "pending" | "active" | "suspended";
   trust_score: number;
+  avatar_url?: string | null;
   created_at: string;
 };
 
@@ -45,6 +48,7 @@ type TeamAttendanceLog = {
   profiles?: {
     name?: string;
     email?: string;
+    avatar_url?: string | null;
   } | null;
 };
 
@@ -143,16 +147,18 @@ export default function SupervisorTeamScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>Employee Management</Text>
         <Text style={styles.headerTitle}>Team Overview</Text>
@@ -237,6 +243,7 @@ export default function SupervisorTeamScreen() {
         )}
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -247,7 +254,7 @@ function AttendanceLogCard({ log }: { log: TeamAttendanceLog }) {
   return (
     <Card style={styles.attendanceCard}>
       <View style={styles.attendanceTop}>
-        <Avatar name={log.profiles?.name || "Employee"} small />
+        <Avatar name={log.profiles?.name || "Employee"} avatarUrl={log.profiles?.avatar_url} small />
         <View style={styles.memberInfo}>
           <Text style={styles.memberName}>
             {log.profiles?.name || "Employee"}
@@ -334,7 +341,7 @@ function MemberApprovalCard({
   return (
     <Card style={styles.memberCard}>
       <View style={styles.memberTop}>
-        <Avatar name={member.name} />
+        <Avatar name={member.name} avatarUrl={member.avatar_url} />
         <View style={styles.memberInfo}>
           <Text style={styles.memberName}>{member.name}</Text>
           <Text style={styles.memberEmail}>{member.email}</Text>
@@ -378,7 +385,7 @@ function TrustScoreRow({ member }: { member: TeamMember }) {
   return (
     <Card style={styles.trustRow}>
       <View style={styles.trustLeft}>
-        <Avatar name={member.name} small />
+        <Avatar name={member.name} avatarUrl={member.avatar_url} small />
         <View style={styles.memberInfo}>
           <Text style={styles.memberName}>{member.name}</Text>
           <Text style={styles.memberEmail}>
@@ -395,7 +402,7 @@ function TrustScoreRow({ member }: { member: TeamMember }) {
   );
 }
 
-function Avatar({ name, small = false }: { name: string; small?: boolean }) {
+function Avatar({ name, avatarUrl, small = false }: { name: string; avatarUrl?: string | null; small?: boolean }) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
   const initials = name
@@ -407,9 +414,20 @@ function Avatar({ name, small = false }: { name: string; small?: boolean }) {
 
   return (
     <View style={[styles.avatar, small && styles.avatarSmall]}>
-      <Text style={[styles.avatarText, small && styles.avatarTextSmall]}>
-        {initials || "U"}
-      </Text>
+      {avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={[styles.avatarImage, small && styles.avatarImageSmall]}
+          contentFit="cover"
+          cachePolicy="none"
+          recyclingKey={avatarUrl}
+          transition={200}
+        />
+      ) : (
+        <Text style={[styles.avatarText, small && styles.avatarTextSmall]}>
+          {initials || "U"}
+        </Text>
+      )}
     </View>
   );
 }
@@ -567,6 +585,15 @@ const createStyles = (colors: ThemeColors) =>
       marginRight: Spacing.md,
     },
     avatarSmall: {
+      width: 42,
+      height: 42,
+    },
+    avatarImage: {
+      width: 54,
+      height: 54,
+      borderRadius: BorderRadius.full,
+    },
+    avatarImageSmall: {
       width: 42,
       height: 42,
     },
