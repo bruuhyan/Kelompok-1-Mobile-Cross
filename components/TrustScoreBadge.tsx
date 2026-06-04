@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors, getTrustScoreTier } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface TrustScoreBadgeProps {
@@ -17,14 +17,8 @@ interface TrustScoreBadgeProps {
 export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: TrustScoreBadgeProps) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
-
-  const getTier = (score: number) => {
-    if (score >= 36) return { color: colors.success, label: 'Trusted' };
-    if (score >= 20) return { color: colors.warning, label: 'Moderate' };
-    return { color: colors.error, label: 'At Risk' };
-  };
-
-  const tier = getTier(score);
+  const tier = getTrustScoreTier(score);
+  const tierColor = colors[tier.colorKey];
 
   const sizeStyles = {
     small: {
@@ -47,19 +41,19 @@ export function TrustScoreBadge({ score, size = 'medium', showLabel = false }: T
         style={[
           styles.badge,
           sizeStyles[size].container,
-          { borderColor: tier.color },
+          { borderColor: tierColor, backgroundColor: `${tierColor}14` },
         ]}>
         <Text
           style={[
             styles.score,
             sizeStyles[size].score,
-            { color: tier.color },
+            { color: tierColor },
           ]}>
           {score}
         </Text>
       </View>
       {showLabel && (
-        <Text style={[styles.label, { color: tier.color }]}>
+        <Text style={[styles.label, { color: tierColor }]}>
           {tier.label}
         </Text>
       )}
@@ -74,17 +68,16 @@ StyleSheet.create({
   },
   badge: {
     borderRadius: BorderRadius.full,
-    borderWidth: 3,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.card,
   },
   score: {
     fontWeight: '800',
   },
   label: {
     fontSize: Typography.xs,
-    fontWeight: '600',
-    marginTop: Spacing.xs,
+    fontWeight: '700',
+    marginTop: Spacing.sm,
   },
 });

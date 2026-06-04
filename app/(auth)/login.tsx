@@ -1,32 +1,29 @@
-/**
- * Login Screen
- * User authentication with email and password
- */
-
-import React, { useState } from 'react';
+import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
+import DecorativeShapes from "@/components/DecorativeShapes";
+import { Input } from "@/components/Input";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { authService, profileService } from "@/services/supabase";
+import { useAuthStore } from "@/store/authStore";
+import { ERROR_MESSAGES } from "@/utils/constants";
+import { isValidEmail } from "@/utils/helpers";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  View,
-  StyleSheet,
-  Text,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Spacing, Typography, ThemeColors } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Input } from '@/components/Input';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { authService, profileService } from '@/services/supabase';
-import { useAuthStore } from '@/store/authStore';
-import { ERROR_MESSAGES } from '@/utils/constants';
-import { isValidEmail } from '@/utils/helpers';
+  View,
+} from "react-native";
 
 const MISSING_PROFILE_MESSAGE =
-  'Your login exists, but no profile is linked to this account. Please register again or contact an admin.';
+  "Your login exists, but no profile is linked to this account. Please register again or contact an admin.";
 
 export default function LoginScreen() {
   const colors = useAppTheme();
@@ -35,10 +32,12 @@ export default function LoginScreen() {
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {},
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
@@ -65,44 +64,38 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // Sign in with Supabase
       const { user } = await authService.signIn(email, password);
 
       if (!user) {
         throw new Error(ERROR_MESSAGES.INVALID_CREDENTIALS);
       }
 
-      // Get user profile
       const profile = await profileService.getProfile(user.id);
 
       if (!profile) {
         throw new Error(MISSING_PROFILE_MESSAGE);
       }
 
-      // Check account status
-      if (profile.status === 'pending') {
+      if (profile.status === "pending") {
         setUser(profile);
-        router.replace('/(auth)/waiting-approval');
+        router.replace("/(auth)/waiting-approval");
         return;
       }
 
-      if (profile.status === 'suspended') {
+      if (profile.status === "suspended") {
         throw new Error(ERROR_MESSAGES.ACCOUNT_SUSPENDED);
       }
 
-      // Set user in store
       setUser(profile);
 
-      // Route based on role
-      if (profile.role === 'supervisor' || profile.role === 'admin') {
-        router.replace('/(supervisor)/home');
+      if (profile.role === "supervisor" || profile.role === "admin") {
+        router.replace("/(supervisor)/home");
       } else {
-        router.replace('/(employee)/home');
+        router.replace("/(employee)/home");
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-      // Show error message (in real app, use toast/snackbar)
-      if (error?.code === 'PGRST116') {
+      console.error("Login error:", error);
+      if (error?.code === "PGRST116") {
         alert(MISSING_PROFILE_MESSAGE);
       } else {
         alert(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
@@ -116,21 +109,32 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <DecorativeShapes variant="auth" />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Logo and Title */}
         <View style={styles.header}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>TE</Text>
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require("@/assets/images/android-icon-foreground.png")}
+              style={styles.logo}
+              contentFit="contain"
+            />
           </View>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue to TrustEnd</Text>
+          <Text style={styles.eyebrow}>TrustEnd Workforce</Text>
+          <Text style={styles.title}>Welcome back</Text>
+          <Text style={styles.subtitle}>
+            Sign in to manage attendance, requests, and workplace trust signals.
+          </Text>
         </View>
 
         {/* Login Form */}
-        <Card style={styles.formCard}>
+        <Card style={styles.formCard} variant="elevated">
           <Input
             label="Email"
             placeholder="Enter your email"
@@ -140,7 +144,9 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoComplete="email"
             error={errors.email}
-            leftIcon={<IconSymbol name="envelope" size={20} color={colors.textMuted} />}
+            leftIcon={
+              <IconSymbol name="envelope" size={20} color={colors.textMuted} />
+            }
           />
 
           <Input
@@ -151,11 +157,13 @@ export default function LoginScreen() {
             secureTextEntry={!showPassword}
             autoComplete="password"
             error={errors.password}
-            leftIcon={<IconSymbol name="lock" size={20} color={colors.textMuted} />}
+            leftIcon={
+              <IconSymbol name="lock" size={20} color={colors.textMuted} />
+            }
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <IconSymbol
-                  name={showPassword ? 'eye.slash' : 'eye'}
+                  name={showPassword ? "eye.slash" : "eye"}
                   size={20}
                   color={colors.textMuted}
                 />
@@ -164,7 +172,7 @@ export default function LoginScreen() {
           />
 
           <Button
-            title="Sign In"
+            title="Sign in"
             onPress={handleLogin}
             loading={isLoading}
             size="large"
@@ -175,20 +183,8 @@ export default function LoginScreen() {
         {/* Register Link */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Do not have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+          <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
             <Text style={styles.linkText}>Sign Up</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Organization Options */}
-        <View style={styles.orgOptions}>
-          <Text style={styles.orgOptionsText}>New to TrustEnd? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/create-organization')}>
-            <Text style={styles.linkText}>Create Organization</Text>
-          </TouchableOpacity>
-          <Text style={styles.orgOptionsText}> or </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/join-organization')}>
-            <Text style={styles.linkText}>Join with Code</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -198,78 +194,74 @@ export default function LoginScreen() {
 
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: Spacing.lg,
-    paddingTop: Spacing['3xl'],
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: Spacing['2xl'],
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: colors.background,
-    letterSpacing: 1,
-  },
-  title: {
-    fontSize: Typography['3xl'],
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: Spacing.xs,
-  },
-  subtitle: {
-    fontSize: Typography.base,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  formCard: {
-    marginBottom: Spacing.lg,
-  },
-  loginButton: {
-    marginTop: Spacing.sm,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: Typography.base,
-    color: colors.textSecondary,
-  },
-  linkText: {
-    fontSize: Typography.base,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  orgOptions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: Spacing.sm,
-  },
-  orgOptionsText: {
-    fontSize: Typography.sm,
-    color: colors.textSecondary,
-  },
-});
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: Spacing.lg,
+      paddingTop: Spacing["3xl"],
+      paddingBottom: Spacing["2xl"],
+      flexGrow: 1,
+      justifyContent: "center",
+    },
+    header: {
+      alignItems: "flex-start",
+      marginBottom: Spacing.xl,
+    },
+    logoWrapper: {
+      width: 72,
+      height: 72,
+      borderRadius: BorderRadius.xl,
+      backgroundColor: colors.card,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: Spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    logo: {
+      width: 48,
+      height: 48,
+    },
+    eyebrow: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: "800",
+      letterSpacing: 1.2,
+      marginBottom: Spacing.sm,
+    },
+    title: {
+      fontSize: Typography["4xl"],
+      fontWeight: "800",
+      color: colors.text,
+      marginBottom: Spacing.xs,
+    },
+    subtitle: {
+      fontSize: Typography.base,
+      color: colors.textSecondary,
+      lineHeight: Typography.lineHeightBase,
+      maxWidth: 340,
+    },
+    formCard: {
+      marginBottom: Spacing.lg,
+      gap: Spacing.xs,
+    },
+    loginButton: {
+      marginTop: Spacing.sm,
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    footerText: {
+      fontSize: Typography.base,
+      color: colors.textSecondary,
+    },
+    linkText: {
+      fontSize: Typography.base,
+      color: colors.primary,
+      fontWeight: "800",
+    },
+  });

@@ -20,6 +20,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatDate, formatTime } from '@/utils/helpers';
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 function parseReviewStatus(notes?: string | null) {
   if (!notes) return 'none';
@@ -71,14 +72,16 @@ export default function EmployeeAttendanceScreen() {
   return (
     <ScrollView
       style={styles.container}
+      contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading || isSyncing} onRefresh={refresh} />}>
+      <DecorativeShapes variant="employee" />
       <View style={styles.header}>
         <Text style={styles.title}>Attendance</Text>
         <Text style={styles.subtitle}>Your recent check-in and check-out records</Text>
       </View>
 
       {pendingSyncLogs.length > 0 ? (
-        <Card style={styles.syncCard}>
+        <Card style={styles.syncCard} variant="soft">
           <View style={styles.syncRow}>
             <IconSymbol name="arrow.triangle.2.circlepath" size={20} color={colors.warning} />
             <View style={styles.syncText}>
@@ -100,15 +103,15 @@ export default function EmployeeAttendanceScreen() {
       ) : null}
 
       <View style={styles.stats}>
-        <Card style={styles.statCard}>
+        <Card style={styles.statCard} variant="elevated">
           <Text style={styles.statValue}>{history.length}</Text>
           <Text style={styles.statLabel}>Records</Text>
         </Card>
-        <Card style={styles.statCard}>
+        <Card style={styles.statCard} variant="elevated">
           <Text style={styles.statValue}>{lateCount}</Text>
           <Text style={styles.statLabel}>Late</Text>
         </Card>
-        <Card style={styles.statCard}>
+        <Card style={styles.statCard} variant="elevated">
           <Text style={styles.statValue}>{reviewCount}</Text>
           <Text style={styles.statLabel}>Review</Text>
         </Card>
@@ -133,7 +136,7 @@ export default function EmployeeAttendanceScreen() {
             const checkOutDate = log.check_out_time ? new Date(log.check_out_time) : null;
 
             return (
-              <Card key={log.id} style={styles.historyCard}>
+              <Card key={log.id} style={styles.historyCard} variant="elevated">
                 <View style={styles.recordHeader}>
                   <View>
                     <Text style={styles.recordDate}>{formatDate(checkInDate)}</Text>
@@ -204,14 +207,18 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    content: {
+      paddingBottom: Spacing['2xl'],
+    },
     header: {
       padding: Spacing.lg,
       paddingTop: Spacing['2xl'],
+      paddingBottom: Spacing.md,
     },
     title: {
       color: colors.text,
       fontSize: Typography['2xl'],
-      fontWeight: '700',
+      fontWeight: '800',
     },
     subtitle: {
       color: colors.textSecondary,
@@ -245,9 +252,10 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: BorderRadius.md,
       marginTop: Spacing.md,
       paddingVertical: Spacing.sm,
+      minHeight: 42,
     },
     syncButtonText: {
-      color: colors.background,
+      color: '#FFFFFF',
       fontSize: Typography.sm,
       fontWeight: '700',
     },
@@ -260,11 +268,13 @@ const createStyles = (colors: ThemeColors) =>
     statCard: {
       flex: 1,
       alignItems: 'center',
+      minHeight: 96,
+      justifyContent: 'center',
     },
     statValue: {
       color: colors.text,
       fontSize: Typography.xl,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     statLabel: {
       color: colors.textSecondary,
@@ -280,7 +290,7 @@ const createStyles = (colors: ThemeColors) =>
     sectionTitle: {
       color: colors.text,
       fontSize: Typography.lg,
-      fontWeight: '700',
+      fontWeight: '800',
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.md,
     },
@@ -295,7 +305,7 @@ const createStyles = (colors: ThemeColors) =>
     emptyTitle: {
       color: colors.text,
       fontSize: Typography.base,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     emptySubtitle: {
       color: colors.textSecondary,
@@ -342,9 +352,11 @@ const createStyles = (colors: ThemeColors) =>
     },
     timeItem: {
       flex: 1,
-      backgroundColor: colors.backgroundLighter,
+      backgroundColor: colors.cardLight,
       borderRadius: BorderRadius.md,
       padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     timeLabel: {
       color: colors.textMuted,

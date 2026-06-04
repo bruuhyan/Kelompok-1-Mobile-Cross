@@ -97,6 +97,74 @@ export function isValidPassword(password: string): boolean {
   return passwordRegex.test(password);
 }
 
+export function isValidBssid(value: string): boolean {
+  return /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(value.trim());
+}
+
+export function isValidWorkTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
+}
+
+export function ipv4ToNumber(ipAddress: string) {
+  const parts = ipAddress.trim().split('.').map(Number);
+  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part) || part < 0 || part > 255)) {
+    return null;
+  }
+
+  return parts.reduce((acc, part) => ((acc << 8) + part) >>> 0, 0);
+}
+
+export function isIpInRange(ipAddress?: string | null, range?: string | null) {
+  if (!range || !ipAddress) return true;
+
+  const normalizedRange = range.trim();
+  if (normalizedRange.includes('/')) {
+    const [baseIp, cidrText] = normalizedRange.split('/');
+    const cidr = Number(cidrText);
+    const ipNumber = ipv4ToNumber(ipAddress);
+    const baseNumber = ipv4ToNumber(baseIp);
+
+    if (ipNumber === null || baseNumber === null || !Number.isInteger(cidr) || cidr < 0 || cidr > 32) {
+      return false;
+    }
+
+    const mask = cidr === 0 ? 0 : (0xffffffff << (32 - cidr)) >>> 0;
+    return (ipNumber & mask) === (baseNumber & mask);
+  }
+
+  if (normalizedRange.includes('-')) {
+    const [startIp, endIp] = normalizedRange.split('-').map((part) => part.trim());
+    const ipNumber = ipv4ToNumber(ipAddress);
+    const startNumber = ipv4ToNumber(startIp);
+    const endNumber = ipv4ToNumber(endIp);
+
+    if (ipNumber === null || startNumber === null || endNumber === null) return false;
+    return ipNumber >= startNumber && ipNumber <= endNumber;
+  }
+
+  return ipv4ToNumber(normalizedRange) !== null && ipAddress.trim() === normalizedRange;
+}
+
+export function isValidIpRange(value: string): boolean {
+  const normalized = value.trim();
+  if (!normalized) return true;
+
+  if (normalized.includes('/')) {
+    const [baseIp, cidrText] = normalized.split('/');
+    const cidr = Number(cidrText);
+    return ipv4ToNumber(baseIp) !== null && Number.isInteger(cidr) && cidr >= 0 && cidr <= 32;
+  }
+
+  if (normalized.includes('-')) {
+    const [startIp, endIp] = normalized.split('-').map((part) => part.trim());
+    const startNumber = ipv4ToNumber(startIp);
+    const endNumber = ipv4ToNumber(endIp);
+    return startNumber !== null && endNumber !== null && startNumber <= endNumber;
+  }
+
+  return ipv4ToNumber(normalized) !== null;
+}
+
 /**
  * Truncate text with ellipsis
  */

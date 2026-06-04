@@ -3,25 +3,31 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
+import NetInfo from '@react-native-community/netinfo';
+import { useRouter } from 'expo-router';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Input } from '@/components/Input';
-import { LocationPicker, LocationData } from '@/components/LocationPicker';
 import { supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
+import DecorativeShapes from "@/components/DecorativeShapes";
+import { isValidBssid, isValidIpRange, isValidWorkTime } from '@/utils/helpers';
 
 export default function SupervisorSettingsScreen() {
   const colors = useAppTheme();
   const styles = createStyles(colors);
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
 
   const [gpsLat, setGpsLat] = useState('');
@@ -34,6 +40,52 @@ export default function SupervisorSettingsScreen() {
   const [workEnd, setWorkEnd] = useState('17:00');
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isGettingNetwork, setIsGettingNetwork] = useState(false);
+  const [ignoreCheckinTime, setIgnoreCheckinTime] = useState(false);
+
+  const validateSettings = () => {
+    const latitude = gpsLat.trim() ? Number(gpsLat) : null;
+    const longitude = gpsLng.trim() ? Number(gpsLng) : null;
+    const radius = gpsRadius.trim() ? Number(gpsRadius) : null;
+    const normalizedBssid = wifiBssid.trim();
+    const normalizedIpRange = ipRange.trim();
+    const normalizedWorkStart = workStart.trim();
+    const normalizedWorkEnd = workEnd.trim();
+
+    if ((latitude == null) !== (longitude == null)) {
+      return 'GPS latitude and longitude must be filled together';
+    }
+
+    if (latitude != null && (Number.isNaN(latitude) || latitude < -90 || latitude > 90)) {
+      return 'GPS latitude must be between -90 and 90';
+    }
+
+    if (longitude != null && (Number.isNaN(longitude) || longitude < -180 || longitude > 180)) {
+      return 'GPS longitude must be between -180 and 180';
+    }
+
+    if (radius != null && (Number.isNaN(radius) || radius < 10 || radius > 1000)) {
+      return 'GPS radius must be between 10 and 1000 meters';
+    }
+
+    if (normalizedBssid && !isValidBssid(normalizedBssid)) {
+      return 'WiFi BSSID must use MAC format like 00:11:22:33:44:55';
+    }
+
+    if (normalizedIpRange && !isValidIpRange(normalizedIpRange)) {
+      return 'IP range must be an exact IPv4, CIDR, or range like 192.168.1.0/24';
+    }
+
+    if (normalizedWorkStart && !isValidWorkTime(normalizedWorkStart)) {
+      return 'Start time must use HH:mm format';
+    }
+
+    if (normalizedWorkEnd && !isValidWorkTime(normalizedWorkEnd)) {
+      return 'End time must use HH:mm format';
+    }
+
+    return null;
+  };
 
   const loadSettings = useCallback(async () => {
     if (!user?.organization_id) return;
@@ -47,8 +99,9 @@ export default function SupervisorSettingsScreen() {
         setWifiSsid(data.wifi_ssid || '');
         setWifiBssid(data.wifi_bssid || '');
         setIpRange(data.ip_range || '');
-        setWorkStart(data.work_start_time || '09:00');
-        setWorkEnd(data.work_end_time || '17:00');
+        setWorkStart(data.work_start_time?.slice(0, 5) || '09:00');
+        setWorkEnd(data.work_end_time?.slice(0, 5) || '17:00');
+        setIgnoreCheckinTime(data.ignore_checkin_time ?? false);
       }
     } catch (error) {
       console.error('Load settings error:', error);
@@ -131,29 +184,65 @@ export default function SupervisorSettingsScreen() {
     }
   };
 
+  const handleUseCurrentNetwork = async () => {
+    setIsGettingNetwork(true);
+
+    try {
+      const network = await NetInfo.fetch();
+      const details = network.details as Record<string, string | null | undefined> | null;
+
+      if (network.type !== 'wifi') {
+        Alert.alert('Info', 'Not connected to WiFi. IP address will still be filled.');
+      }
+
+      if (details?.ssid) {
+        setWifiSsid(details.ssid);
+      }
+
+      if (details?.bssid) {
+        setWifiBssid(details.bssid.toUpperCase());
+      }
+
+      if (details?.ipAddress) {
+        setIpRange(details.ipAddress + '/24');
+      }
+
+      if (!details?.ssid && !details?.bssid && !details?.ipAddress) {
+        Alert.alert('Error', 'Could not detect any network information from this device.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to get network info');
+    } finally {
+      setIsGettingNetwork(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!user?.organization_id) {
       Alert.alert('Error', 'Organization ID is not available');
       return;
     }
 
-    const radius = Number(gpsRadius);
-    if (gpsRadius && (Number.isNaN(radius) || radius < 10 || radius > 1000)) {
-      Alert.alert('Error', 'GPS radius must be between 10 and 1000 meters');
+    const validationError = validateSettings();
+    if (validationError) {
+      Alert.alert('Error', validationError);
       return;
     }
+
+    const radius = gpsRadius.trim() ? Number(gpsRadius) : null;
 
     setIsSaving(true);
     try {
       await supervisorService.upsertOrganizationSettings(user.organization_id, {
-        gps_lat: gpsLat ? Number(gpsLat) : null,
-        gps_lng: gpsLng ? Number(gpsLng) : null,
-        gps_radius_meters: gpsRadius ? radius : null,
-        wifi_ssid: wifiSsid || null,
-        wifi_bssid: wifiBssid || null,
-        ip_range: ipRange || null,
-        work_start_time: workStart || null,
-        work_end_time: workEnd || null,
+        gps_lat: gpsLat.trim() ? Number(gpsLat) : null,
+        gps_lng: gpsLng.trim() ? Number(gpsLng) : null,
+        gps_radius_meters: radius,
+        wifi_ssid: wifiSsid.trim() || null,
+        wifi_bssid: wifiBssid.trim().toUpperCase() || null,
+        ip_range: ipRange.trim() || null,
+        work_start_time: workStart.trim() || null,
+        work_end_time: workEnd.trim() || null,
+        ignore_checkin_time: ignoreCheckinTime,
       });
 
       Alert.alert('Success', 'Organization settings saved');
@@ -167,9 +256,21 @@ export default function SupervisorSettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Display and navigation preferences.</Text>
+    <View style={styles.container}>
+      <DecorativeShapes variant="supervisor" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.subtitle}>Display and navigation preferences.</Text>
+        </View>
+      </View>
 
       <SettingsAppearance />
 
@@ -236,7 +337,7 @@ export default function SupervisorSettingsScreen() {
             label="WiFi BSSID"
             placeholder="00:11:22:33:44:55"
             value={wifiBssid}
-            onChangeText={setWifiBssid}
+            onChangeText={(value) => setWifiBssid(value.toUpperCase())}
           />
 
           <Input
@@ -245,6 +346,18 @@ export default function SupervisorSettingsScreen() {
             value={ipRange}
             onChangeText={setIpRange}
           />
+
+          <TouchableOpacity
+            style={[
+              styles.useLocationBtn,
+              isGettingNetwork && styles.useLocationBtnDisabled,
+            ]}
+            disabled={isGettingNetwork}
+            onPress={handleUseCurrentNetwork}>
+            <Text style={styles.useLocationText}>
+              {isGettingNetwork ? 'Detecting Network...' : 'Use Current Network'}
+            </Text>
+          </TouchableOpacity>
 
           <Text style={styles.formSectionTitle}>Work Hours</Text>
 
@@ -267,16 +380,32 @@ export default function SupervisorSettingsScreen() {
             </View>
           </View>
 
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.toggleLabel}>Ignore Check-in Time</Text>
+              <Text style={styles.toggleDescription}>
+                When enabled, employees will not be marked late regardless of check-in time,
+                and late penalties will not affect trust scores.
+              </Text>
+            </View>
+            <Switch
+              value={ignoreCheckinTime}
+              onValueChange={setIgnoreCheckinTime}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={ignoreCheckinTime ? colors.primary : colors.textMuted}
+            />
+          </View>
+
           <Button
             title="Save Settings"
             onPress={handleSave}
             loading={isSaving}
-            disabled={isSaving}
             size="large"
           />
         </Card>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -291,6 +420,19 @@ const createStyles = (colors: ThemeColors) =>
       paddingTop: Spacing.xl,
       paddingBottom: Spacing['3xl'],
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginBottom: Spacing.lg,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     title: {
       color: colors.text,
       fontSize: Typography['3xl'],
@@ -300,7 +442,6 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       fontSize: Typography.base,
       marginTop: Spacing.xs,
-      marginBottom: Spacing.lg,
     },
     section: {
       marginTop: Spacing.xl,
@@ -348,5 +489,24 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.sm,
       fontWeight: '600',
       color: colors.primary,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginTop: Spacing.md,
+    },
+    toggleInfo: {
+      flex: 1,
+    },
+    toggleLabel: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '600',
+    },
+    toggleDescription: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginTop: Spacing.xs,
     },
   });

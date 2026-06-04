@@ -6,12 +6,14 @@
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 export default function EmployeeTabsLayout() {
   const colors = useAppTheme();
   const insets = useSafeAreaInsets();
+  const bottomInset = Platform.OS === "android" ? Math.max(insets.bottom, 16) : insets.bottom;
 
   return (
     <Tabs
@@ -19,18 +21,23 @@ export default function EmployeeTabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          backgroundColor: colors.card,
+          borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 8,
+          height: 68 + bottomInset,
+          paddingBottom: bottomInset + 8,
+          paddingTop: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -8 },
+          shadowOpacity: 0.08,
+          shadowRadius: 18,
+          elevation: 12,
         },
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "600",
+          fontWeight: "700",
         },
       }}
     >

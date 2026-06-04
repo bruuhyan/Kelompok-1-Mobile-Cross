@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { attendanceService } from "@/services/attendanceService";
 import { authService, taskService } from "@/services/supabase";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { useAuthStore } from "@/store/authStore";
@@ -29,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DecorativeShapes from "@/components/DecorativeShapes";
 
 export default function EmployeeHomeScreen() {
   const colors = useAppTheme();
@@ -39,6 +41,7 @@ export default function EmployeeHomeScreen() {
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [workHours, setWorkHours] = useState({ start: '', end: '' });
   const {
     status: todayStatus,
     currentLog,
@@ -58,6 +61,24 @@ export default function EmployeeHomeScreen() {
       processSyncQueue();
     }
   }, [initializeToday, processSyncQueue, user]);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Attendance", error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (!user?.organization_id) return;
+    attendanceService.getOrgSettings(user.organization_id).then((settings) => {
+      if (settings) {
+        setWorkHours({
+          start: settings.work_start_time?.slice(0, 5) || '09:00',
+          end: settings.work_end_time?.slice(0, 5) || '17:00',
+        });
+      }
+    });
+  }, [user?.organization_id]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -98,9 +119,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckIn(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-in submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-in saved and will sync when online."
           : "Check-in successful.",
       );
@@ -114,9 +138,12 @@ export default function EmployeeHomeScreen() {
 
     try {
       await performCheckOut(user);
+      const latestAttendance = useAttendanceStore.getState();
       Alert.alert(
         "Success",
-        pendingSyncLogs.length > 0
+        latestAttendance.lastValidationResult?.requiresReview
+          ? "Check-out submitted and flagged for supervisor review."
+          : latestAttendance.pendingSyncLogs.length > 0
           ? "Check-out saved and will sync when online."
           : "Check-out successful.",
       );
@@ -152,7 +179,8 @@ export default function EmployeeHomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DecorativeShapes variant="employee" />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -171,7 +199,7 @@ export default function EmployeeHomeScreen() {
       </View>
 
       {/* Trust Score Card */}
-      <Card style={styles.trustScoreCard}>
+      <Card style={styles.trustScoreCard} variant="elevated">
         <View style={styles.trustScoreHeader}>
           <Text style={styles.trustScoreTitle}>Your Trust Score</Text>
           <TouchableOpacity onPress={() => setShowTrustScoreModal(true)}>
@@ -191,7 +219,7 @@ export default function EmployeeHomeScreen() {
       </Card>
 
       {/* Today Status Card */}
-      <Card style={styles.statusCard}>
+      <Card style={styles.statusCard} variant="elevated">
         <Text style={styles.statusTitle}>Today Status</Text>
         <View style={styles.statusContent}>
           <View
@@ -201,6 +229,12 @@ export default function EmployeeHomeScreen() {
             {getStatusText()}
           </Text>
         </View>
+
+        {workHours.start ? (
+          <Text style={styles.workHoursText}>
+            Work hours: {workHours.start} — {workHours.end}
+          </Text>
+        ) : null}
 
         {pendingSyncLogs.length > 0 ? (
           <View style={styles.offlineBanner}>
@@ -256,7 +290,7 @@ export default function EmployeeHomeScreen() {
                 <IconSymbol
                   name="location.fill"
                   size={20}
-                  color={colors.background}
+                  color="#FFFFFF"
                 />
                 <Text style={styles.checkInButtonText}>Check In</Text>
               </>
@@ -275,7 +309,7 @@ export default function EmployeeHomeScreen() {
                 <IconSymbol
                   name="location.slash"
                   size={20}
-                  color={colors.background}
+                  color="#FFFFFF"
                 />
                 <Text style={styles.checkOutButtonText}>Check Out</Text>
               </>
@@ -291,6 +325,7 @@ export default function EmployeeHomeScreen() {
             <Text style={styles.completedText}>Completed for today</Text>
           </View>
         )}
+
       </Card>
 
       {/* Quick Actions */}
@@ -525,9 +560,13 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    content: {
+      paddingBottom: Spacing["2xl"],
+    },
     header: {
       padding: Spacing.lg,
       paddingTop: Spacing["2xl"],
+      paddingBottom: Spacing.md,
     },
     headerTop: {
       flexDirection: "row",
@@ -535,21 +574,32 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: "center",
     },
     greeting: {
-      fontSize: Typography.base,
+      fontSize: Typography.sm,
       color: colors.textSecondary,
+      fontWeight: "700",
+      textTransform: "uppercase",
     },
     userName: {
       fontSize: Typography["2xl"],
-      fontWeight: "700",
+      fontWeight: "800",
       color: colors.text,
+      marginTop: Spacing.xs,
     },
     logoutButton: {
-      padding: Spacing.sm,
+      width: 42,
+      height: 42,
+      borderRadius: BorderRadius.full,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     trustScoreCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
       alignItems: "center",
+      borderColor: `${colors.primary}55`,
     },
     trustScoreHeader: {
       flexDirection: "row",
@@ -558,7 +608,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     trustScoreTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
       marginRight: Spacing.xs,
     },
@@ -573,10 +623,11 @@ const createStyles = (colors: ThemeColors) =>
     statusCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
+      borderColor: `${colors.secondary}55`,
     },
     statusTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
       marginBottom: Spacing.md,
     },
@@ -603,9 +654,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkInButtonText: {
-      color: colors.background,
+      color: "#FFFFFF",
       fontSize: Typography.base,
       fontWeight: "600",
     },
@@ -617,9 +669,10 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.md,
       borderRadius: BorderRadius.md,
       gap: Spacing.sm,
+      minHeight: 54,
     },
     checkOutButtonText: {
-      color: colors.background,
+      color: "#FFFFFF",
       fontSize: Typography.base,
       fontWeight: "600",
     },
@@ -634,6 +687,11 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.success,
       fontSize: Typography.base,
       fontWeight: "600",
+    },
+    workHoursText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      marginBottom: Spacing.md,
     },
     offlineBanner: {
       flexDirection: "row",
@@ -670,7 +728,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     sectionTitle: {
       fontSize: Typography.lg,
-      fontWeight: "600",
+      fontWeight: "800",
       color: colors.text,
     },
     edgeAlignedSectionTitle: {
@@ -740,7 +798,9 @@ const createStyles = (colors: ThemeColors) =>
       padding: Spacing.md,
       borderRadius: BorderRadius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderLight,
+      minHeight: 110,
+      justifyContent: "center",
     },
     quickActionIcon: {
       width: 48,
@@ -753,8 +813,9 @@ const createStyles = (colors: ThemeColors) =>
     },
     quickActionText: {
       fontSize: Typography.sm,
-      fontWeight: "600",
+      fontWeight: "700",
       color: colors.text,
+      textAlign: "center",
     },
     activityCard: {
       marginBottom: Spacing["2xl"],

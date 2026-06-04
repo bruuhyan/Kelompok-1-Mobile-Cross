@@ -8,9 +8,10 @@ import NetInfo from '@react-native-community/netinfo';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { TRUST_SCORE_MAX, getTrustScoreTier } from '@/constants/theme';
 import { supabase, profileService } from '@/services/supabase';
 import { STORAGE_KEYS, VALIDATION } from '@/utils/constants';
-import { calculateDistance } from '@/utils/helpers';
+import { calculateDistance, isIpInRange } from '@/utils/helpers';
 import {
   AttendanceHistoryResult,
   AttendanceLog,
@@ -29,10 +30,12 @@ import {
 const DEFAULT_WORK_START_TIME = '09:00';
 const GRACE_PERIOD_MINUTES = 15;
 const OFFLINE_MAX_AGE_HOURS = 24;
-const TRUST_SCORE_MAX = 50;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 type AttendanceNotes = {
   validation_flags?: AttendanceValidation;
+  check_in_validation_flags?: AttendanceValidation;
+  check_out_validation_flags?: AttendanceValidation;
   review_status?: 'none' | 'needs_review' | 'urgent_review';
   review_reasons?: string[];
   offline?: {
@@ -116,15 +119,11 @@ function getSettingsLongitude(settings: OrganizationSettings | null) {
 }
 
 function getReviewStatus(score: number): AttendanceNotes['review_status'] {
-  if (score <= 19) return 'urgent_review';
-  if (score <= 35) return 'needs_review';
-  return 'none';
+  return getTrustScoreTier(score).reviewStatus;
 }
 
 function getTrustScoreLabel(score: number): TrustScoreCalculation['label'] {
-  if (score <= 19) return 'Urgent Review';
-  if (score <= 35) return 'Needs Review';
-  return 'Okay';
+  return getTrustScoreTier(score).label;
 }
 
 function getMinutesBetween(start?: string | null, end?: string | null) {
@@ -143,6 +142,14 @@ function isSameLocalDay(left: string, right: string) {
   );
 }
 
+function isBeforeToday(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return date.getTime() < today.getTime();
+}
+
 function isLate(checkInTime: string, workStartTime?: string | null) {
   const [hours, minutes] = (workStartTime || DEFAULT_WORK_START_TIME).split(':').map(Number);
   const checkInDate = new Date(checkInTime);
@@ -153,69 +160,60 @@ function isLate(checkInTime: string, workStartTime?: string | null) {
   return checkInDate.getTime() > expected.getTime();
 }
 
-function isIpInRange(ipAddress?: string | null, range?: string | null) {
-  if (!range || !ipAddress) return true;
-
-  const normalizedRange = range.trim();
-  if (normalizedRange.includes('/')) {
-    const [baseIp, cidrText] = normalizedRange.split('/');
-    const cidr = Number(cidrText);
-    const ipNumber = ipv4ToNumber(ipAddress);
-    const baseNumber = ipv4ToNumber(baseIp);
-
-    if (ipNumber === null || baseNumber === null || Number.isNaN(cidr)) return false;
-
-    const mask = cidr === 0 ? 0 : (0xffffffff << (32 - cidr)) >>> 0;
-    return (ipNumber & mask) === (baseNumber & mask);
-  }
-
-  if (normalizedRange.includes('-')) {
-    const [startIp, endIp] = normalizedRange.split('-').map((part) => part.trim());
-    const ipNumber = ipv4ToNumber(ipAddress);
-    const startNumber = ipv4ToNumber(startIp);
-    const endNumber = ipv4ToNumber(endIp);
-
-    if (ipNumber === null || startNumber === null || endNumber === null) return false;
-    return ipNumber >= startNumber && ipNumber <= endNumber;
-  }
-
-  return ipAddress === normalizedRange;
-}
-
-function ipv4ToNumber(ipAddress: string) {
-  const parts = ipAddress.split('.').map(Number);
-  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part) || part < 0 || part > 255)) {
-    return null;
-  }
-
-  return parts.reduce((acc, part) => ((acc << 8) + part) >>> 0, 0);
-}
-
 function getValidationReviewReasons(validation: AttendanceValidation) {
   const reasons: string[] = [];
 
-  if (validation.gps_valid === false) reasons.push('GPS outside workplace radius');
-  if (validation.wifi_valid === false) reasons.push('WiFi network mismatch');
-  if (validation.ip_valid === false) reasons.push('Unusual IP address');
-  if (validation.spoofing_detected) reasons.push('Location anomaly detected');
+  if (validation.gps_valid === false) {
+    reasons.push(validation.details?.gps?.message || 'GPS outside workplace radius');
+  }
+  if (validation.wifi_valid === false) {
+    reasons.push(validation.details?.wifi?.message || 'WiFi network mismatch');
+  }
+  if (validation.ip_valid === false) {
+    reasons.push(validation.details?.ip?.message || 'Unusual IP address');
+  }
+  if (validation.spoofing_detected) {
+    reasons.push(validation.details?.spoofing?.message || 'Location anomaly detected');
+  }
 
   return reasons;
 }
 
-function buildNotes(validation: AttendanceValidation, extra?: Partial<AttendanceNotes>): string {
-  const reasons = getValidationReviewReasons(validation);
-  const score = extra?.review_status ? undefined : null;
+function getNoteValidationFlags(notes: AttendanceNotes): AttendanceValidation[] {
+  return [
+    notes.check_in_validation_flags,
+    notes.check_out_validation_flags,
+    notes.validation_flags,
+  ].filter((validation): validation is AttendanceValidation => !!validation);
+}
 
-  return JSON.stringify({
-    validation_flags: validation,
-    review_status: extra?.review_status ?? (reasons.length > 0 ? 'needs_review' : 'none'),
-    review_reasons: reasons,
+function getNotesReviewReasons(notes: AttendanceNotes) {
+  return Array.from(new Set(getNoteValidationFlags(notes).flatMap(getValidationReviewReasons)));
+}
+
+function buildNotes(
+  validation: AttendanceValidation,
+  phase: 'check_in' | 'check_out',
+  existingNotes?: AttendanceNotes,
+  extra?: Partial<AttendanceNotes>
+): string {
+  const nextNotes: AttendanceNotes = {
+    ...existingNotes,
+    ...(phase === 'check_in'
+      ? { check_in_validation_flags: validation }
+      : { check_out_validation_flags: validation }),
     client: {
       platform: Platform.OS,
       app_version: Constants.expoConfig?.version,
     },
-    ...(score === null ? {} : { score }),
     ...extra,
+  };
+  const reasons = getNotesReviewReasons(nextNotes);
+
+  return JSON.stringify({
+    ...nextNotes,
+    review_status: extra?.review_status ?? (reasons.length > 0 ? 'needs_review' : 'none'),
+    review_reasons: reasons,
   });
 }
 
@@ -325,8 +323,23 @@ export const attendanceService = {
       };
     }
 
-    const ssidValid = !settings.wifi_ssid || network.ssid === settings.wifi_ssid;
-    const bssidValid = !settings.wifi_bssid || network.bssid === settings.wifi_bssid;
+    const requiredSsid = settings.wifi_ssid?.trim();
+    const requiredBssid = settings.wifi_bssid?.trim().toLowerCase();
+    const currentSsid = network.ssid?.trim();
+    const currentBssid = network.bssid?.trim().toLowerCase();
+    const missingRequiredSsid = !!requiredSsid && !currentSsid;
+    const missingRequiredBssid = !!requiredBssid && !currentBssid;
+
+    if (missingRequiredSsid || missingRequiredBssid) {
+      return {
+        isValid: false,
+        isSuspicious: true,
+        message: 'WiFi info unavailable on this device. Attendance will be flagged for review.',
+      };
+    }
+
+    const ssidValid = !requiredSsid || currentSsid === requiredSsid;
+    const bssidValid = !requiredBssid || currentBssid === requiredBssid;
     const isValid = ssidValid && bssidValid;
 
     return {
@@ -341,12 +354,21 @@ export const attendanceService = {
     network: AttendanceNetworkInfo,
     settings: OrganizationSettings | null
   ): Promise<AttendanceValidationResult> {
-    const isValid = isIpInRange(network.ipAddress, settings?.ip_range);
+    const configuredRange = settings?.ip_range?.trim();
+    if (configuredRange && !network.ipAddress) {
+      return {
+        isValid: false,
+        isSuspicious: true,
+        message: 'Local IP address unavailable for configured IP range',
+      };
+    }
+
+    const isValid = isIpInRange(network.ipAddress, configuredRange);
 
     return {
       isValid,
       isSuspicious: !isValid,
-      message: isValid ? 'IP address verified' : 'Unusual IP address detected',
+      message: isValid ? 'Local IP address verified' : 'Local IP address is outside the configured range',
     };
   },
 
@@ -413,13 +435,19 @@ export const attendanceService = {
       wifi_valid: wifi.isValid,
       ip_valid: ip.isValid,
       spoofing_detected: !!spoofing.isSuspicious,
-      requires_review: warnings.length > 0 || !!spoofing.isSuspicious,
+      requires_review: errors.length > 0 || warnings.length > 0 || !!spoofing.isSuspicious,
+      details: {
+        gps,
+        wifi,
+        ip,
+        spoofing,
+      },
       errors,
       warnings,
     };
 
     return {
-      canSubmit: errors.length === 0,
+      canSubmit: true,
       requiresReview: !!validation.requires_review,
       location,
       network,
@@ -449,10 +477,60 @@ export const attendanceService = {
     return data;
   },
 
+  async deleteTodayAttendance(userId: string, organizationId: string): Promise<{ deletedCount: number; trustScore: number }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const from = today.toISOString();
+    const to = tomorrow.toISOString();
+
+    const { count, error: countError } = await supabase
+      .from('attendance_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .gte('check_in_time', from)
+      .lt('check_in_time', to);
+
+    if (countError) throw countError;
+
+    const { error: deleteError } = await supabase
+      .from('attendance_logs')
+      .delete()
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .gte('check_in_time', from)
+      .lt('check_in_time', to);
+
+    if (deleteError) throw deleteError;
+
+    const queue = await getStoredQueue();
+    const remainingQueue = queue.filter((item) => {
+      if (item.user_id !== userId) return true;
+      const timestamp = new Date(item.timestamp);
+      return timestamp < today || timestamp >= tomorrow;
+    });
+
+    if (remainingQueue.length !== queue.length) {
+      await setStoredQueue(remainingQueue);
+    }
+
+    const trustScore = await this.recalculateTrustScore(userId);
+
+    return {
+      deletedCount: count ?? 0,
+      trustScore: trustScore.score,
+    };
+  },
+
   async performCheckIn(data: CheckInData): Promise<AttendanceLog> {
     const timestamp = data.clientTimestamp ?? new Date().toISOString();
     const settings = await this.getOrgSettings(data.organizationId);
-    const late = isLate(timestamp, settings?.work_start_time);
+    const ignoreCheckinTime = settings?.ignore_checkin_time === true;
+    const late = ignoreCheckinTime ? false : isLate(timestamp, settings?.work_start_time);
 
     const { data: log, error } = await supabase
       .from('attendance_logs')
@@ -467,7 +545,7 @@ export const attendanceService = {
         check_in_ip: data.network.ipAddress,
         is_late: late,
         trust_score_impact: 0,
-        notes: buildNotes(data.validation, {
+        notes: buildNotes(data.validation, 'check_in', undefined, {
           offline: data.offlineId
             ? {
                 id: data.offlineId,
@@ -487,6 +565,14 @@ export const attendanceService = {
 
   async performCheckOut(data: CheckOutData): Promise<AttendanceLog> {
     const timestamp = data.clientTimestamp ?? new Date().toISOString();
+    const { data: currentLog, error: currentLogError } = await supabase
+      .from('attendance_logs')
+      .select('notes')
+      .eq('id', data.logId)
+      .eq('user_id', data.userId)
+      .maybeSingle();
+
+    if (currentLogError) throw currentLogError;
 
     const { data: log, error } = await supabase
       .from('attendance_logs')
@@ -497,7 +583,7 @@ export const attendanceService = {
         check_out_wifi_ssid: data.network.ssid,
         check_out_wifi_bssid: data.network.bssid,
         check_out_ip: data.network.ipAddress,
-        notes: buildNotes(data.validation, {
+        notes: buildNotes(data.validation, 'check_out', parseNotes(currentLog?.notes), {
           auto_checkout: data.autoCheckout,
           offline: data.offlineId
             ? {
@@ -555,10 +641,10 @@ export const attendanceService = {
     };
   },
 
-  calculateTrustScore(logs: AttendanceLog[]): TrustScoreCalculation {
+  calculateTrustScore(logs: AttendanceLog[], ignoreCheckinTime = false): TrustScoreCalculation {
     const recentLogs = logs.filter((log) => {
       const ageMs = Date.now() - new Date(log.check_in_time).getTime();
-      return ageMs <= 30 * 24 * 60 * 60 * 1000;
+      return ageMs <= THIRTY_DAYS_MS;
     });
 
     const sorted = [...recentLogs].sort(
@@ -569,18 +655,22 @@ export const attendanceService = {
 
     sorted.forEach((log, index) => {
       const notes = parseNotes(log.notes);
-      const flags = notes.validation_flags;
+      const flags = getNoteValidationFlags(notes);
       const duplicateSameDay = sorted
         .slice(0, index)
         .some((previous) => isSameLocalDay(previous.check_in_time, log.check_in_time));
-      const missingCheckout = !log.check_out_time;
+      const missingCheckout = !log.check_out_time && isBeforeToday(log.check_in_time);
+      const hasGpsViolation = flags.some((validation) => validation.gps_valid === false);
+      const hasWifiViolation = flags.some((validation) => validation.wifi_valid === false);
+      const hasIpViolation = flags.some((validation) => validation.ip_valid === false);
+      const hasSpoofingViolation = flags.some((validation) => !!validation.spoofing_detected);
 
       const offenseWeights = [
-        log.is_late ? 1 : 0,
-        flags?.gps_valid === false ? 4 : 0,
-        flags?.wifi_valid === false ? 3 : 0,
-        flags?.ip_valid === false ? 1 : 0,
-        flags?.spoofing_detected ? 6 : 0,
+        !ignoreCheckinTime && log.is_late ? 1 : 0,
+        hasGpsViolation ? 4 : 0,
+        hasWifiViolation ? 3 : 0,
+        hasIpViolation ? 1 : 0,
+        hasSpoofingViolation ? 6 : 0,
         duplicateSameDay ? 2 : 0,
         missingCheckout ? 2 : 0,
       ].filter((weight) => weight > 0);
@@ -597,20 +687,23 @@ export const attendanceService = {
 
     const roundedPenalty = Math.round(penalty);
     const score = Math.max(0, TRUST_SCORE_MAX - roundedPenalty);
+    const reviewStatus = getReviewStatus(score);
 
     return {
       score,
       label: getTrustScoreLabel(score),
       offenseCount,
       penalty: roundedPenalty,
-      reviewRequired: score <= 35,
-      urgentReviewRequired: score <= 19,
+      reviewRequired: reviewStatus !== 'none',
+      urgentReviewRequired: reviewStatus === 'urgent_review',
     };
   },
 
   async recalculateTrustScore(userId: string): Promise<TrustScoreCalculation> {
     const { logs } = await this.fetchAttendanceHistory(userId, { limit: 60 });
-    const result = this.calculateTrustScore(logs);
+    const profile = await profileService.getProfile(userId);
+    const settings = profile ? await this.getOrgSettings(profile.organization_id) : null;
+    const result = this.calculateTrustScore(logs, settings?.ignore_checkin_time === true);
     await profileService.updateProfile(userId, { trust_score: result.score });
 
     const newestLog = logs[0];

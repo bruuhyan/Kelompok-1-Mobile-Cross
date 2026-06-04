@@ -254,6 +254,7 @@ export const organizationService = {
     adminEmail: string;
     latitude?: number;
     longitude?: number;
+    wifi_ssid?: string | null;
     wifi_bssid?: string | null;
   }) {
     const { data, error } = await supabase.rpc('create_organization_with_admin', {
@@ -263,7 +264,9 @@ export const organizationService = {
       p_admin_name: org.adminName,
       p_admin_email: org.adminEmail,
       p_latitude: org.latitude,
-    p_longitude: org.longitude,
+      p_longitude: org.longitude,
+      p_wifi_ssid: org.wifi_ssid ?? null,
+      p_wifi_bssid: org.wifi_bssid ?? null,
     });
 
     if (error) throw error;
@@ -332,7 +335,7 @@ export const supervisorService = {
 
     const { data, error } = await supabase
       .from('attendance_logs')
-      .select('*, profiles:user_id(id, name, email)')
+      .select('*, profiles:user_id(id, name, email, avatar_url)')
       .eq('organization_id', organizationId)
       .gte('check_in_time', start.toISOString())
       .lte('check_in_time', end.toISOString())
@@ -488,6 +491,7 @@ export const supervisorService = {
     ip_range?: string | null;
     work_start_time?: string | null;
     work_end_time?: string | null;
+    ignore_checkin_time?: boolean | null;
   }) {
     const { data, error } = await supabase
       .from('org_settings')
@@ -501,6 +505,7 @@ export const supervisorService = {
         ip_range: settings.ip_range,
         work_start_time: settings.work_start_time,
         work_end_time: settings.work_end_time,
+        ignore_checkin_time: settings.ignore_checkin_time,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'organization_id',

@@ -14,13 +14,15 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Spacing, Typography, ThemeColors } from '@/constants/theme';
+import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
@@ -122,11 +124,17 @@ export default function JoinOrganizationScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <DecorativeShapes variant="auth" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
+          <Image
+            source={require("@/assets/images/android-icon-foreground.png")}
+            style={styles.logo}
+            contentFit="contain"
+          />
           <Text style={styles.title}>Join Organization</Text>
           <Text style={styles.subtitle}>Enter your organization code to get started</Text>
         </View>
@@ -213,6 +221,12 @@ const createStyles = (colors: ThemeColors) =>
   },
   header: {
     marginBottom: Spacing.lg,
+  },
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
   },
   title: {
     fontSize: Typography['3xl'],

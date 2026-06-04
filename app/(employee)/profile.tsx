@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { BorderRadius, BrandColors, Spacing, ThemeColors, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -27,6 +27,7 @@ import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import DecorativeShapes from '@/components/DecorativeShapes';
 
 type Organization = {
   name?: string;
@@ -240,21 +241,22 @@ export default function EmployeeProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={BrandColors.primary} />
+        <ActivityIndicator color={colors.primary} />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <DecorativeShapes variant="employee" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <IconSymbol name="chevron.left" size={24} color={BrandColors.text} />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
         <View>
           <Text style={styles.headerEyebrow}>Employee Profile</Text>
@@ -272,7 +274,7 @@ export default function EmployeeProfileScreen() {
       </View>
 
       {/* Profile Card */}
-      <Card style={styles.profileCard}>
+      <Card style={styles.profileCard} variant="elevated">
         <TouchableOpacity
           style={styles.avatarWrap}
           activeOpacity={0.8}
@@ -294,13 +296,13 @@ export default function EmployeeProfileScreen() {
             )}
             {isUploadingAvatar && (
               <View style={styles.avatarOverlay}>
-                <ActivityIndicator color={BrandColors.background} />
+                <ActivityIndicator color="#FFFFFF" />
               </View>
             )}
           </View>
           {!isUploadingAvatar && (
             <View style={styles.avatarEditButton}>
-              <IconSymbol name="camera.fill" size={18} color={BrandColors.background} />
+              <IconSymbol name="camera.fill" size={18} color="#FFFFFF" />
             </View>
           )}
         </TouchableOpacity>
@@ -318,7 +320,7 @@ export default function EmployeeProfileScreen() {
               {user?.role === 'employee' ? 'Employee' : user?.role || 'Loading...'}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? BrandColors.success : BrandColors.warning }]}>
+          <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? colors.success : colors.warning }]}>
             <Text style={styles.statusText}>
               {user?.status === 'active' ? 'Active' : user?.status || 'Loading...'}
             </Text>
@@ -331,12 +333,12 @@ export default function EmployeeProfileScreen() {
       </Card>
 
       {/* Personal Information Card */}
-      <Card style={styles.infoCard}>
+      <Card style={styles.infoCard} variant="elevated">
         <Text style={styles.cardTitle}>Personal Information</Text>
 
         <View style={styles.infoRow}>
           <View style={styles.infoLabel}>
-            <IconSymbol name="person" size={16} color={BrandColors.textMuted} />
+            <IconSymbol name="person" size={16} color={colors.textMuted} />
             <Text style={styles.infoLabelText}>Name</Text>
           </View>
           {isEditing ? (
@@ -357,7 +359,7 @@ export default function EmployeeProfileScreen() {
       </Card>
 
       {/* Organization Card */}
-      <Card style={styles.infoCard}>
+      <Card style={styles.infoCard} variant="elevated">
         <Text style={styles.cardTitle}>Organization</Text>
         <InfoRow icon="building.2" label="Name" value={organization?.name || 'Unknown'} />
         <InfoRow icon="shield" label="Code" value={organization?.code || 'Unknown'} />
@@ -374,7 +376,7 @@ export default function EmployeeProfileScreen() {
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={BrandColors.error} />
+          <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
@@ -388,6 +390,9 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    content: {
+      paddingBottom: Spacing['2xl'],
+    },
     loadingContainer: {
       flex: 1,
       alignItems: 'center',
@@ -396,7 +401,7 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.md,
     },
     loadingText: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.sm,
     },
     header: {
@@ -407,31 +412,46 @@ const createStyles = (colors: ThemeColors) =>
       paddingTop: Spacing['2xl'],
     },
     backButton: {
-      padding: Spacing.sm,
+      width: 42,
+      height: 42,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     headerEyebrow: {
-      color: BrandColors.primary,
+      color: colors.primary,
       fontSize: Typography.sm,
       fontWeight: '800',
     },
     headerTitle: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography['3xl'],
       fontWeight: '800',
     },
     editButton: {
-      padding: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      minHeight: 42,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
     },
     editButtonText: {
       fontSize: Typography.base,
       fontWeight: '600',
-      color: BrandColors.primary,
+      color: colors.primary,
     },
     profileCard: {
       marginHorizontal: Spacing.lg,
       marginBottom: Spacing.lg,
       alignItems: 'center',
       paddingVertical: Spacing['2xl'],
+      borderColor: `${colors.primary}55`,
     },
     avatarWrap: {
       position: 'relative',
@@ -441,7 +461,7 @@ const createStyles = (colors: ThemeColors) =>
       width: 84,
       height: 84,
       borderRadius: BorderRadius.full,
-      backgroundColor: BrandColors.primary,
+      backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
@@ -451,7 +471,7 @@ const createStyles = (colors: ThemeColors) =>
       height: '100%',
     },
     avatarText: {
-      color: BrandColors.background,
+      color: '#FFFFFF',
       fontSize: Typography['2xl'],
       fontWeight: '800',
     },
@@ -470,23 +490,23 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: BorderRadius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: BrandColors.primary,
+      backgroundColor: colors.primary,
       borderWidth: 2,
-      borderColor: BrandColors.card,
+      borderColor: colors.card,
     },
     avatarHint: {
       fontSize: Typography.sm,
-      color: BrandColors.textMuted,
+      color: colors.textMuted,
       textAlign: 'center',
       marginBottom: Spacing.sm,
     },
     name: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography['2xl'],
       fontWeight: '800',
     },
     email: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.base,
       marginTop: Spacing.xs,
     },
@@ -496,13 +516,13 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: Spacing.md,
     },
     roleBadge: {
-      backgroundColor: BrandColors.backgroundLighter,
+      backgroundColor: colors.cardLight,
       borderRadius: BorderRadius.full,
       paddingHorizontal: Spacing.md,
       paddingVertical: Spacing.xs,
     },
     roleText: {
-      color: BrandColors.primary,
+      color: colors.primary,
       fontSize: Typography.xs,
       fontWeight: '800',
     },
@@ -512,7 +532,7 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: Spacing.xs,
     },
     statusText: {
-      color: BrandColors.background,
+      color: '#FFFFFF',
       fontSize: Typography.xs,
       fontWeight: '800',
     },
@@ -524,7 +544,7 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: Spacing.lg,
     },
     cardTitle: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography.lg,
       fontWeight: '700',
       marginBottom: Spacing.lg,
@@ -542,11 +562,11 @@ const createStyles = (colors: ThemeColors) =>
       gap: Spacing.sm,
     },
     infoLabelText: {
-      color: BrandColors.textSecondary,
+      color: colors.textSecondary,
       fontSize: Typography.base,
     },
     infoValue: {
-      color: BrandColors.text,
+      color: colors.text,
       fontSize: Typography.base,
       fontWeight: '500',
       flex: 1,
@@ -571,9 +591,9 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: BrandColors.card,
+      backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderLight,
       borderRadius: BorderRadius.md,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.md,
@@ -589,15 +609,15 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: BrandColors.card,
+      backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderLight,
       borderRadius: BorderRadius.md,
       paddingVertical: Spacing.md,
       gap: Spacing.sm,
     },
     logoutText: {
-      color: BrandColors.error,
+      color: colors.error,
       fontSize: Typography.base,
       fontWeight: '700',
     },
