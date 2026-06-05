@@ -16,7 +16,9 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
 // Keep the splash screen visible while fonts load
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Native splash may already be hidden in development reloads.
+});
 
 function AuthGate() {
   const router = useRouter();
@@ -107,10 +109,13 @@ function AuthGate() {
 export default function RootLayout() {
   const fontsLoaded = useCustomFonts();
 
-  // Hide splash screen once fonts are loaded
-  if (fontsLoaded) {
-    SplashScreen.hideAsync();
-  }
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {
+        // Native splash may already be hidden in development reloads.
+      });
+    }
+  }, [fontsLoaded]);
 
   if (!fontsLoaded) {
     return null;
