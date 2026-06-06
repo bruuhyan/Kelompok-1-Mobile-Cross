@@ -23,6 +23,7 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InfoRow } from '@/components/InfoRow';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
+import { OrganizationLifecycleActions } from '@/components/OrganizationLifecycleActions';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -79,10 +80,17 @@ export default function SupervisorProfileScreen() {
   const handleSave = async () => {
     if (!user?.id) return;
 
+    const nextName = name.trim();
+    if (nextName === (user.name || '').trim()) {
+      setName(user.name || '');
+      setIsEditing(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       await profileService.updateProfile(user.id, {
-        name: name.trim(),
+        name: nextName,
       });
 
       const updatedProfile = await profileService.getProfile(user.id);
@@ -375,6 +383,23 @@ export default function SupervisorProfileScreen() {
           <Text style={styles.settingsButtonText}>Settings</Text>
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/(supervisor)/privacy-policy')}>
+          <IconSymbol name="shield" size={20} color={colors.text} />
+          <Text style={styles.settingsButtonText}>Privacy Policy</Text>
+          <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/(supervisor)/account-deletion')}>
+          <IconSymbol name="person.crop.circle.badge.xmark" size={20} color={colors.error} />
+          <Text style={[styles.settingsButtonText, styles.deleteButtonText]}>
+            Request Account Deletion
+          </Text>
+          <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+        <OrganizationLifecycleActions organization={organization} />
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
@@ -587,6 +612,9 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.text,
       fontSize: Typography.base,
       fontWeight: '700',
+    },
+    deleteButtonText: {
+      color: colors.error,
     },
     logoutButton: {
       flexDirection: 'row',

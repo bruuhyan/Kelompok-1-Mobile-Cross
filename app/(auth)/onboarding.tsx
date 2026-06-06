@@ -110,6 +110,11 @@ export default function OnboardingScreen() {
       <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => router.push('/(auth)/privacy-policy')}
+        style={styles.privacyButton}>
+        <Text style={styles.privacyText}>Privacy Policy</Text>
+      </TouchableOpacity>
     </ScrollView>
     </View>
   );
@@ -204,5 +209,14 @@ const createStyles = (colors: ThemeColors) =>
   logoutText: {
     fontSize: Typography.base,
     color: colors.textMuted,
+  },
+  privacyButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  privacyText: {
+    fontSize: Typography.sm,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
 });

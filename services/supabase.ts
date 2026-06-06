@@ -174,6 +174,35 @@ export const profileService = {
 };
 
 /**
+ * Account compliance service
+ */
+export const accountComplianceService = {
+  async requestAccountDeletion(request: {
+    user_id: string;
+    organization_id?: string | null;
+    email: string;
+    name?: string | null;
+    reason?: string | null;
+  }) {
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .insert({
+        user_id: request.user_id,
+        organization_id: request.organization_id ?? null,
+        email: request.email,
+        name: request.name ?? null,
+        reason: request.reason ?? null,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+/**
  * Organization Service
  */
 export const organizationService = {
@@ -185,6 +214,7 @@ export const organizationService = {
       .from('organizations')
       .select('*')
       .eq('code', code)
+      .eq('status', 'active')
       .single();
 
     if (error) throw error;
@@ -274,6 +304,24 @@ export const organizationService = {
     if (error) throw error;
     return data;
   },
+
+  async leaveOrganization(reason?: string) {
+    const { data, error } = await supabase.rpc('leave_organization', {
+      p_reason: reason?.trim() || null,
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async disbandOrganization(reason: string) {
+    const { data, error } = await supabase.rpc('disband_organization', {
+      p_reason: reason.trim(),
+    });
+
+    if (error) throw error;
+    return data;
+  },
 };
 
 /**
@@ -285,7 +333,6 @@ export const supervisorService = {
       .from('profiles')
       .select('*')
       .eq('organization_id', organizationId)
-      .neq('role', 'admin')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -311,6 +358,16 @@ export const supervisorService = {
       .eq('id', userId)
       .select()
       .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateMemberRole(userId: string, role: 'employee' | 'supervisor' | 'admin') {
+    const { data, error } = await supabase.rpc('update_org_member_role', {
+      p_member_id: userId,
+      p_role: role,
+    });
 
     if (error) throw error;
     return data;

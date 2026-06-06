@@ -193,6 +193,11 @@ export default function RegisterScreen() {
             <Text style={styles.linkText}>Sign In</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.privacyLink}
+          onPress={() => router.push('/(auth)/privacy-policy')}>
+          <Text style={styles.privacyLinkText}>Privacy Policy</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -255,5 +260,14 @@ const createStyles = (colors: ThemeColors) =>
     fontSize: Typography.base,
     color: colors.primary,
     fontWeight: '800',
+  },
+  privacyLink: {
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  privacyLinkText: {
+    color: colors.textMuted,
+    fontSize: Typography.sm,
+    fontWeight: '600',
   },
 });
