@@ -28,6 +28,11 @@ type Props = {
   onChange: (location: LocationData) => void;
 };
 
+const NOMINATIM_HEADERS = {
+  'Accept-Language': 'id,en',
+  'User-Agent': 'TrustEnd/1.0 (contact@trustend.app)',
+};
+
 export function LocationPicker({ value, onChange }: Props) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
@@ -35,6 +40,9 @@ export function LocationPicker({ value, onChange }: Props) {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState(value?.address || '');
+  const [suggestions, setSuggestions] = useState<
+    { display_name: string; lat: string; lon: string }[]
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [pin, setPin] = useState<{ latitude: number; longitude: number } | null>(
@@ -107,10 +115,29 @@ export function LocationPicker({ value, onChange }: Props) {
 </html>
 `;
 
-const NOMINATIM_HEADERS = {
-  'Accept-Language': 'id,en',
-  'User-Agent': 'TrustEnd/1.0 (contact@trustend.app)',
-};
+  React.useEffect(() => {
+    const query = searchText.trim();
+
+    if (!modalVisible || query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
+          { headers: NOMINATIM_HEADERS }
+        );
+        const results = await res.json();
+        setSuggestions(Array.isArray(results) ? results : []);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 450);
+
+    return () => clearTimeout(timeout);
+  }, [modalVisible, searchText]);
 
   // Handle messages from WebView (map tap)
   const handleWebViewMessage = async (event: any) => {
@@ -164,6 +191,7 @@ const NOMINATIM_HEADERS = {
       const lng = parseFloat(results[0].lon);
       setPin({ latitude: lat, longitude: lng });
       setSearchText(results[0].display_name);
+      setSuggestions([]);
       movePinOnMap(lat, lng);
     } catch {
       Alert.alert('Error', 'Failed to search address. Try again.');
@@ -196,6 +224,7 @@ const NOMINATIM_HEADERS = {
       } else {
         setSearchText(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
       }
+      setSuggestions([]);
     } catch {
       Alert.alert('Error', 'Failed to get current location.');
     } finally {
@@ -210,6 +239,18 @@ const NOMINATIM_HEADERS = {
     }
     onChange({ address: searchText.trim(), latitude: pin.latitude, longitude: pin.longitude });
     setModalVisible(false);
+  };
+
+  const handleSelectSuggestion = (suggestion: { display_name: string; lat: string; lon: string }) => {
+    const latitude = parseFloat(suggestion.lat);
+    const longitude = parseFloat(suggestion.lon);
+
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) return;
+
+    setPin({ latitude, longitude });
+    setSearchText(suggestion.display_name);
+    setSuggestions([]);
+    movePinOnMap(latitude, longitude);
   };
 
   return (
@@ -251,11 +292,43 @@ const NOMINATIM_HEADERS = {
               />
               {isSearching
                 ? <ActivityIndicator size="small" color={colors.primary} />
-                : <TouchableOpacity onPress={handleSearch}>
-                    <IconSymbol name="magnifyingglass" size={20} color={colors.primary} />
-                  </TouchableOpacity>
+                : (
+                  <>
+                    {searchText.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.searchIconButton}
+                        onPress={() => {
+                          setSearchText('');
+                          setSuggestions([]);
+                        }}
+                      >
+                        <IconSymbol name="xmark.circle.fill" size={20} color={colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity style={styles.searchIconButton} onPress={handleSearch}>
+                      <IconSymbol name="magnifyingglass" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  </>
+                )
               }
             </View>
+
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionList}>
+                {suggestions.map((suggestion) => (
+                  <TouchableOpacity
+                    key={`${suggestion.lat}-${suggestion.lon}-${suggestion.display_name}`}
+                    style={styles.suggestionItem}
+                    onPress={() => handleSelectSuggestion(suggestion)}
+                  >
+                    <IconSymbol name="location" size={16} color={colors.textMuted} />
+                    <Text style={styles.suggestionText} numberOfLines={2}>
+                      {suggestion.display_name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {/* Current location button */}
             <TouchableOpacity
@@ -351,6 +424,37 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     fontSize: Typography.base,
     color: colors.text,
+  },
+  searchIconButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionList: {
+    marginHorizontal: Spacing.md,
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suggestionText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: Typography.sm,
+    lineHeight: 18,
   },
   currentLocButton: {
     flexDirection: 'row',

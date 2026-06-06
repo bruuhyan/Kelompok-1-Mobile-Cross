@@ -17,6 +17,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Input } from '@/components/Input';
+import { LocationData, LocationPicker } from '@/components/LocationPicker';
 import { supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
 import { useAuthStore } from '@/store/authStore';
@@ -32,6 +33,7 @@ export default function SupervisorSettingsScreen() {
 
   const [gpsLat, setGpsLat] = useState('');
   const [gpsLng, setGpsLng] = useState('');
+  const [gpsAddress, setGpsAddress] = useState('');
   const [gpsRadius, setGpsRadius] = useState('100');
   const [wifiSsid, setWifiSsid] = useState('');
   const [wifiBssid, setWifiBssid] = useState('');
@@ -87,6 +89,26 @@ export default function SupervisorSettingsScreen() {
     return null;
   };
 
+  const getSelectedLocation = (): LocationData | null => {
+    const latitude = gpsLat.trim() ? Number(gpsLat) : null;
+    const longitude = gpsLng.trim() ? Number(gpsLng) : null;
+
+    if (
+      latitude == null ||
+      longitude == null ||
+      Number.isNaN(latitude) ||
+      Number.isNaN(longitude)
+    ) {
+      return null;
+    }
+
+    return {
+      address: gpsAddress || 'Selected workplace location',
+      latitude,
+      longitude,
+    };
+  };
+
   const loadSettings = useCallback(async () => {
     if (!user?.organization_id) return;
 
@@ -95,6 +117,7 @@ export default function SupervisorSettingsScreen() {
       if (data) {
         setGpsLat(data.gps_lat?.toString() || '');
         setGpsLng(data.gps_lng?.toString() || '');
+        setGpsAddress(data.gps_lat != null && data.gps_lng != null ? 'Configured workplace location' : '');
         setGpsRadius(data.gps_radius_meters?.toString() || '100');
         setWifiSsid(data.wifi_ssid || '');
         setWifiBssid(data.wifi_bssid || '');
@@ -177,6 +200,7 @@ export default function SupervisorSettingsScreen() {
 
       setGpsLat(location.coords.latitude.toFixed(6));
       setGpsLng(location.coords.longitude.toFixed(6));
+      setGpsAddress('Current device location');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -283,13 +307,28 @@ export default function SupervisorSettingsScreen() {
         <Card style={styles.formCard}>
           <Text style={styles.formSectionTitle}>Location</Text>
 
+          <View style={styles.locationField}>
+            <Text style={styles.locationLabel}>Workplace Location</Text>
+            <LocationPicker
+              value={getSelectedLocation()}
+              onChange={(location) => {
+                setGpsLat(location.latitude.toFixed(6));
+                setGpsLng(location.longitude.toFixed(6));
+                setGpsAddress(location.address);
+              }}
+            />
+          </View>
+
           <View style={styles.locationRow}>
             <View style={styles.locationInput}>
               <Input
                 label="GPS Latitude"
                 placeholder="-6.200000"
                 value={gpsLat}
-                onChangeText={setGpsLat}
+                onChangeText={(value) => {
+                  setGpsLat(value);
+                  setGpsAddress('');
+                }}
                 keyboardType="numeric"
               />
             </View>
@@ -298,7 +337,10 @@ export default function SupervisorSettingsScreen() {
                 label="GPS Longitude"
                 placeholder="106.816666"
                 value={gpsLng}
-                onChangeText={setGpsLng}
+                onChangeText={(value) => {
+                  setGpsLng(value);
+                  setGpsAddress('');
+                }}
                 keyboardType="numeric"
               />
             </View>
@@ -465,6 +507,15 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: Typography.base,
       fontWeight: '700',
       marginTop: Spacing.sm,
+      marginBottom: Spacing.xs,
+    },
+    locationField: {
+      marginBottom: Spacing.sm,
+    },
+    locationLabel: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      fontWeight: '600',
       marginBottom: Spacing.xs,
     },
     locationRow: {
