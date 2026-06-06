@@ -144,8 +144,8 @@ Users who leave or are removed from an organization keep their Supabase Auth acc
 
 Static public pages are in `docs/` and are intended for GitHub Pages from the `main` branch using the `/docs` source:
 
-- `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
-- `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
+- `https://rafpoo.github.io/TrustEnd/privacy/`
+- `https://rafpoo.github.io/TrustEnd/account-deletion/`
 
 Support email: `support.trustend@gmail.com`.
 

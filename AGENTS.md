@@ -184,8 +184,8 @@ CREATE POLICY "Users can update own attendance"
 - Current support email: `support.trustend@gmail.com`.
 - Static public pages for Play Store are in `docs/`.
 - GitHub Pages URLs:
-  - `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
-  - `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
+  - `https://rafpoo.github.io/TrustEnd/privacy/`
+  - `https://rafpoo.github.io/TrustEnd/account-deletion/`
 
 ## Dashboard Auto-Refresh
 

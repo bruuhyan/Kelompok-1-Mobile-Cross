@@ -53,8 +53,8 @@ TrustEnd is an Expo React Native mobile app for workforce attendance, organizati
 
 ### Play Store Readiness
 
-- Public privacy policy page: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
-- Public account deletion page: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
+- Public privacy policy page: `https://rafpoo.github.io/TrustEnd/privacy/`
+- Public account deletion page: `https://rafpoo.github.io/TrustEnd/account-deletion/`
 - In-app privacy policy and account deletion request screens.
 - Support email: `support.trustend@gmail.com`.
 
@@ -175,8 +175,8 @@ Recommended GitHub Pages settings:
 
 After deployment, use these URLs in Google Play Console:
 
-- Privacy policy: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
-- Account deletion: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
+- Privacy policy: `https://rafpoo.github.io/TrustEnd/privacy/`
+- Account deletion: `https://rafpoo.github.io/TrustEnd/account-deletion/`
 
 ## Development Notes
 
