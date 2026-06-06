@@ -1,244 +1,220 @@
 # AGENTS.md
 
+This file is the working guide for agents modifying TrustEnd.
+
 ## Commands
 
 ```bash
-npm start          # Dev server (default Metro)
-npm run android    # Android emulator/device
-npm run ios        # iOS simulator
-npm run web        # Web browser
-npm run lint       # ESLint check
-npm run reset-project  # Clear app directory (use with caution)
+npm start              # Dev server, default Metro
+npm run android        # Android emulator/device
+npm run ios            # iOS simulator
+npm run web            # Web browser
+npm run lint           # ESLint and TypeScript validation through Expo
+npm run reset-project  # Clear app directory, use with caution
 ```
+
+There is no separate typecheck command. Use `npm run lint`.
 
 ## Architecture
 
-- **Router**: Expo Router file-based routing with route groups `(auth)`, `(employee)`, `(supervisor)`
-- **State**: Zustand stores in `store/*.ts` (`authStore.ts`, `attendanceStore.ts`)
-- **Backend**: Supabase (RLS policies in `supabase/rls_policies.sql`)
-- **Entry**: Root layout `app/_layout.tsx` is the auth gate. It checks the Supabase session, fetches the profile, mirrors it into `store/authStore.ts`, and routes by profile `status` and `role`.
-- **Supabase client**: `services/supabase.ts` owns the singleton client and configures React Native session persistence with AsyncStorage. Do not instantiate Supabase clients elsewhere.
+- Router: Expo Router file-based routing with route groups `(auth)`, `(employee)`, and `(supervisor)`.
+- Entry: `app/_layout.tsx` is the central auth/profile gate.
+- State: Zustand stores in `store/authStore.ts` and `store/attendanceStore.ts`.
+- Backend: Supabase Auth, Postgres, Storage, and RLS.
+- Supabase client: `services/supabase.ts` owns the singleton client and React Native AsyncStorage session persistence. Do not instantiate Supabase clients elsewhere.
+- Multi-tenancy: always scope organization data by `organization_id`.
 
-## Conventions
+## Auth and Routing Flow
 
-- Dark theme: background `#0D1B2A`, card `#1B263B`, primary `#00F5A0`
-- Route group naming: parentheses syntax `(groupname)` creates isolated stacks
-- Always scope queries by `organization_id` (multi-tenant)
-- Profile role values: `'employee'`, `'supervisor'`, `'admin'`
-- Normal user-created profiles must be `role = 'employee'` and `status = 'pending'`
-- Creating the first organization admin must go through `organizationService.createOrganizationWithAdmin()`, backed by the `create_organization_with_admin` SQL RPC
+`app/_layout.tsx` checks the Supabase session, fetches the linked profile, mirrors it into `authStore`, then routes by profile status and role:
 
-## Gotchas
+- No Supabase session: `/(auth)/login`
+- Session without profile: `/(auth)/onboarding`
+- Pending profile: `/(auth)/waiting-approval`
+- Suspended profile: sign out, clear local auth store, route to login
+- Active employee: `/(employee)/home`
+- Active supervisor/admin: `/(supervisor)/home`
 
-- No separate typecheck command - use lint for TS validation
-- Route groups require `_layout.tsx` inside each group
-- Test environment requires Supabase project (`.env`) - check `.env.example` for keys
-- `expo-router/entry` is the main entry point in package.json
-- After changing `supabase/rls_policies.sql`, apply it in Supabase before testing auth/organization flows
-- Logout flows must call both `authService.signOut()` and `useAuthStore().logout()` to clear persisted profile state
+Normal registration creates only a Supabase Auth user. Organization setup happens after registration:
+
+- First organization admin must use `organizationService.createOrganizationWithAdmin()`, backed by the `create_organization_with_admin` SQL RPC.
+- Joining an organization creates a profile with `role = 'employee'` and `status = 'pending'`.
+- Join-by-code must only use active organizations.
+- Users who leave or are removed from an organization keep their Auth account, lose their `profiles` row, and return to onboarding.
+
+## Roles
+
+Valid profile role values:
+
+- `employee`
+- `supervisor`
+- `admin`
+
+Admin is routed through the supervisor route group and has extra permissions. Admin-only flows include member role updates and disband organization.
 
 ## Theming Convention
 
-- **NEVER use `BrandColors`** in component styles — it is hardcoded to dark theme values and breaks in light mode
-- **ALWAYS use `useAppTheme()`** hook + `createStyles(colors)` pattern for dynamic light/dark switching
-- `BrandColors` is only used as the source of truth in `constants/theme.ts` for defining `Colors.dark` and `Colors.light`
-- Pattern:
+- Never use `BrandColors` directly in component styles. It is a source of truth for `Colors.dark` and `Colors.light`, but direct usage breaks light mode.
+- Always use `useAppTheme()` plus a `createStyles(colors)` pattern.
+- Sub-components that render their own styles must also call `useAppTheme()`.
 
-  ```tsx
-  import { Spacing, ThemeColors, Typography } from "@/constants/theme";
-  import { useAppTheme } from "@/hooks/use-app-theme";
+Pattern:
 
-  export default function MyScreen() {
-    const colors = useAppTheme();
-    const styles = createStyles(colors);
-    // ...
-  }
+```tsx
+import { Spacing, ThemeColors, Typography } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
-  const createStyles = (colors: ThemeColors) =>
-    StyleSheet.create({
-      container: { backgroundColor: colors.background },
-      // replace all BrandColors.* with colors.*
-    });
-  ```
+export default function MyScreen() {
+  const colors = useAppTheme();
+  const styles = createStyles(colors);
+  return null;
+}
 
-- Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: { backgroundColor: colors.background },
+  });
+```
 
 ## Decorative Shapes
 
-- `components/DecorativeShapes.tsx` — Reusable background component with circles/ovals of low opacity
-- 4 variants: `"auth"`, `"employee"`, `"supervisor"`, `"splash"` — each has different shape positions/sizes
-- Applied to all 24 screens across the app as first child inside root container View
-- Uses `colors.primary` and `colors.secondary` with opacity 0.04–0.08
-- `pointerEvents="none"` so shapes don't interfere with touch
-- Import: `import DecorativeShapes from "@/components/DecorativeShapes";`
-- Usage: `<DecorativeShapes variant="auth" />`
-
-## Profile Picture Upload
-
-### Storage Setup
-
-- Bucket: `profile-pictures` (public)
-- File path: `{userId}/avatar.jpg`
-- RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
-- Field name in profiles table: `avatar_url` (TEXT)
-
-### Upload Service
-
-- `services/storageService.ts` handles all avatar operations
-- Uses `expo-image-picker` with `base64: true` option (avoids React Native's buggy `fetch().blob()`)
-- Converts base64 → `Uint8Array` → Supabase Storage upload
-- Image settings: 1:1 aspect ratio, quality 0.7
-- Old avatars are deleted before uploading new ones
-
-### Gotchas
-
-- Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
-- Do NOT use `expo-file-system` for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
-- Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
-
-## Dashboard Auto-Refresh
-
-- Use `useFocusEffect` from `expo-router` instead of `useEffect` for screens that need to refresh data when the user navigates back to them
-- Applied to: `app/(supervisor)/home.tsx`, `app/(supervisor)/request-review.tsx`, and `app/(employee)/attendance.tsx`
-- Pattern:
-  ```tsx
-  import { useFocusEffect } from "expo-router";
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData]),
-  );
-  ```
-
-## Trust Score System
-
-- Scale: 0-50 (max defined by `TRUST_SCORE_MAX` in `constants/theme.ts`)
-- Tiers: 36-50 = Trusted (green), 20-35 = Moderate (yellow), 0-19 = At Risk (red)
-- Recalculated server-side after every check-in and check-out via `attendanceService.recalculateTrustScore()`
-- Local UI sync: after check-in/out, `attendanceStore` fetches the updated score and calls `useAuthStore.getState().updateUser({ trust_score: newScore })`
-- Penalties: late check-in (1), GPS outside (4), WiFi mismatch (3), IP anomaly (1), spoofing (6), duplicate same-day (2), missing checkout (2) — with stacking multipliers
-
-## Attendance Check-Out
-
-- Requires an UPDATE RLS policy on `attendance_logs` table. If check-out fails with a permission error, verify this policy exists in Supabase:
-  ```sql
-  CREATE POLICY "Users can update own attendance"
-    ON attendance_logs FOR UPDATE
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-  ```
-- Check-out runs the full validation flow (GPS, WiFi, IP, spoofing) before submitting
-- GPS/WiFi/IP/spoofing mismatches submit the attendance log but flag it for supervisor review and trust score penalties
-- IP range validation uses the device's local LAN IP from NetInfo, not a public internet IP
-- If WiFi SSID/BSSID is configured but unavailable from the device, the log is flagged as "WiFi info unavailable"
-- If `currentLog` is null, check-out fails with "No active check-in found"
+- `components/DecorativeShapes.tsx` provides background circles/ovals.
+- Variants: `auth`, `employee`, `supervisor`, `splash`.
+- Use it as the first child inside a screen root container when matching existing screens.
+- It uses `pointerEvents="none"` and theme colors.
 
 ## Bottom Navigation
 
-### Employee Tabs (5 tabs)
+Employee tabs:
 
-- **Home** — Dashboard with trust score, check-in/out, My Tasks preview, quick actions
-- **Attendance** — History and status
-- **Requests** — Holiday/overtime submission and history
-- **Reports** — Report submission with photo attachment
-- **Profile** — Account info, avatar upload, Settings link, logout
-- Settings and Tasks are accessible from within Profile and Home respectively (not separate tabs)
+- Home: dashboard, trust score, check-in/out, task preview
+- Attendance: history and status
+- Requests: holiday/overtime submission and history
+- Reports: report submission with photo attachment
+- Profile: account info, avatar upload, settings/legal/lifecycle actions
 
-### Supervisor Tabs (5 tabs)
+Supervisor/admin tabs:
 
-- **Home** — Dashboard with org stats, My Attendance card (check-in/out with validation), and pending items
-- **Team** — Team management, attendance logs, registration approvals
-- **Request** — Review and approve employee requests
-- **Task** — Create and review employee tasks
-- **Profile** — Account info, avatar upload, Settings link, logout
-- Organization Settings accessible from within Profile
+- Home: dashboard, trust score, own attendance, pending items
+- Team: team management, attendance logs, registration approvals, role management
+- Request: review employee requests
+- Task: create and review employee tasks
+- Profile: account info, avatar upload, organization settings/legal/lifecycle actions
 
-## Employee Tasks Screen
+Settings and legal screens are linked from Profile, not bottom tabs.
 
-- `app/(employee)/tasks.tsx` — View assigned tasks grouped by status (To Do, In Review, Needs Revision, Completed)
-- Expandable cards with submission form for assigned/rejected tasks
-- `useFocusEffect` for auto-refresh
-- Service: `taskService.getMyTasks(userId)` and `taskService.submitTask(taskId, submissionNote)` in `services/supabase.ts`
+## Trust Score System
+
+- Max score: `50`, defined by `TRUST_SCORE_MAX` in `constants/theme.ts`.
+- Tiers: `36-50` Trusted, `20-35` Moderate, `0-19` At Risk.
+- Recalculated after check-in and check-out via `attendanceService.recalculateTrustScore()`.
+- Local UI sync happens through `useAuthStore.getState().updateUser({ trust_score: newScore })`.
+- Penalties: late check-in (1), GPS outside (4), WiFi mismatch (3), IP anomaly (1), spoofing (6), duplicate same-day check-in (2), missing checkout (2), with stacking multipliers.
+
+## Attendance
+
+- Employee and supervisor/admin attendance use the shared `attendanceStore` and `attendanceService`.
+- Check-in and check-out run GPS, WiFi, local LAN IP, and spoofing validation.
+- Validation violations still submit the log, flag it for supervisor review, affect trust score, and show `AttendanceWarningModal`.
+- IP range validation uses the device local LAN IP from NetInfo, not public internet IP.
+- If WiFi SSID/BSSID is configured but unavailable from the device, the log is flagged as WiFi info unavailable.
+- If `currentLog` is null during check-out, the user sees "No active check-in found".
+
+Required RLS for check-out:
+
+```sql
+CREATE POLICY "Users can update own attendance"
+  ON attendance_logs FOR UPDATE
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+```
 
 ## Organization Settings
 
-- `app/(supervisor)/settings.tsx` — Configure attendance validation rules:
-  - GPS coordinates (with "Use Current Location" via `expo-location`)
-  - GPS radius (10-1000m)
-  - WiFi SSID/BSSID
-  - IP range
-  - Work start/end time
-- Service: `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` in `services/supabase.ts`
-  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
-- Upserts into `organization_settings` table with `onConflict: 'organization_id'`
-- Accessible from Supervisor Profile screen via Settings button
-- `expo-location` plugin must be configured in `app.json` with location permissions
-- Android emulator requires: Location enabled in Quick Settings + mock location set via Extended Controls (three dots → Location)
+`app/(supervisor)/settings.tsx` configures attendance validation rules:
+
+- Workplace location via `LocationPicker`.
+- Location picker supports map selection, search suggestions, clear search, and current location.
+- Workplace address is stored on `organizations.address`.
+- GPS radius, WiFi SSID/BSSID, IP range, work start/end time, and ignore check-in time are stored in `org_settings`.
+- Service methods for settings live on `supervisorService`, not `organizationService`.
+- Organization name/address/code updates live on `organizationService`.
+- `expo-location` is configured in `app.json`; native rebuild may be required after plugin changes.
+
+## Organization Lifecycle
+
+- `components/OrganizationLifecycleActions.tsx` provides Leave Organization and Disband Organization UI.
+- Leave is available to all roles.
+- Last active admin cannot leave; they must add another admin first or disband.
+- Disband is admin-only and soft-deletes the organization.
+- Successful leave/disband clears local auth/attendance profile state and routes to onboarding while keeping the Supabase Auth user signed in.
+- SQL RPCs: `leave_organization(p_reason text)` and `disband_organization(p_reason text)`.
+
+## Admin Role Management
+
+- Admins can promote/demote active same-organization members from `app/(supervisor)/team.tsx`.
+- Service: `supervisorService.updateMemberRole(userId, role)`.
+- SQL RPC: `update_org_member_role(p_member_id uuid, p_role text)`.
+- Admins cannot change their own role through this flow.
+- At least one active admin must remain.
+
+## Profile Picture Upload
+
+- Bucket: `profile-pictures`, public.
+- Path: `{userId}/avatar.jpg`.
+- Field: `profiles.avatar_url`.
+- Service: `services/storageService.ts`.
+- Uses `expo-image-picker` with `base64: true`, then converts base64 to `Uint8Array`.
+- Do not use `fetch(uri).blob()` for React Native uploads.
+- Do not use `expo-file-system` for upload reads unless the existing service is intentionally redesigned.
 
 ## Report Photo Upload
 
-### Storage Setup
+- Bucket: `report-photos`, public.
+- Path: `{userId}/{reportId}.jpg`.
+- Field: `reports.photo_url`.
+- Service: `storageService.pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`.
+- Uses `expo-image-picker` with `base64: true`.
 
-- Bucket: `report-photos` (public)
-- File path: `{userId}/{reportId}.jpg`
-- RLS policies: users can only upload/update/delete files in their own `{userId}/` folder
+## Account Deletion and Legal
 
-### Upload Service
+- In-app privacy/account deletion routes exist under employee and supervisor route groups.
+- Shared screens: `PrivacyPolicyScreen` and `AccountDeletionRequestScreen`.
+- Support email and legal URLs live in `constants/legal.ts`.
+- Current support email: `support.trustend@gmail.com`.
+- Static public pages for Play Store are in `docs/`.
+- GitHub Pages URLs:
+  - `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
+  - `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
 
-- `services/storageService.ts` — `pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`
-- Uses `expo-image-picker` with `base64: true` (avoids React Native's buggy `fetch().blob()`)
-- Converts base64 → `Uint8Array` → Supabase Storage upload
-- Image settings: 4:3 aspect ratio, quality 0.7
-- `app/(employee)/reports.tsx` — Photo picker with preview and remove button
+## Dashboard Auto-Refresh
 
-### Gotchas
+Use `useFocusEffect` from `expo-router` for screens that should refresh when revisited.
 
-- `reports` table must have `photo_url` TEXT column (run `ALTER TABLE reports ADD COLUMN IF NOT EXISTS photo_url TEXT;`)
-- Do NOT use `fetch(uri).blob()` for uploads — it fails with "Network request failed" on React Native
+```tsx
+import { useFocusEffect } from "expo-router";
 
-## Supervisor Check-In/Check-Out
-
-- `app/(supervisor)/home.tsx` — "My Attendance" card with same check-in/out flow as employees
-- Uses the shared `attendanceStore` and `attendanceService` — role-agnostic, no separate logic needed
-- Validation flow: GPS, WiFi, IP, spoofing detection (same as employee)
-- Trust score recalculated after supervisor check-in/out
-- UI states: Not checked in (green button) → Checked in (blue button) → Completed (checkmark)
-- Offline sync and location monitoring work identically for supervisors
-
-## expo-location Plugin
-
-- Configured in `app.json` with `locationAlwaysAndWhenInUsePermission`
-- Android requires a native rebuild after adding the plugin: `npx expo run:android`
-- Android emulator needs: Location enabled in Quick Settings + mock location set via Extended Controls (three dots → Location)
-- Used by "Use Current Location" button in `app/(supervisor)/settings.tsx`
-
-## Required Supabase Migrations
-
-Run these in Supabase SQL Editor before testing new features:
-
-```sql
--- Add photo_url column to reports
-ALTER TABLE reports ADD COLUMN IF NOT EXISTS photo_url TEXT;
-
--- Create report-photos storage bucket
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('report-photos', 'report-photos', true)
-ON CONFLICT (id) DO NOTHING;
-
--- RLS policies for report photos
-CREATE POLICY "Users can upload own report photos"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Users can update own report photos"
-  ON storage.objects FOR UPDATE
-  USING (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Users can delete own report photos"
-  ON storage.objects FOR DELETE
-  USING (bucket_id = 'report-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Anyone can view report photos"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'report-photos');
+useFocusEffect(
+  useCallback(() => {
+    loadData();
+  }, [loadData]),
+);
 ```
+
+Applied patterns include supervisor home, request review, and employee attendance.
+
+## Supabase Notes
+
+- Apply `supabase/rls_policies.sql` in Supabase after changing RLS or RPCs.
+- Keep RLS helper functions security-definer to avoid recursive profile lookups.
+- `organizations.status` supports `active` and `disbanded`.
+- `account_deletion_requests` stores user deletion requests.
+- Storage buckets require their own RLS policies.
+
+## Gotchas
+
+- Route groups require `_layout.tsx` inside each group.
+- `expo-router/entry` is the app entry point in `package.json`.
+- Logout flows must call both `authService.signOut()` and `useAuthStore().logout()`.
+- Organization leave/disband flows intentionally do not call Supabase Auth sign out.
+- Android emulator location testing requires Location enabled and mock coordinates set from Extended Controls.

@@ -1,178 +1,191 @@
 # TrustEnd
 
-A React Native mobile app for smart employee attendance tracking with trust scoring, GPS/WiFi validation, and multi-tenant organization support.
+TrustEnd is an Expo React Native mobile app for workforce attendance, organization management, task review, and trust scoring. It uses Supabase Auth, Postgres, Storage, and Row Level Security for a multi-tenant backend.
 
 ## Features
 
-### Core
-- **Role-Based Access**: Employee and Supervisor dashboards with separate navigation flows
-- **Trust Score System**: 0-50 scale with three tiers - Trusted (36-50), Moderate (20-35), At Risk (0-19)
-- **Security Validation**: GPS radius, WiFi SSID/BSSID, and local LAN IP verification on check-in/check-out
-- **Offline Mode**: Local storage with integrity-hash validation and automatic sync when online
-- **Multi-Tenant**: Organization-based data isolation with Row Level Security (RLS) policies
-- **Dark/Light Theme**: Dynamic theme switching with `useAppTheme()` hook
+### Auth and Organizations
 
-### Employee Features
-- **Check-in / Check-out**: GPS + WiFi + local LAN IP + spoofing detection validation flow
-- **Attendance History**: View past records with duration, status pills, and late flags
-- **Holiday Requests**: Submit date-range leave requests with validation
-- **Overtime Requests**: Submit overtime with hours and reason
-- **Reports**: Submit work updates and incident reports with title and content
-- **Profile Management**: Edit name, upload profile picture (camera/gallery), view organization details
-- **Settings**: Toggle dark/light mode preference
+- Register-first auth flow: sign up, then create or join an organization.
+- Organization onboarding for first admin creation through a secure SQL RPC.
+- Employee join flow with pending approval.
+- Session users without a profile are routed back to onboarding.
+- Leave organization and disband organization flows.
+- Soft-deleted organizations cannot be joined by code.
 
-### Supervisor Features
-- **Dashboard**: Overview metrics (pending registrations, active employees, pending requests/reports)
-- **Request Review**: Approve/reject holiday and overtime requests with detail view
-- **Report Review**: Review submitted employee reports with detail view
-- **Team Management**: Approve new registrations, view team attendance logs, TrustScore overview
-- **Task Management**: Assign tasks to employees, review submissions
-- **Attendance Logs**: View today's team check-in/check-out activity
-- **Settings**: Toggle dark/light mode preference
+### Roles
 
-### Auth & Security
-- **Register-First Flow**: Email/password registration → onboarding → organization setup
-- **Waiting Approval**: Auto-refreshing screen for pending employee approvals
-- **Organization Creation**: Admin setup with secure SQL RPC (`create_organization_with_admin`)
-- **Row Level Security**: All data scoped by `organization_id` with helper functions to avoid recursion
+- `employee`: attendance, requests, reports, assigned tasks, profile, settings.
+- `supervisor`: employee features plus team visibility, reviews, task management, organization settings.
+- `admin`: supervisor features plus member role management, organization lifecycle controls, and disband organization.
+
+### Attendance
+
+- Check-in and check-out with GPS radius, WiFi SSID/BSSID, local LAN IP, and spoofing checks.
+- Warning modal explains violations such as outside GPS range, WiFi mismatch, IP anomaly, or spoofing signal.
+- Offline queue with local persistence and sync support.
+- Supervisor/admin accounts use the same attendance flow as employees.
+
+### Trust Score
+
+- 0-50 score stored on profile and recalculated after attendance actions.
+- Tiers: Trusted (36-50), Moderate (20-35), At Risk (0-19).
+- Penalties include late check-in, GPS outside workplace, WiFi mismatch, IP anomaly, spoofing, duplicate same-day check-in, and missing checkout.
+
+### Employee
+
+- Dashboard with trust score, attendance action, quick actions, and task preview.
+- Attendance history.
+- Holiday and overtime request submission.
+- Report submission with optional photo attachment.
+- Assigned task list and submission flow.
+- Profile editing, avatar upload, privacy policy, account deletion request, leave organization.
+
+### Supervisor and Admin
+
+- Dashboard with organization metrics, trust score, and own attendance action.
+- Team management, pending approvals, attendance logs, and TrustScore overview.
+- Request and report review queues with detail screens.
+- Task creation and submission review.
+- Organization settings with map-based workplace picker, location search suggestions, current location, WiFi/IP/work hour rules, and ignore check-in time.
+- Admin-only member role updates to employee, supervisor, or admin.
+- Admin-only disband organization.
+
+### Play Store Readiness
+
+- Public privacy policy page: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
+- Public account deletion page: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
+- In-app privacy policy and account deletion request screens.
+- Support email: `support.trustend@gmail.com`.
 
 ## Tech Stack
 
-- **Framework**: React Native (Expo SDK 54)
-- **Navigation**: Expo Router v6 (file-based routing with route groups)
-- **State Management**: Zustand with AsyncStorage persistence
-- **Backend/DB**: Supabase (auth, Postgres, Storage, RLS)
-- **Location**: expo-location
-- **Network**: @react-native-community/netinfo
-- **Image Picker**: expo-image-picker (base64 mode)
-- **UI**: Custom components with dynamic theming via `useAppTheme()`
+- React Native 0.81 with Expo SDK 54
+- Expo Router 6
+- React 19
+- Zustand
+- Supabase JS
+- Supabase Auth, Postgres, Storage, RLS
+- expo-location
+- @react-native-community/netinfo
+- expo-image-picker
+- react-native-maps
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Expo CLI
-- iOS Simulator or Android Emulator (or physical device with Expo Go)
+- Expo CLI or `npx expo`
+- Android Studio/emulator or a physical Android device
 - Supabase project
 
-### Installation
+### Install
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-3. Create `.env` file from `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
+Create `.env` from `.env.example` and fill Supabase values:
 
-4. Fill in your Supabase credentials in `.env`
+```bash
+cp .env.example .env
+```
 
-5. Set up the database:
-   - Run `supabase/schema.sql` in Supabase SQL Editor
-   - Run `supabase/rls_policies.sql` in Supabase SQL Editor
-   - Run `supabase/tasks.sql` in Supabase SQL Editor
-   - Run `supabase/add_request_hours.sql` in Supabase SQL Editor
-   - Create a public storage bucket named `profile-pictures` with RLS policies
+Required environment variables:
 
-### Running the App
+```text
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+```
+
+### Supabase Setup
+
+Run the current SQL files in Supabase SQL Editor:
+
+```text
+supabase/schema.sql
+supabase/rls_policies.sql
+supabase/tasks.sql
+supabase/profile_pictures_storage.sql
+supabase/add_request_hours.sql
+supabase/add_ignore_checkin_time.sql
+```
+
+Storage buckets used by the app:
+
+- `profile-pictures`: public avatar bucket, path `{userId}/avatar.jpg`
+- `report-photos`: public report photo bucket, path `{userId}/{reportId}.jpg`
+
+### Run
 
 ```bash
 npm start
 ```
 
 Then press:
+
 - `a` for Android
 - `i` for iOS
 - `w` for web
 
+Other commands:
+
+```bash
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
+
 ## Project Structure
 
-```
-/app
-  /(auth)          - Authentication screens (login, register, onboarding, etc.)
-  /(employee)      - Employee dashboard tabs (home, attendance, requests, reports, profile, settings)
-  /(supervisor)    - Supervisor dashboard tabs (home, attendance, requests, reports, team, task, profile, settings)
-  splash.tsx       - Animated splash screen
-  _layout.tsx      - Root layout with auth/profile routing gate
-
-/components       - Reusable UI components (Card, Input, Button, TrustScoreBadge, InfoRow, SettingsAppearance)
-/hooks            - Custom hooks (useAppTheme, useThemePreference, useThemeColor)
-/services         - API services (supabase, attendanceService, storageService)
-/store            - State management (authStore, attendanceStore)
-/utils            - Helpers, constants, types
-/assets           - Fonts (DM Sans, Syne)
-/constants         - Theme configuration (BrandColors, Colors, Typography, Spacing, BorderRadius)
-/supabase         - SQL migrations and RLS policies
+```text
+app/                Expo Router screens and route groups
+components/         Shared UI and workflow components
+constants/          Theme, fonts, legal URLs, support email
+hooks/              Theme hooks
+services/           Supabase, attendance, storage services
+store/              Zustand stores
+supabase/           SQL schema, RLS policies, migrations
+utils/              Constants, helper functions, types
+docs/               Static legal pages and Play Store docs
+assets/             Images and fonts
 ```
 
-## Build Phases
+## Key Files
 
-The app is built incrementally across 16 phases:
+- `app/_layout.tsx`: central auth/profile routing gate.
+- `services/supabase.ts`: singleton Supabase client and all Supabase service methods.
+- `services/attendanceService.ts`: validation and trust score logic.
+- `store/authStore.ts`: persisted user profile state.
+- `store/attendanceStore.ts`: attendance action state and sync queue.
+- `supabase/rls_policies.sql`: active RLS policies and security-definer RPCs.
+- `constants/legal.ts`: support email and public legal URLs.
 
-1. ✅ Project setup, folder structure, navigation skeleton, theme/fonts
-2. ✅ Auth screens – Login, Register, Create Organization, Join Organization
-3. ✅ Waiting Approval screen + Supabase auth & profiles DB setup
-4. ✅ Employee Dashboard shell + Bottom Tab navigation
-5. ✅ Check-in / Check-out flow with GPS + WiFi + IP validation
-6. ✅ Offline mode – local storage, sync queue, online/offline banner
-7. ✅ Holiday & Overtime request submission (Employee)
-8. ✅ Report submission (Employee)
-9. ✅ Trust Score calculation logic + Trust Score badge component
-10. ✅ Supervisor Dashboard shell + Bottom Tab navigation
-11. ✅ Supervisor – Attendance log viewer
-12. ✅ Supervisor – Request approval / disapproval flow
-13. ✅ Supervisor – Report review flow
-14. ✅ Supervisor – Team management (approve users, view TrustScore)
-15. ⏳ Multi-tenant org settings UI (GPS radius, WiFi registration)
-16. ⏳ Polish – animations, loading states, error handling, empty states
+## Legal Pages Deployment
 
-## Database Schema
+The `docs/` folder is ready for GitHub Pages.
 
-### Tables
+Recommended GitHub Pages settings:
 
-- `organizations` - Organization details (id, name, address, code)
-- `profiles` - User profiles linked to organizations (extends auth.users), includes `avatar_url`, `phone`, `trust_score`
-- `attendance_logs` - Check-in/check-out records with GPS/WiFi/IP/spoofing data
-- `requests` - Holiday and overtime requests (includes `hours` column for overtime)
-- `reports` - Employee reports with title, content, and optional `photo_url`
-- `org_settings` - Organization-specific settings (GPS radius, WiFi SSID/BSSID, IP range, work hours)
-- `tasks` - Task assignments between supervisors and employees
+- Source: Deploy from a branch
+- Branch: `main`
+- Folder: `/docs`
 
-### Storage Buckets
+After deployment, use these URLs in Google Play Console:
 
-- `profile-pictures` - Public bucket for user avatars, path: `{userId}/avatar.jpg`
+- Privacy policy: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
+- Account deletion: `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
 
-### RLS Policies
+## Development Notes
 
-Row Level Security policies use helper functions to avoid recursion:
-- `is_user_admin_or_supervisor()` - Check if user is admin or supervisor
-- `is_user_admin()` - Check if user is admin
-- `get_user_organization_id()` - Get user's organization ID
-- `create_organization_with_admin()` - Authenticated RPC that atomically creates an organization and admin profile
-
-## Trust Score System
-
-Trust scores (0-50) are recalculated after every check-in and check-out based on:
-
-| Offense | Penalty |
-|---------|---------|
-| Late check-in | 1 |
-| GPS outside workplace | 4 |
-| WiFi network mismatch | 3 |
-| IP address anomaly | 1 |
-| Location spoofing detected | 6 |
-| Duplicate same-day check-in | 2 |
-| Missing checkout | 2 |
-
-Penalties use stacking multipliers based on cumulative offense count:
-- First 2 offenses: 0.5x
-- 3-5 offenses: 1x
-- 6-8 offenses: 1.5x
-- 9+ offenses: 2x
+- Do not instantiate Supabase clients outside `services/supabase.ts`.
+- Always scope database queries by `organization_id`.
+- Use `useAppTheme()` and `createStyles(colors)` for styles.
+- Do not use `BrandColors` directly in component styles.
+- Use `expo-image-picker` with `base64: true` for uploads; avoid `fetch(uri).blob()` in React Native.
+- After editing `supabase/rls_policies.sql`, apply it in Supabase before testing auth or organization flows.
 
 ## License
 

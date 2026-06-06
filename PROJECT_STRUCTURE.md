@@ -1,289 +1,162 @@
-# TrustEnd - Project Structure
+# TrustEnd Project Structure
 
 ## Overview
 
-TrustEnd is a React Native mobile app for smart employee attendance tracking with trust scoring, GPS/WiFi validation, and multi-tenant organization support.
+TrustEnd is an Expo React Native app for workforce attendance, trust scoring, task/review workflows, and multi-tenant organization management. The current app is feature-complete enough for internal testing and Play Store preparation, with Supabase Auth, Postgres, Storage, and RLS as the backend.
 
-## Phase 1 Complete ✅
+## Current Status
 
-### What Was Built
+- Auth flow: register first, then create or join an organization through onboarding.
+- Roles: `employee`, `supervisor`, and `admin`.
+- Employee app: dashboard, attendance, requests, reports, tasks, profile, settings, privacy policy, account deletion request.
+- Supervisor/admin app: dashboard, team management, attendance logs, request review, report review, task assignment/review, profile, organization settings, privacy policy, account deletion request.
+- Admin capabilities: approve members, update member roles, add another admin/supervisor by promoting active members, leave organization, and disband organization.
+- Play Store preparation: privacy policy and account deletion pages live under `docs/` for GitHub Pages.
 
-#### 1. Theme & Design System
+## Main Structure
 
-- **`constants/theme.ts`** - Complete color palette with TrustEnd branding:
-  - Dark navy background (`#0D1B2A`)
-  - Electric green accent (`#00F5A0`)
-  - Trust score color tiers (green/yellow/red)
-  - Typography scale and font weights
-  - Spacing, border radius, and shadow utilities
-  - Animation durations
+```text
+app/
+  _layout.tsx                    Root auth/profile routing gate
+  index.tsx                      Entry redirect
+  modal.tsx                      Default modal route
+  (auth)/
+    _layout.tsx                  Auth stack
+    login.tsx                    Sign in
+    register.tsx                 Email/password registration
+    onboarding.tsx               Create or join organization choice
+    create-organization.tsx      First organization admin setup
+    join-organization.tsx        Join by active organization code
+    waiting-approval.tsx         Pending profile approval
+    privacy-policy.tsx           Public privacy route inside app
+  (employee)/
+    _layout.tsx                  Employee tab layout
+    home.tsx                     Dashboard, trust score, check-in/out, task preview
+    attendance.tsx               Attendance history
+    requests.tsx                 Holiday/overtime requests
+    reports.tsx                  Report submission with photo
+    tasks.tsx                    Assigned task list and submission
+    profile.tsx                  Profile, avatar, lifecycle/legal actions
+    settings.tsx                 Appearance settings
+    privacy-policy.tsx           In-app privacy policy
+    account-deletion.tsx         Account deletion request
+  (supervisor)/
+    _layout.tsx                  Supervisor/admin tab layout
+    home.tsx                     Dashboard, trust score, own attendance, pending work
+    team.tsx                     Members, approvals, role management
+    attendance-logs.tsx          Organization attendance view
+    request-review.tsx           Request review queue
+    request-detail/[id].tsx      Request detail
+    report-review.tsx            Report review queue
+    report-detail/[id].tsx       Report detail
+    task.tsx                     Task creation and review
+    profile.tsx                  Profile, avatar, lifecycle/legal actions
+    settings.tsx                 Organization attendance rules and map picker
+    privacy-policy.tsx           In-app privacy policy
+    account-deletion.tsx         Account deletion request
 
-- **`constants/fonts.ts`** - Font configuration:
-  - Syne for headings
-  - DM Sans for body text
-  - Font loading hook with splash screen integration
+components/
+  AccountDeletionRequestScreen.tsx
+  AttendanceWarningModal.tsx
+  Button.tsx
+  Card.tsx
+  DatePickerInput.tsx
+  DecorativeShapes.tsx
+  InfoRow.tsx
+  Input.tsx
+  LocationPicker.tsx
+  OrganizationLifecycleActions.tsx
+  PrivacyPolicyScreen.tsx
+  SettingsAppearance.tsx
+  TrustScoreBadge.tsx
+  ui/icon-symbol.tsx
 
-#### 2. Navigation Structure
+constants/
+  fonts.ts
+  legal.ts                       Support email and public legal URLs
+  theme.ts                       Colors, spacing, typography, trust score tiers
 
-- **`app/_layout.tsx`** - Root layout with theme provider and font loading
-- **`app/splash.tsx`** - Animated splash screen with logo
-- **`app/(auth)/_layout.tsx`** - Auth stack navigation
-- **`app/(employee)/_layout.tsx`** - Employee bottom tab navigation (5 tabs)
-- **`app/(supervisor)/_layout.tsx`** - Supervisor bottom tab navigation (6 tabs)
+services/
+  attendanceService.ts           Validation, offline queue, trust score recalculation
+  storageService.ts              Profile and report photo upload
+  supabase.ts                    Singleton Supabase client and service methods
 
-#### 3. Screen Placeholders
+store/
+  authStore.ts                   Persisted profile/session UI state
+  attendanceStore.ts             Attendance state, check-in/out, local sync
 
-All screens created with placeholder content indicating their implementation phase:
+supabase/
+  schema.sql                     Main schema
+  rls_policies.sql               Current RLS policies and RPCs
+  tasks.sql                      Task table support
+  profile_pictures_storage.sql   Avatar bucket policies
+  add_request_hours.sql          Request hours migration
+  add_ignore_checkin_time.sql    Organization time-rule migration
 
-**Auth Screens (Phase 2-3):**
-
-- `login.tsx` - Login screen
-- `register.tsx` - Registration screen
-- `create-organization.tsx` - Create organization modal
-- `join-organization.tsx` - Join organization modal
-- `waiting-approval.tsx` - Pending approval screen
-
-**Employee Screens (Phase 4-8):**
-
-- `home.tsx` - Employee dashboard
-- `attendance.tsx` - Check-in/check-out
-- `requests.tsx` - Holiday/overtime requests
-- `reports.tsx` - Report submission
-- `profile.tsx` - User profile
-
-**Supervisor Screens (Phase 10-14):**
-
-- `home.tsx` - Supervisor dashboard
-- `attendance-logs.tsx` - View attendance logs
-- `request-review.tsx` - Approve/disapprove requests
-- `report-review.tsx` - Review reports
-- `team.tsx` - Team management
-- `profile.tsx` - User profile
-
-#### 4. Utility Files
-
-- **`src/utils/helpers.ts`** - Helper functions:
-  - Date/time formatting
-  - Organization code generation
-  - GPS distance calculation
-  - Email/password validation
-  - Text truncation, initials, phone formatting
-  - Debounce/throttle utilities
-
-- **`src/utils/constants.ts`** - App constants:
-  - API configuration
-  - Storage keys
-  - Validation rules
-  - Error/success messages
-  - Animation durations
-
-- **`src/utils/types.ts`** - TypeScript interfaces:
-  - User, Organization, Attendance types
-  - Request, Report types
-  - Trust Score types
-  - Form data types
-  - API response types
-
-- **`src/navigation/types.ts`** - Navigation type definitions
-
-#### 5. Folder Structure
-
-```
-/app
-  /(auth)          - Authentication screens
-  /(employee)      - Employee dashboard tabs
-  /(supervisor)    - Supervisor dashboard tabs
-  splash.tsx       - Splash screen
-  _layout.tsx      - Root layout
-
-/components       - Reusable UI components
-/hooks            - Custom hooks
-/services         - API services
-/store            - State management (Zustand)
-/navigation       - Navigation types
-/utils            - Helpers, constants, types
-/assets           - Fonts, images
-/constants         - Theme and font configuration
+docs/
+  index.html                     Legal landing page
+  privacy/index.html             Public privacy policy page
+  account-deletion/index.html    Public account deletion page
+  play-store/*.md                Play Store copy/reference docs
 ```
 
-## Phase 2 Complete ✅
+## Important Runtime Flow
 
-### What Was Built
+`app/_layout.tsx` is the auth gate. It checks the Supabase session, fetches `profiles`, mirrors the profile into `store/authStore.ts`, and routes by profile status and role:
 
-#### 1. Reusable Components
+- No Supabase session: `/(auth)/login`
+- Session without profile: `/(auth)/onboarding`
+- Pending profile: `/(auth)/waiting-approval`
+- Active employee: `/(employee)/home`
+- Active supervisor/admin: `/(supervisor)/home`
 
-- **`src/components/Card.tsx`** - Card component with variants (default, elevated, outlined)
-- **`src/components/Input.tsx`** - Input component with label, error, and icon support
-- **`src/components/Button.tsx`** - Button component with variants (primary, secondary, outline, ghost) and sizes
+Users who leave or are removed from an organization keep their Supabase Auth account, but their `profiles` row is deleted. On next app open they return to onboarding.
 
-#### 2. State Management
+## Backend Features
 
-- **`src/store/authStore.ts`** - Zustand store for authentication state:
-  - User data management
-  - Authentication status
-  - Loading states
-  - Logout functionality
+- Multi-tenant isolation is based on `organization_id`.
+- Organization creation uses the `create_organization_with_admin` RPC.
+- Join by organization code only finds active organizations.
+- Organization soft delete uses `organizations.status = 'disbanded'`.
+- Leave organization uses `leave_organization(p_reason text)`.
+- Disband organization uses `disband_organization(p_reason text)`.
+- Admin role changes use `update_org_member_role(p_member_id uuid, p_role text)`.
+- Account deletion requests are stored in `account_deletion_requests`.
 
-#### 3. Supabase Service
+## Attendance and Trust Score
 
-- **`src/services/supabase.ts`** - Supabase client and service functions:
-  - Authentication service (sign in, sign up, sign out, reset password)
-  - Profile service (get, create, update profiles)
-  - Organization service (get by code, create organization)
+- Trust score max is `50` (`TRUST_SCORE_MAX` in `constants/theme.ts`).
+- Tiers: `36-50` Trusted, `20-35` Moderate, `0-19` At Risk.
+- Check-in and check-out validate GPS radius, WiFi SSID/BSSID, local LAN IP, spoofing signals, duplicate same-day check-ins, and missing checkout.
+- Validation violations still allow submission, but the attendance log is flagged for supervisor review and a warning modal explains the reason.
+- Trust score recalculates after attendance actions and syncs into `authStore`.
 
-#### 4. Auth Screens
+## Organization Settings
 
-- **`app/(auth)/login.tsx`** - Login screen with:
-  - Email and password input
-  - Form validation
-  - Password visibility toggle
-  - Forgot password link
-  - Navigation to register, create organization, join organization
+`app/(supervisor)/settings.tsx` configures attendance validation rules:
 
-- **`app/(auth)/register.tsx`** - Register screen with:
-  - Name, email, password, confirm password, organization code inputs
-  - Form validation
-  - Password visibility toggle
-  - Organization code validation
-  - Navigation to login, create organization, join organization
+- Workplace GPS via map picker, search suggestions, tap-to-select, current location, and clearable search.
+- Workplace address is stored on `organizations.address`.
+- GPS radius, WiFi SSID/BSSID, IP range, work start/end time, and ignore check-in time are stored in `org_settings`.
+- Settings service methods live on `supervisorService`, while organization name/address/code updates live on `organizationService`.
 
-- **`app/(auth)/create-organization.tsx`** - Create organization screen with:
-  - Auto-generated 6-character organization code
-  - Organization name and address inputs
-  - Admin email and password inputs
-  - Form validation
-  - Creates organization and admin account
+## Play Store Legal Pages
 
-- **`app/(auth)/join-organization.tsx`** - Join organization screen with:
-  - Organization code verification
-  - Displays organization info after verification
-  - Name, email, password inputs
-  - Form validation
-  - Creates employee account with pending status
+Static public pages are in `docs/` and are intended for GitHub Pages from the `main` branch using the `/docs` source:
 
-- **`app/(auth)/waiting-approval.tsx`** - Waiting approval screen with:
-  - Pending status display
-  - User information display
-  - Auto-refresh every 10 seconds
-  - Automatic redirect when approved
-  - Logout functionality
+- `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/`
+- `https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/`
 
-## Phase 3 Complete ✅
+Support email: `support.trustend@gmail.com`.
 
-### What Was Built
-
-#### 1. Supabase Database Setup
-
-- **`supabase/schema.sql`** - Complete database schema:
-  - `organizations` table with unique codes
-  - `profiles` table linked to auth.users
-  - `org_settings` table for organization configuration
-  - `attendance_logs` table for check-in/check-out records
-  - `requests` table for holiday/overtime requests
-  - `reports` table for employee reports
-  - Indexes for performance optimization
-  - Triggers for updated_at timestamps
-
-- **`supabase/rls_policies.sql`** - Row Level Security policies:
-  - Helper functions to avoid recursion
-  - Organization policies (public read, anyone can create)
-  - Profile policies (own profile, admin/supervisor access)
-  - Org settings policies (org members can view, admins can update)
-  - Attendance policies (own logs, admin/supervisor can view org logs)
-  - Request policies (own requests, admin/supervisor can review)
-  - Report policies (own reports, admin/supervisor can review)
-
-#### 2. Environment Configuration
-
-- **`.env`** - Supabase configuration with publishable key
-- **`.env.example`** - Template for environment variables
-
-## Phase 4 Complete ✅
-
-### What Was Built
-
-#### 1. Trust Score Badge Component
-
-- **`components/TrustScoreBadge.tsx`** - Reusable trust score display:
-  - Color-coded tiers (green: 80-100, yellow: 50-79, red: 0-49)
-  - Multiple sizes (small, medium, large)
-  - Optional label display
-  - Circular badge design with border
-
-#### 2. Employee Home Screen
-
-- **`app/(employee)/home.tsx`** - Employee dashboard with:
-  - Personalized greeting with user name
-  - Trust score card with large badge
-  - Today's status display (not checked in / checked in / checked out)
-  - Check-in/Check-out buttons with loading states
-  - Quick actions grid (Requests, Reports, Profile)
-  - Recent activity section
-  - Logout button in header
-
-#### 3. Employee Profile Screen
-
-- **`app/(employee)/profile.tsx`** - User profile with:
-  - Avatar with initials
-  - Trust score badge overlay
-  - User name, email, role display
-  - Edit mode for personal information
-  - Personal information section (name, email, phone, member since)
-  - Organization section (org ID, status)
-  - Logout action button
-  - Profile update integration with Supabase
-
-#### 4. Type Definitions
-
-- **`utils/types.ts`** - Added enums:
-  - `UserStatus` enum (PENDING, ACTIVE, SUSPENDED)
-  - `UserRole` enum (EMPLOYEE, SUPERVISOR, ADMIN)
-
-## Next Steps
-
-### Phase 5: Attendance Tracking
-
-- Implement GPS location tracking
-- Implement WiFi network detection
-- Implement IP address validation
-- Create check-in validation modal
-- Implement offline sync for attendance logs
-
-### Phase 6: Requests System
-
-- Implement holiday request form
-- Implement overtime request form
-- Add request history display
-- Implement request status tracking
-
-### Phase 7: Reports System
-
-- Implement report submission form
-- Add photo attachment support
-- Implement report history display
-- Add report status tracking
-
-## Dependencies
-
-Already installed:
-```bash
-npm install @supabase/supabase-js zustand expo-location @react-native-community/netinfo react-native-svg
-```
-
-## Environment Variables
-
-Create `.env` file:
-```
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-```
-
-## Running the App
+## Commands
 
 ```bash
 npm start
-# or
-expo start
+npm run android
+npm run ios
+npm run web
+npm run lint
 ```
 
-Then press `a` for Android or `i` for iOS.
+Use `npm run lint` as the TypeScript/ESLint validation command.
