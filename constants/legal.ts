@@ -1,6 +1,6 @@
-export const SUPPORT_EMAIL = "3k.raffs@gmail.com";
-export const PRIVACY_POLICY_URL = "https://trustend.app/privacy";
-export const ACCOUNT_DELETION_URL = "https://trustend.app/account-deletion";
+export const SUPPORT_EMAIL = "support.trustend@gmail.com";
+export const PRIVACY_POLICY_URL = "https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/privacy/";
+export const ACCOUNT_DELETION_URL = "https://bruuhyan.github.io/Kelompok-1-Mobile-Cross/account-deletion/";
 
 export const PRIVACY_POLICY_SECTIONS = [
   {

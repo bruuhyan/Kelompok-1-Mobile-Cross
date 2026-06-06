@@ -22,4 +22,4 @@ Some records may be retained if required for workplace audit, fraud prevention, 
 
 ## Processing Time
 
-Requests are reviewed before completion. For urgent deletion requests or questions, contact 3k.raffs@gmail.com.
+Requests are reviewed before completion. For urgent deletion requests or questions, contact support.trustend@gmail.com.

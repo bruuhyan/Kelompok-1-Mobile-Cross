@@ -34,4 +34,4 @@ Organization records are retained while the account is active or as needed for w
 
 ## Contact
 
-For privacy or account deletion requests, contact 3k.raffs@gmail.com.
+For privacy or account deletion requests, contact support.trustend@gmail.com.
