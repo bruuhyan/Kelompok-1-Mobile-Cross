@@ -4,6 +4,7 @@
  */
 
 import { Card } from "@/components/Card";
+import { AttendanceWarningModal } from "@/components/AttendanceWarningModal";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
@@ -31,6 +32,7 @@ import {
   View,
 } from "react-native";
 import DecorativeShapes from "@/components/DecorativeShapes";
+import { AttendanceValidationFlowResult } from "@/utils/types";
 
 export default function EmployeeHomeScreen() {
   const colors = useAppTheme();
@@ -39,6 +41,15 @@ export default function EmployeeHomeScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
+  const [warningModal, setWarningModal] = useState<{
+    visible: boolean;
+    actionLabel: "check-in" | "check-out";
+    result: AttendanceValidationFlowResult | null;
+  }>({
+    visible: false,
+    actionLabel: "check-in",
+    result: null,
+  });
   const [myTasks, setMyTasks] = useState<any[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [workHours, setWorkHours] = useState({ start: '', end: '' });
@@ -120,11 +131,18 @@ export default function EmployeeHomeScreen() {
     try {
       await performCheckIn(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: "check-in",
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         "Success",
-        latestAttendance.lastValidationResult?.requiresReview
-          ? "Check-in submitted and flagged for supervisor review."
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
           ? "Check-in saved and will sync when online."
           : "Check-in successful.",
       );
@@ -139,11 +157,18 @@ export default function EmployeeHomeScreen() {
     try {
       await performCheckOut(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: "check-out",
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         "Success",
-        latestAttendance.lastValidationResult?.requiresReview
-          ? "Check-out submitted and flagged for supervisor review."
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
           ? "Check-out saved and will sync when online."
           : "Check-out successful.",
       );
@@ -550,6 +575,15 @@ export default function EmployeeHomeScreen() {
           </View>
         </Pressable>
       )}
+
+      <AttendanceWarningModal
+        visible={warningModal.visible}
+        actionLabel={warningModal.actionLabel}
+        result={warningModal.result}
+        onClose={() =>
+          setWarningModal((current) => ({ ...current, visible: false }))
+        }
+      />
     </ScrollView>
   );
 }

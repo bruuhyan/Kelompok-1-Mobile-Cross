@@ -46,10 +46,12 @@ const MAPPING = {
   'calendar.badge.plus': 'event-note',
   'doc.text.fill': 'description',
   'xmark': 'close',
+  'xmark.circle.fill': 'cancel',
   'exclamationmark.triangle.fill': 'warning',
   'list.bullet.rectangle': 'format-list-bulleted',
   'checkmark.seal.fill': 'verified',
   'doc.text.magnifyingglass': 'find-in-page',
+  'magnifyingglass': 'search',
   'person.2.fill': 'groups',
   'gearshape.fill': 'settings',
   'person.badge.plus': 'person-add',
@@ -61,6 +63,7 @@ const MAPPING = {
   'camera.fill': 'photo-camera',
   'photo.fill': 'photo-library',
   'pencil': 'edit',
+  'wifi': 'wifi',
 } as IconMapping;
 
 /**

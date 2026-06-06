@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -18,12 +19,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
+import { AttendanceWarningModal } from '@/components/AttendanceWarningModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatTime } from '@/utils/helpers';
+import { AttendanceValidationFlowResult } from '@/utils/types';
 import DecorativeShapes from "@/components/DecorativeShapes";
 
 type DashboardSummary = {
@@ -63,6 +66,16 @@ export default function SupervisorHomeScreen() {
   const [recentRequests, setRecentRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
+  const [warningModal, setWarningModal] = useState<{
+    visible: boolean;
+    actionLabel: 'check-in' | 'check-out';
+    result: AttendanceValidationFlowResult | null;
+  }>({
+    visible: false,
+    actionLabel: 'check-in',
+    result: null,
+  });
   const [workHours, setWorkHours] = useState({ start: '', end: '' });
 
   const {
@@ -151,11 +164,18 @@ export default function SupervisorHomeScreen() {
     try {
       await performCheckIn(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: 'check-in',
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         'Success',
-        latestAttendance.lastValidationResult?.requiresReview
-          ? 'Check-in submitted and flagged for supervisor review.'
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
             ? 'Check-in saved and will sync when online.'
             : 'Check-in successful.',
       );
@@ -170,11 +190,18 @@ export default function SupervisorHomeScreen() {
     try {
       await performCheckOut(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: 'check-out',
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         'Success',
-        latestAttendance.lastValidationResult?.requiresReview
-          ? 'Check-out submitted and flagged for supervisor review.'
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
             ? 'Check-out saved and will sync when online.'
             : 'Check-out successful.',
       );
@@ -267,6 +294,26 @@ export default function SupervisorHomeScreen() {
           color={colors.error}
         />
       </View>
+
+      {/* Trust Score Card */}
+      <Card style={styles.trustScoreCard} variant="elevated">
+        <View style={styles.trustScoreHeader}>
+          <Text style={styles.trustScoreTitle}>Your Trust Score</Text>
+          <TouchableOpacity onPress={() => setShowTrustScoreModal(true)}>
+            <IconSymbol name="info.circle" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.trustScoreContent}>
+          <TrustScoreBadge
+            score={user?.trust_score || 50}
+            size="large"
+            showLabel
+          />
+        </View>
+        <Text style={styles.trustScoreDescription}>
+          Your score reflects your own attendance consistency
+        </Text>
+      </Card>
 
       {/* My Attendance Card */}
       <Card style={styles.attendanceCard} variant="elevated">
@@ -402,6 +449,100 @@ export default function SupervisorHomeScreen() {
           ))
         )}
       </Card>
+
+      {/* Trust Score Modal */}
+      {showTrustScoreModal && (
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowTrustScoreModal(false)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Understanding Your Trust Score
+              </Text>
+              <TouchableOpacity onPress={() => setShowTrustScoreModal(false)}>
+                <IconSymbol name="xmark" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalSubtitle}>
+                How we calculate your trustworthiness
+              </Text>
+              <View style={styles.explanationBox}>
+                <Text style={styles.explanationTitle}>Three Key Factors:</Text>
+                <View style={styles.factorRow}>
+                  <View style={styles.factorIcon}>
+                    <IconSymbol name="clock.fill" size={18} color={colors.primary} />
+                  </View>
+                  <View style={styles.factorText}>
+                    <Text style={styles.factorTitle}>Punctuality</Text>
+                    <Text style={styles.factorDescription}>
+                      On-time check-ins vs late check-ins
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.factorRow}>
+                  <View style={styles.factorIcon}>
+                    <IconSymbol name="location.fill" size={18} color={colors.info} />
+                  </View>
+                  <View style={styles.factorText}>
+                    <Text style={styles.factorTitle}>Location Consistency</Text>
+                    <Text style={styles.factorDescription}>
+                      GPS matches your registered workplace location
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.factorRow}>
+                  <View style={styles.factorIcon}>
+                    <IconSymbol
+                      name="exclamationmark.triangle.fill"
+                      size={18}
+                      color={colors.warning}
+                    />
+                  </View>
+                  <View style={styles.factorText}>
+                    <Text style={styles.factorTitle}>Activity Patterns</Text>
+                    <Text style={styles.factorDescription}>
+                      Monitoring for suspicious activity like duplicate check-ins
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.scoreTiers}>
+                <Text style={styles.scoreTiersTitle}>Trust Score Tiers:</Text>
+                <View style={styles.tierRow}>
+                  <View style={[styles.tierDot, { backgroundColor: colors.trustHigh }]} />
+                  <Text style={styles.tierLabel}>36-50: Trusted (Green)</Text>
+                </View>
+                <View style={styles.tierRow}>
+                  <View style={[styles.tierDot, { backgroundColor: colors.trustMedium }]} />
+                  <Text style={styles.tierLabel}>20-35: Moderate (Yellow)</Text>
+                </View>
+                <View style={styles.tierRow}>
+                  <View style={[styles.tierDot, { backgroundColor: colors.trustLow }]} />
+                  <Text style={styles.tierLabel}>0-19: At Risk (Red)</Text>
+                </View>
+              </View>
+              <Text style={styles.modalFooterText}>
+                Your score is recalculated after each check-in/check-out to
+                reflect your recent behavior patterns.
+              </Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowTrustScoreModal(false)}>
+                <Text style={styles.modalCloseButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      )}
+
+      <AttendanceWarningModal
+        visible={warningModal.visible}
+        actionLabel={warningModal.actionLabel}
+        result={warningModal.result}
+        onClose={() => setWarningModal((current) => ({ ...current, visible: false }))}
+      />
     </ScrollView>
     </View>
   );
@@ -564,6 +705,31 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       fontSize: Typography.sm,
       marginTop: Spacing.xs,
+    },
+    trustScoreCard: {
+      marginHorizontal: Spacing.lg,
+      marginBottom: Spacing.lg,
+      alignItems: 'center',
+      borderColor: `${colors.primary}55`,
+    },
+    trustScoreHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    trustScoreTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '800',
+      marginRight: Spacing.xs,
+    },
+    trustScoreContent: {
+      marginVertical: Spacing.lg,
+    },
+    trustScoreDescription: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: 'center',
     },
     attendanceCard: {
       marginHorizontal: Spacing.lg,
@@ -764,5 +930,118 @@ const createStyles = (colors: ThemeColors) =>
     emptyText: {
       color: colors.textSecondary,
       fontSize: Typography.sm,
+    },
+    modalOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContainer: {
+      width: '90%',
+      maxWidth: 350,
+      backgroundColor: colors.card,
+      borderRadius: BorderRadius.lg,
+      padding: Spacing.lg,
+      maxHeight: '80%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    modalTitle: {
+      color: colors.text,
+      fontSize: Typography.lg,
+      fontWeight: '600',
+    },
+    modalContent: {
+      gap: Spacing.md,
+    },
+    modalSubtitle: {
+      color: colors.textSecondary,
+      fontSize: Typography.base,
+      fontWeight: '500',
+    },
+    explanationBox: {
+      gap: Spacing.sm,
+    },
+    explanationTitle: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '600',
+      marginBottom: Spacing.xs,
+    },
+    factorRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.sm,
+    },
+    factorIcon: {
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    factorText: {
+      flex: 1,
+    },
+    factorTitle: {
+      color: colors.text,
+      fontSize: Typography.sm,
+      fontWeight: '600',
+    },
+    factorDescription: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      lineHeight: 18,
+    },
+    scoreTiers: {
+      marginTop: Spacing.md,
+    },
+    scoreTiersTitle: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '600',
+      marginBottom: Spacing.xs,
+    },
+    tierRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginVertical: 4,
+    },
+    tierDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    tierLabel: {
+      color: colors.text,
+      fontSize: Typography.sm,
+    },
+    modalFooterText: {
+      color: colors.textSecondary,
+      fontSize: Typography.sm,
+      textAlign: 'center',
+      marginTop: Spacing.md,
+      fontStyle: 'italic',
+    },
+    modalCloseButton: {
+      backgroundColor: colors.primary,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.md,
+      alignItems: 'center',
+      marginTop: Spacing.sm,
+    },
+    modalCloseButtonText: {
+      color: colors.background,
+      fontSize: Typography.base,
+      fontWeight: '600',
     },
   });

@@ -22,9 +22,6 @@ import {
   View,
 } from "react-native";
 
-const MISSING_PROFILE_MESSAGE =
-  "Your login exists, but no profile is linked to this account. Please register again or contact an admin.";
-
 export default function LoginScreen() {
   const colors = useAppTheme();
   const styles = createStyles(colors);
@@ -73,7 +70,23 @@ export default function LoginScreen() {
       const profile = await profileService.getProfile(user.id);
 
       if (!profile) {
-        throw new Error(MISSING_PROFILE_MESSAGE);
+        const now = new Date().toISOString();
+        const metadataName = user.user_metadata?.name;
+
+        setUser({
+          id: user.id,
+          email: user.email || email,
+          name: typeof metadataName === "string" ? metadataName : "",
+          role: "employee",
+          organization_id: "",
+          trust_score: 50,
+          status: "pending",
+          created_at: user.created_at || now,
+          updated_at: user.updated_at || now,
+        });
+
+        router.replace("/(auth)/onboarding");
+        return;
       }
 
       if (profile.status === "pending") {
@@ -95,11 +108,7 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      if (error?.code === "PGRST116") {
-        alert(MISSING_PROFILE_MESSAGE);
-      } else {
-        alert(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
-      }
+      alert(error.message || ERROR_MESSAGES.INVALID_CREDENTIALS);
     } finally {
       setIsLoading(false);
       setLoading(false);
