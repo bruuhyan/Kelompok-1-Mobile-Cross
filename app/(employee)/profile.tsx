@@ -79,10 +79,17 @@ export default function EmployeeProfileScreen() {
   const handleSave = async () => {
     if (!user?.id) return;
 
+    const nextName = name.trim();
+    if (nextName === (user.name || '').trim()) {
+      setName(user.name || '');
+      setIsEditing(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       await profileService.updateProfile(user.id, {
-        name: name.trim(),
+        name: nextName,
       });
 
       const updatedProfile = await profileService.getProfile(user.id);
