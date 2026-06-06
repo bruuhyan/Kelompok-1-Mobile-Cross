@@ -23,6 +23,7 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InfoRow } from '@/components/InfoRow';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
+import { OrganizationLifecycleActions } from '@/components/OrganizationLifecycleActions';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -398,6 +399,7 @@ export default function SupervisorProfileScreen() {
           </Text>
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
+        <OrganizationLifecycleActions organization={organization} />
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>

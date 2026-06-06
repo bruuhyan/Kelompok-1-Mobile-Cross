@@ -61,6 +61,7 @@ export default function SupervisorTeamScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [roleUpdatingId, setRoleUpdatingId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
     if (!user?.organization_id) return;
@@ -96,6 +97,8 @@ export default function SupervisorTeamScreen() {
     [members],
   );
 
+  const currentUserRole = user?.role;
+
   const averageTrustScore = useMemo(() => {
     if (activeMembers.length === 0) return 0;
     const total = activeMembers.reduce(
@@ -130,6 +133,47 @@ export default function SupervisorTeamScreen() {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleRoleUpdate = async (
+    member: TeamMember,
+    role: "employee" | "supervisor" | "admin",
+  ) => {
+    if (member.role === role) return;
+
+    Alert.alert(
+      "Update Member Role",
+      `Change ${member.name}'s role to ${formatRole(role)}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Update",
+          onPress: async () => {
+            setRoleUpdatingId(member.id);
+            try {
+              const updated = await supervisorService.updateMemberRole(
+                member.id,
+                role,
+              );
+              setMembers((current) =>
+                current.map((item) =>
+                  item.id === member.id ? { ...item, ...updated } : item,
+                ),
+              );
+              Alert.alert("Success", "Member role updated");
+            } catch (error: any) {
+              console.error("Update member role error:", error);
+              Alert.alert(
+                "Error",
+                error.message || "Failed to update member role",
+              );
+            } finally {
+              setRoleUpdatingId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleRefresh = () => {
@@ -238,7 +282,13 @@ export default function SupervisorTeamScreen() {
           </Card>
         ) : (
           activeMembers.map((member) => (
-            <TrustScoreRow key={member.id} member={member} />
+            <TrustScoreRow
+              key={member.id}
+              member={member}
+              canManageRoles={currentUserRole === "admin" && member.id !== user?.id}
+              updatingRole={roleUpdatingId === member.id}
+              onRoleChange={(role) => handleRoleUpdate(member, role)}
+            />
           ))
         )}
       </View>
@@ -378,26 +428,64 @@ function MemberApprovalCard({
   );
 }
 
-function TrustScoreRow({ member }: { member: TeamMember }) {
+function TrustScoreRow({
+  member,
+  canManageRoles,
+  updatingRole,
+  onRoleChange,
+}: {
+  member: TeamMember;
+  canManageRoles: boolean;
+  updatingRole: boolean;
+  onRoleChange: (role: "employee" | "supervisor" | "admin") => void;
+}) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
+  const availableRoles: ("employee" | "supervisor" | "admin")[] = [
+    "employee",
+    "supervisor",
+    "admin",
+  ].filter((role) => role !== member.role) as ("employee" | "supervisor" | "admin")[];
 
   return (
     <Card style={styles.trustRow}>
-      <View style={styles.trustLeft}>
-        <Avatar name={member.name} avatarUrl={member.avatar_url} small />
-        <View style={styles.memberInfo}>
-          <Text style={styles.memberName}>{member.name}</Text>
-          <Text style={styles.memberEmail}>
-            {member.role === "supervisor" ? "Supervisor" : "Employee"}
-          </Text>
+      <View style={styles.trustRowContent}>
+        <View style={styles.trustTop}>
+          <View style={styles.trustLeft}>
+            <Avatar name={member.name} avatarUrl={member.avatar_url} small />
+            <View style={styles.memberInfo}>
+              <Text style={styles.memberName}>{member.name}</Text>
+              <Text style={styles.memberEmail}>{formatRole(member.role)}</Text>
+            </View>
+          </View>
+          <TrustScoreBadge
+            score={member.trust_score || 50}
+            size="medium"
+            showLabel
+          />
         </View>
+
+        {canManageRoles ? (
+          <View style={styles.roleActions}>
+            {availableRoles.map((role) => (
+              <TouchableOpacity
+                key={role}
+                style={styles.roleActionButton}
+                disabled={updatingRole}
+                onPress={() => onRoleChange(role)}
+              >
+                {updatingRole ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.roleActionText}>
+                    Make {formatRole(role)}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
       </View>
-      <TrustScoreBadge
-        score={member.trust_score || 50}
-        size="medium"
-        showLabel
-      />
     </Card>
   );
 }
@@ -450,6 +538,17 @@ function formatTime(date: string) {
 function formatLocation(lat?: number | null, lng?: number | null) {
   if (lat == null || lng == null) return "Not recorded";
   return `${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}`;
+}
+
+function formatRole(role: "employee" | "supervisor" | "admin") {
+  switch (role) {
+    case "admin":
+      return "Admin";
+    case "supervisor":
+      return "Supervisor";
+    case "employee":
+      return "Employee";
+  }
 }
 
 const createStyles = (colors: ThemeColors) =>
@@ -647,6 +746,12 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: "800",
     },
     trustRow: {
+      gap: Spacing.md,
+    },
+    trustRowContent: {
+      gap: Spacing.md,
+    },
+    trustTop: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -656,6 +761,29 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: "center",
       flex: 1,
       marginRight: Spacing.md,
+    },
+    roleActions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingTop: Spacing.md,
+    },
+    roleActionButton: {
+      minHeight: 38,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      backgroundColor: colors.backgroundLight,
+      paddingHorizontal: Spacing.md,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    roleActionText: {
+      color: colors.primary,
+      fontSize: Typography.sm,
+      fontWeight: "800",
     },
     emptyCard: {
       alignItems: "center",

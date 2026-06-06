@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS organizations (
   name TEXT NOT NULL,
   address TEXT,
   code TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disbanded')),
+  disbanded_at TIMESTAMP WITH TIME ZONE,
+  disbanded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  disband_reason TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
