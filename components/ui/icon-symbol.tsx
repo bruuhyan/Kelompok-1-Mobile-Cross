@@ -61,6 +61,7 @@ const MAPPING = {
   'camera.fill': 'photo-camera',
   'photo.fill': 'photo-library',
   'pencil': 'edit',
+  'wifi': 'wifi',
 } as IconMapping;
 
 /**

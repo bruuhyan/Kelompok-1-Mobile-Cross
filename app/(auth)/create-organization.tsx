@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import {
+  Alert,
   View,
   StyleSheet,
   Text,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Image } from 'expo-image';
+import NetInfo from '@react-native-community/netinfo';
 import { useRouter } from 'expo-router';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -27,7 +29,7 @@ import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService, organizationService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
-import { generateOrgCode, isValidBssid } from '@/utils/helpers';
+import { generateOrgCode, isValidBssid, isValidIpRange } from '@/utils/helpers';
 
 export default function CreateOrganizationScreen() {
   const colors = useAppTheme();
@@ -40,13 +42,17 @@ export default function CreateOrganizationScreen() {
   const [orgName, setOrgName] = useState('');
   const [orgLocation, setOrgLocation] = useState<LocationData | null>(null);
   const [generatedCode, setGeneratedCode] = useState('');
+  const [wifiSsid, setWifiSsid] = useState('');
   const [wifiBssid, setWifiBssid] = useState('');
+  const [ipRange, setIpRange] = useState('');
   const [errors, setErrors] = useState<{
     orgName?: string;
     orgAddress?: string;
     wifiBssid?: string;
+    ipRange?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingNetwork, setIsGettingNetwork] = useState(false);
 
   React.useEffect(() => {
     setGeneratedCode(generateOrgCode());
@@ -56,8 +62,13 @@ export default function CreateOrganizationScreen() {
     setGeneratedCode(generateOrgCode());
   };
 
-  const validateForm = () => {
-  const newErrors: any = {};
+const validateForm = () => {
+  const newErrors: {
+    orgName?: string;
+    orgAddress?: string;
+    wifiBssid?: string;
+    ipRange?: string;
+  } = {};
 
   if (!orgName.trim()) {
     newErrors.orgName = ERROR_MESSAGES.REQUIRED_FIELD;
@@ -72,12 +83,49 @@ export default function CreateOrganizationScreen() {
     wifiBssid.trim() &&
     !isValidBssid(wifiBssid.trim())
   ) {
-    newErrors.wifiBssid = 'Invalid BSSID format';
+    newErrors.wifiBssid = 'WiFi BSSID must use MAC format like 00:11:22:33:44:55';
+  }
+
+  if (ipRange.trim() && !isValidIpRange(ipRange.trim())) {
+    newErrors.ipRange = 'IP range must be an exact IPv4, CIDR, or range like 192.168.1.0/24';
   }
 
   setErrors(newErrors);
   return Object.keys(newErrors).length === 0;
 };
+
+  const handleUseCurrentNetwork = async () => {
+    setIsGettingNetwork(true);
+
+    try {
+      const network = await NetInfo.fetch();
+      const details = network.details as Record<string, string | null | undefined> | null;
+
+      if (network.type !== 'wifi') {
+        Alert.alert('Info', 'Not connected to WiFi. IP address will still be filled if available.');
+      }
+
+      if (details?.ssid) {
+        setWifiSsid(details.ssid);
+      }
+
+      if (details?.bssid) {
+        setWifiBssid(details.bssid.toUpperCase());
+      }
+
+      if (details?.ipAddress) {
+        setIpRange(details.ipAddress + '/24');
+      }
+
+      if (!details?.ssid && !details?.bssid && !details?.ipAddress) {
+        Alert.alert('Error', 'Could not detect any network information from this device.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to get network info');
+    } finally {
+      setIsGettingNetwork(false);
+    }
+  };
 
   const handleCreateOrganization = async () => {
     if (!validateForm()) return;
@@ -97,7 +145,9 @@ export default function CreateOrganizationScreen() {
         address: orgLocation!.address,
         latitude: orgLocation!.latitude,
         longitude: orgLocation!.longitude,
+        wifi_ssid: wifiSsid.trim() || null,
         wifi_bssid: wifiBssid.trim() || null,
+        ip_range: ipRange.trim() || null,
         code: generatedCode,
         adminName: orgName.trim(),
         adminEmail: currentUser.email || user?.email || '',
@@ -170,22 +220,46 @@ export default function CreateOrganizationScreen() {
             )}
           </View>
 
-            <Input
-            style = {styles.wifiField}
+          <Text style={styles.formSectionTitle}>Network</Text>
+
+          <Input
+            label="WiFi SSID (Optional)"
+            placeholder="Office_WiFi"
+            value={wifiSsid}
+            onChangeText={setWifiSsid}
+            leftIcon={<IconSymbol name="wifi" size={20} color={colors.textMuted} />}
+          />
+
+          <Input
             label="WiFi BSSID (Optional)"
-            placeholder="AA:BB:CC:DD:EE:FF"
+            placeholder="00:11:22:33:44:55"
             value={wifiBssid}
             onChangeText={(text) => setWifiBssid(text.toUpperCase())}
             autoCapitalize="characters"
             error={errors.wifiBssid}
-            leftIcon={
-            <IconSymbol
-              name="wifi"
-              size={20}
-              color={colors.textMuted}
-            />
-  }
-/> 
+            leftIcon={<IconSymbol name="wifi" size={20} color={colors.textMuted} />}
+          />
+
+          <Input
+            label="IP Range (Optional)"
+            placeholder="192.168.1.0/24"
+            value={ipRange}
+            onChangeText={setIpRange}
+            error={errors.ipRange}
+            leftIcon={<IconSymbol name="wifi" size={20} color={colors.textMuted} />}
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.useNetworkButton,
+              isGettingNetwork && styles.useNetworkButtonDisabled,
+            ]}
+            disabled={isGettingNetwork}
+            onPress={handleUseCurrentNetwork}>
+            <Text style={styles.useNetworkText}>
+              {isGettingNetwork ? 'Detecting Network...' : 'Use Current Network'}
+            </Text>
+          </TouchableOpacity>
 
           <Button
             title="Create Organization"
@@ -275,9 +349,29 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       marginBottom: Spacing.xs,
     },
-    wifiField: {
-      marginTop: Spacing.sm,
-      marginBottom: Spacing.sm,
+    formSectionTitle: {
+      color: colors.text,
+      fontSize: Typography.base,
+      fontWeight: '700',
+      marginTop: Spacing.md,
+      marginBottom: Spacing.xs,
+    },
+    useNetworkButton: {
+      backgroundColor: colors.backgroundLight,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: BorderRadius.md,
+      padding: Spacing.md,
+      alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    useNetworkButtonDisabled: {
+      opacity: 0.6,
+    },
+    useNetworkText: {
+      fontSize: Typography.sm,
+      fontWeight: '600',
+      color: colors.primary,
     },
     errorText: {
       color: colors.error,

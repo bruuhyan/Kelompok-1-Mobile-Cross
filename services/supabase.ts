@@ -256,6 +256,7 @@ export const organizationService = {
     longitude?: number;
     wifi_ssid?: string | null;
     wifi_bssid?: string | null;
+    ip_range?: string | null;
   }) {
     const { data, error } = await supabase.rpc('create_organization_with_admin', {
       p_name: org.name,
@@ -267,6 +268,7 @@ export const organizationService = {
       p_longitude: org.longitude,
       p_wifi_ssid: org.wifi_ssid ?? null,
       p_wifi_bssid: org.wifi_bssid ?? null,
+      p_ip_range: org.ip_range ?? null,
     });
 
     if (error) throw error;

@@ -39,6 +39,7 @@ $$;
 
 DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT);
 DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION create_organization_with_admin(
   p_name TEXT,
@@ -49,7 +50,8 @@ CREATE OR REPLACE FUNCTION create_organization_with_admin(
   p_latitude NUMERIC DEFAULT NULL,
   p_longitude NUMERIC DEFAULT NULL,
   p_wifi_ssid TEXT DEFAULT NULL,
-  p_wifi_bssid TEXT DEFAULT NULL
+  p_wifi_bssid TEXT DEFAULT NULL,
+  p_ip_range TEXT DEFAULT NULL
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -79,14 +81,16 @@ BEGIN
     workplace_lat,
     workplace_lng,
     wifi_ssid,
-    wifi_bssid
+    wifi_bssid,
+    ip_range
   )
   VALUES (
     new_org_id,
     p_latitude,
     p_longitude,
     NULLIF(TRIM(p_wifi_ssid), ''),
-    NULLIF(UPPER(TRIM(p_wifi_bssid)), '')
+    NULLIF(UPPER(TRIM(p_wifi_bssid)), ''),
+    NULLIF(TRIM(p_ip_range), '')
   )
   ON CONFLICT (organization_id) DO UPDATE
   SET
@@ -94,6 +98,7 @@ BEGIN
     workplace_lng = EXCLUDED.workplace_lng,
     wifi_ssid = EXCLUDED.wifi_ssid,
     wifi_bssid = EXCLUDED.wifi_bssid,
+    ip_range = EXCLUDED.ip_range,
     updated_at = NOW();
 
   INSERT INTO public.profiles (
@@ -117,8 +122,8 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT) FROM anon;
-GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT) TO authenticated;
 
 -- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
