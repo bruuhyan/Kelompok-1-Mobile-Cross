@@ -39,6 +39,7 @@ export default function CreateOrganizationScreen() {
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
 
+  const [adminName, setAdminName] = useState('');
   const [orgName, setOrgName] = useState('');
   const [orgLocation, setOrgLocation] = useState<LocationData | null>(null);
   const [generatedCode, setGeneratedCode] = useState('');
@@ -46,6 +47,7 @@ export default function CreateOrganizationScreen() {
   const [wifiBssid, setWifiBssid] = useState('');
   const [ipRange, setIpRange] = useState('');
   const [errors, setErrors] = useState<{
+    adminName?: string;
     orgName?: string;
     orgAddress?: string;
     wifiBssid?: string;
@@ -62,13 +64,18 @@ export default function CreateOrganizationScreen() {
     setGeneratedCode(generateOrgCode());
   };
 
-const validateForm = () => {
-  const newErrors: {
-    orgName?: string;
-    orgAddress?: string;
-    wifiBssid?: string;
-    ipRange?: string;
-  } = {};
+  const validateForm = () => {
+    const newErrors: {
+      adminName?: string;
+      orgName?: string;
+      orgAddress?: string;
+      wifiBssid?: string;
+      ipRange?: string;
+    } = {};
+
+  if (!adminName.trim()) {
+    newErrors.adminName = ERROR_MESSAGES.REQUIRED_FIELD;
+  }
 
   if (!orgName.trim()) {
     newErrors.orgName = ERROR_MESSAGES.REQUIRED_FIELD;
@@ -149,7 +156,7 @@ const validateForm = () => {
         wifi_bssid: wifiBssid.trim() || null,
         ip_range: ipRange.trim() || null,
         code: generatedCode,
-        adminName: orgName.trim(),
+        adminName: adminName.trim(),
         adminEmail: currentUser.email || user?.email || '',
       });
 
@@ -199,6 +206,16 @@ const validateForm = () => {
         </Card>
 
         <Card style={styles.formCard}>
+          <Input
+            label="Full Name"
+            placeholder="Enter your full name"
+            value={adminName}
+            onChangeText={setAdminName}
+            autoCapitalize="words"
+            error={errors.adminName}
+            leftIcon={<IconSymbol name="person" size={20} color={colors.textMuted} />}
+          />
+
           <Input
             label="Organization Name"
             placeholder="Enter organization name"

@@ -4,12 +4,8 @@
  */
 
 import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
-
-// Prevent splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
 
 // Try to load custom fonts, fall back to system fonts if not available
 const fontAssets: Record<string, any> = {};
@@ -39,8 +35,7 @@ export function useCustomFonts() {
     }
   }, [fontError]);
 
-  // Always return true so app doesn't wait for fonts
-  return true;
+  return fontsLoaded || !!fontError;
 }
 
 export const FontWeights = {
