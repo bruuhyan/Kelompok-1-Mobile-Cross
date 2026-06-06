@@ -12,6 +12,7 @@ import { ERROR_MESSAGES } from "@/utils/constants";
 import { isValidEmail } from "@/utils/helpers";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -24,7 +25,8 @@ import {
 
 export default function LoginScreen() {
   const colors = useAppTheme();
-  const styles = createStyles(colors);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(colors, insets.bottom);
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
@@ -118,12 +120,14 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
     >
       <DecorativeShapes variant="auth" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo and Title */}
@@ -207,7 +211,7 @@ export default function LoginScreen() {
   );
 }
 
-const createStyles = (colors: ThemeColors) =>
+const createStyles = (colors: ThemeColors, bottomInset: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -216,7 +220,7 @@ const createStyles = (colors: ThemeColors) =>
     scrollContent: {
       padding: Spacing.lg,
       paddingTop: Spacing["3xl"],
-      paddingBottom: Spacing["2xl"],
+      paddingBottom: Math.max(Spacing["2xl"], bottomInset + Spacing["2xl"]),
       flexGrow: 1,
       justifyContent: "center",
     },

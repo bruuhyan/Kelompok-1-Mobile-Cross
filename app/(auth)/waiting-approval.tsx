@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
@@ -24,7 +25,8 @@ import { UserStatus } from '@/utils/types';
 
 export default function WaitingApprovalScreen() {
   const colors = useAppTheme();
-  const styles = createStyles(colors);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(colors, insets.bottom);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -164,11 +166,12 @@ export default function WaitingApprovalScreen() {
   );
 }
 
-const createStyles = (colors: ThemeColors) =>
+const createStyles = (colors: ThemeColors, bottomInset: number) =>
   StyleSheet.create({
   scrollContent: {
     padding: Spacing.lg,
     paddingTop: Spacing['3xl'],
+    paddingBottom: Math.max(Spacing['3xl'], bottomInset + Spacing['3xl']),
     backgroundColor: colors.background,
     minHeight: '100%',
   },
