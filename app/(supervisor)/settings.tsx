@@ -18,12 +18,33 @@ import { Card } from '@/components/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Input } from '@/components/Input';
 import { LocationData, LocationPicker } from '@/components/LocationPicker';
-import { supervisorService } from '@/services/supabase';
+import { organizationService, supervisorService } from '@/services/supabase';
 import { SettingsAppearance } from '@/components/SettingsAppearance';
 import { useAuthStore } from '@/store/authStore';
 import { ERROR_MESSAGES } from '@/utils/constants';
 import DecorativeShapes from "@/components/DecorativeShapes";
 import { isValidBssid, isValidIpRange, isValidWorkTime } from '@/utils/helpers';
+
+const formatReverseGeocodeAddress = (place: {
+  name?: string | null;
+  street?: string | null;
+  district?: string | null;
+  city?: string | null;
+  region?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+}) =>
+  [
+    place.name,
+    place.street,
+    place.district,
+    place.city,
+    place.region,
+    place.postalCode,
+    place.country,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
 export default function SupervisorSettingsScreen() {
   const colors = useAppTheme();
@@ -113,11 +134,19 @@ export default function SupervisorSettingsScreen() {
     if (!user?.organization_id) return;
 
     try {
-      const data = await supervisorService.getOrganizationSettings(user.organization_id);
+      const [data, organization] = await Promise.all([
+        supervisorService.getOrganizationSettings(user.organization_id),
+        organizationService.getOrganizationById(user.organization_id),
+      ]);
       if (data) {
         setGpsLat(data.gps_lat?.toString() || '');
         setGpsLng(data.gps_lng?.toString() || '');
-        setGpsAddress(data.gps_lat != null && data.gps_lng != null ? 'Configured workplace location' : '');
+        setGpsAddress(
+          organization?.address ||
+          (data.gps_lat != null && data.gps_lng != null
+            ? `${Number(data.gps_lat).toFixed(6)}, ${Number(data.gps_lng).toFixed(6)}`
+            : ''),
+        );
         setGpsRadius(data.gps_radius_meters?.toString() || '100');
         setWifiSsid(data.wifi_ssid || '');
         setWifiBssid(data.wifi_bssid || '');
@@ -200,7 +229,17 @@ export default function SupervisorSettingsScreen() {
 
       setGpsLat(location.coords.latitude.toFixed(6));
       setGpsLng(location.coords.longitude.toFixed(6));
-      setGpsAddress('Current device location');
+
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      }).catch(() => []);
+      const address = place ? formatReverseGeocodeAddress(place) : '';
+
+      setGpsAddress(
+        address ||
+        `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`,
+      );
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -257,17 +296,29 @@ export default function SupervisorSettingsScreen() {
 
     setIsSaving(true);
     try {
-      await supervisorService.upsertOrganizationSettings(user.organization_id, {
-        gps_lat: gpsLat.trim() ? Number(gpsLat) : null,
-        gps_lng: gpsLng.trim() ? Number(gpsLng) : null,
-        gps_radius_meters: radius,
-        wifi_ssid: wifiSsid.trim() || null,
-        wifi_bssid: wifiBssid.trim().toUpperCase() || null,
-        ip_range: ipRange.trim() || null,
-        work_start_time: workStart.trim() || null,
-        work_end_time: workEnd.trim() || null,
-        ignore_checkin_time: ignoreCheckinTime,
-      });
+      const updates = [
+        supervisorService.upsertOrganizationSettings(user.organization_id, {
+          gps_lat: gpsLat.trim() ? Number(gpsLat) : null,
+          gps_lng: gpsLng.trim() ? Number(gpsLng) : null,
+          gps_radius_meters: radius,
+          wifi_ssid: wifiSsid.trim() || null,
+          wifi_bssid: wifiBssid.trim().toUpperCase() || null,
+          ip_range: ipRange.trim() || null,
+          work_start_time: workStart.trim() || null,
+          work_end_time: workEnd.trim() || null,
+          ignore_checkin_time: ignoreCheckinTime,
+        }),
+      ];
+
+      if (gpsAddress.trim()) {
+        updates.push(
+          organizationService.updateOrganization(user.organization_id, {
+            address: gpsAddress.trim(),
+          }),
+        );
+      }
+
+      await Promise.all(updates);
 
       Alert.alert('Success', 'Organization settings saved');
       await loadSettings();
