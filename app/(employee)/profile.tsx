@@ -375,6 +375,22 @@ export default function EmployeeProfileScreen() {
           <Text style={styles.settingsButtonText}>Settings</Text>
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/(employee)/privacy-policy')}>
+          <IconSymbol name="shield" size={20} color={colors.text} />
+          <Text style={styles.settingsButtonText}>Privacy Policy</Text>
+          <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => router.push('/(employee)/account-deletion')}>
+          <IconSymbol name="person.crop.circle.badge.xmark" size={20} color={colors.error} />
+          <Text style={[styles.settingsButtonText, styles.deleteButtonText]}>
+            Request Account Deletion
+          </Text>
+          <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
@@ -604,6 +620,9 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.text,
       fontSize: Typography.base,
       fontWeight: '700',
+    },
+    deleteButtonText: {
+      color: colors.error,
     },
     logoutButton: {
       flexDirection: 'row',

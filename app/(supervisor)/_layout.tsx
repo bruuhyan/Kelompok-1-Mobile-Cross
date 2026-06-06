@@ -112,6 +112,20 @@ export default function SupervisorTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="account-deletion"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="privacy-policy"
+        options={{
+          href: null,
+          tabBarItemStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
         name="report-detail/[id]"
         options={{
           href: null,

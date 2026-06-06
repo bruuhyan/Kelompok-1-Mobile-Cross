@@ -174,6 +174,35 @@ export const profileService = {
 };
 
 /**
+ * Account compliance service
+ */
+export const accountComplianceService = {
+  async requestAccountDeletion(request: {
+    user_id: string;
+    organization_id?: string | null;
+    email: string;
+    name?: string | null;
+    reason?: string | null;
+  }) {
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .insert({
+        user_id: request.user_id,
+        organization_id: request.organization_id ?? null,
+        email: request.email,
+        name: request.name ?? null,
+        reason: request.reason ?? null,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+};
+
+/**
  * Organization Service
  */
 export const organizationService = {

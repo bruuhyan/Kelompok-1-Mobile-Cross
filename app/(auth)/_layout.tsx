@@ -31,6 +31,7 @@ export default function AuthStackLayout() {
         name="waiting-approval"
         options={{ title: 'Waiting Approval', gestureEnabled: false }}
       />
+      <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy' }} />
     </Stack>
   );
 }

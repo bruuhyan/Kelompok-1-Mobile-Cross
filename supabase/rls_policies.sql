@@ -375,3 +375,38 @@ CREATE POLICY "Supervisors can review org tasks"
     is_user_admin_or_supervisor()
     AND get_user_organization_id() = organization_id
   );
+
+-- Account deletion request support
+CREATE TABLE IF NOT EXISTS account_deletion_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+  email TEXT NOT NULL,
+  name TEXT,
+  reason TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'rejected')),
+  requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  resolution_notes TEXT
+);
+
+ALTER TABLE account_deletion_requests ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can create own deletion request" ON account_deletion_requests;
+DROP POLICY IF EXISTS "Users can view own deletion requests" ON account_deletion_requests;
+DROP POLICY IF EXISTS "Supervisors can view org deletion requests" ON account_deletion_requests;
+
+CREATE POLICY "Users can create own deletion request"
+  ON account_deletion_requests FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can view own deletion requests"
+  ON account_deletion_requests FOR SELECT
+  USING (user_id = auth.uid());
+
+CREATE POLICY "Supervisors can view org deletion requests"
+  ON account_deletion_requests FOR SELECT
+  USING (
+    is_user_admin_or_supervisor()
+    AND get_user_organization_id() = organization_id
+  );
