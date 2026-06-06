@@ -19,12 +19,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { BorderRadius, Spacing, ThemeColors, Typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
+import { AttendanceWarningModal } from '@/components/AttendanceWarningModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { authService, supervisorService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useAttendanceStore } from '@/store/attendanceStore';
 import { formatTime } from '@/utils/helpers';
+import { AttendanceValidationFlowResult } from '@/utils/types';
 import DecorativeShapes from "@/components/DecorativeShapes";
 
 type DashboardSummary = {
@@ -65,6 +67,15 @@ export default function SupervisorHomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
+  const [warningModal, setWarningModal] = useState<{
+    visible: boolean;
+    actionLabel: 'check-in' | 'check-out';
+    result: AttendanceValidationFlowResult | null;
+  }>({
+    visible: false,
+    actionLabel: 'check-in',
+    result: null,
+  });
   const [workHours, setWorkHours] = useState({ start: '', end: '' });
 
   const {
@@ -153,11 +164,18 @@ export default function SupervisorHomeScreen() {
     try {
       await performCheckIn(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: 'check-in',
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         'Success',
-        latestAttendance.lastValidationResult?.requiresReview
-          ? 'Check-in submitted and flagged for supervisor review.'
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
             ? 'Check-in saved and will sync when online.'
             : 'Check-in successful.',
       );
@@ -172,11 +190,18 @@ export default function SupervisorHomeScreen() {
     try {
       await performCheckOut(user);
       const latestAttendance = useAttendanceStore.getState();
+      if (latestAttendance.lastValidationResult?.requiresReview) {
+        setWarningModal({
+          visible: true,
+          actionLabel: 'check-out',
+          result: latestAttendance.lastValidationResult,
+        });
+        return;
+      }
+
       Alert.alert(
         'Success',
-        latestAttendance.lastValidationResult?.requiresReview
-          ? 'Check-out submitted and flagged for supervisor review.'
-          : latestAttendance.pendingSyncLogs.length > 0
+        latestAttendance.pendingSyncLogs.length > 0
             ? 'Check-out saved and will sync when online.'
             : 'Check-out successful.',
       );
@@ -511,6 +536,13 @@ export default function SupervisorHomeScreen() {
           </View>
         </Pressable>
       )}
+
+      <AttendanceWarningModal
+        visible={warningModal.visible}
+        actionLabel={warningModal.actionLabel}
+        result={warningModal.result}
+        onClose={() => setWarningModal((current) => ({ ...current, visible: false }))}
+      />
     </ScrollView>
     </View>
   );
