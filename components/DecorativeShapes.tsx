@@ -29,15 +29,15 @@ function getShapesForVariant(variant: ShapesVariant): ShapeConfig[] {
       ];
     case "employee":
       return [
-        { top: -80, left: -40, width: 200, height: 200, borderRadius: 100, colorKey: "primary", opacity: 0.05 },
-        { bottom: -100, right: -50, width: 240, height: 130, borderRadius: 120, colorKey: "secondary", opacity: 0.06 },
-        { top: SCREEN_WIDTH * 0.5, right: -30, width: 100, height: 100, borderRadius: 50, colorKey: "primary", opacity: 0.04 },
+        { top: -80, left: -40, width: 200, height: 200, borderRadius: 100, colorKey: "primary", opacity: 0.1 },
+        { bottom: -100, right: -50, width: 240, height: 130, borderRadius: 120, colorKey: "secondary", opacity: 0.11 },
+        { top: SCREEN_WIDTH * 0.5, right: -30, width: 100, height: 100, borderRadius: 50, colorKey: "primary", opacity: 0.08 },
       ];
     case "supervisor":
       return [
-        { top: -60, right: -50, width: 220, height: 220, borderRadius: 110, colorKey: "primary", opacity: 0.05 },
-        { bottom: -70, left: -40, width: 200, height: 120, borderRadius: 100, colorKey: "secondary", opacity: 0.06 },
-        { bottom: SCREEN_WIDTH * 0.3, right: -20, width: 90, height: 90, borderRadius: 45, colorKey: "primary", opacity: 0.04 },
+        { top: -60, right: -50, width: 220, height: 220, borderRadius: 110, colorKey: "primary", opacity: 0.1 },
+        { bottom: -70, left: -40, width: 200, height: 120, borderRadius: 100, colorKey: "secondary", opacity: 0.11 },
+        { bottom: SCREEN_WIDTH * 0.3, right: -20, width: 90, height: 90, borderRadius: 45, colorKey: "primary", opacity: 0.08 },
       ];
     case "splash":
       return [
@@ -85,6 +85,8 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
+    zIndex: 1,
+    elevation: 1,
   },
   shape: {
     position: "absolute",
