@@ -41,6 +41,10 @@ export interface Organization {
   name: string;
   address: string;
   code: string;
+  status?: 'active' | 'disbanded';
+  disbanded_at?: string | null;
+  disbanded_by?: string | null;
+  disband_reason?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -37,6 +37,15 @@ AS $$
   SELECT organization_id FROM profiles WHERE id = auth.uid() LIMIT 1;
 $$;
 
+ALTER TABLE organizations
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'disbanded'));
+
+ALTER TABLE organizations
+  ADD COLUMN IF NOT EXISTS disbanded_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS disbanded_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS disband_reason TEXT;
+
 DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT);
 DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT);
 DROP FUNCTION IF EXISTS create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT);
@@ -125,6 +134,209 @@ $$;
 REVOKE EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION create_organization_with_admin(TEXT, TEXT, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, TEXT, TEXT, TEXT) TO authenticated;
 
+DROP FUNCTION IF EXISTS leave_organization(TEXT);
+CREATE OR REPLACE FUNCTION leave_organization(p_reason TEXT DEFAULT NULL)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_user_id UUID;
+  current_profile RECORD;
+  active_admin_count INTEGER;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO current_profile
+  FROM public.profiles
+  WHERE id = current_user_id;
+
+  IF current_profile.id IS NULL THEN
+    RAISE EXCEPTION 'No organization profile found for this account';
+  END IF;
+
+  IF current_profile.role = 'admin' THEN
+    SELECT COUNT(*) INTO active_admin_count
+    FROM public.profiles
+    WHERE organization_id = current_profile.organization_id
+      AND role = 'admin'
+      AND status = 'active';
+
+    IF active_admin_count <= 1 THEN
+      RAISE EXCEPTION 'You are the last admin. Disband the organization or add another admin first.';
+    END IF;
+  END IF;
+
+  UPDATE public.requests
+  SET reviewed_by = NULL
+  WHERE reviewed_by = current_user_id;
+
+  UPDATE public.reports
+  SET reviewed_by = NULL
+  WHERE reviewed_by = current_user_id;
+
+  UPDATE public.tasks
+  SET reviewed_by = NULL
+  WHERE reviewed_by = current_user_id;
+
+  DELETE FROM public.tasks
+  WHERE created_by = current_user_id;
+
+  DELETE FROM public.profiles
+  WHERE id = current_user_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION leave_organization(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION leave_organization(TEXT) TO authenticated;
+
+DROP FUNCTION IF EXISTS disband_organization(TEXT);
+CREATE OR REPLACE FUNCTION disband_organization(p_reason TEXT DEFAULT NULL)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_user_id UUID;
+  current_profile RECORD;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO current_profile
+  FROM public.profiles
+  WHERE id = current_user_id;
+
+  IF current_profile.id IS NULL THEN
+    RAISE EXCEPTION 'No organization profile found for this account';
+  END IF;
+
+  IF current_profile.role <> 'admin' THEN
+    RAISE EXCEPTION 'Only organization admins can disband an organization';
+  END IF;
+
+  UPDATE public.organizations
+  SET
+    status = 'disbanded',
+    disbanded_at = NOW(),
+    disbanded_by = current_user_id,
+    disband_reason = NULLIF(TRIM(p_reason), ''),
+    updated_at = NOW()
+  WHERE id = current_profile.organization_id
+    AND status = 'active';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Organization is already disbanded or unavailable';
+  END IF;
+
+  UPDATE public.requests
+  SET reviewed_by = NULL
+  WHERE organization_id = current_profile.organization_id;
+
+  UPDATE public.reports
+  SET reviewed_by = NULL
+  WHERE organization_id = current_profile.organization_id;
+
+  UPDATE public.tasks
+  SET reviewed_by = NULL
+  WHERE organization_id = current_profile.organization_id;
+
+  DELETE FROM public.tasks
+  WHERE organization_id = current_profile.organization_id;
+
+  DELETE FROM public.profiles
+  WHERE organization_id = current_profile.organization_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION disband_organization(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION disband_organization(TEXT) TO authenticated;
+
+DROP FUNCTION IF EXISTS update_org_member_role(UUID, TEXT);
+CREATE OR REPLACE FUNCTION update_org_member_role(
+  p_member_id UUID,
+  p_role TEXT
+)
+RETURNS public.profiles
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  current_user_id UUID;
+  current_profile RECORD;
+  target_profile public.profiles%ROWTYPE;
+  active_admin_count INTEGER;
+  updated_profile public.profiles%ROWTYPE;
+BEGIN
+  current_user_id := auth.uid();
+
+  IF current_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_role NOT IN ('employee', 'supervisor', 'admin') THEN
+    RAISE EXCEPTION 'Invalid role';
+  END IF;
+
+  SELECT * INTO current_profile
+  FROM public.profiles
+  WHERE id = current_user_id;
+
+  IF current_profile.id IS NULL OR current_profile.role <> 'admin' THEN
+    RAISE EXCEPTION 'Only organization admins can update member roles';
+  END IF;
+
+  IF p_member_id = current_user_id THEN
+    RAISE EXCEPTION 'You cannot change your own role';
+  END IF;
+
+  SELECT * INTO target_profile
+  FROM public.profiles
+  WHERE id = p_member_id
+    AND organization_id = current_profile.organization_id;
+
+  IF target_profile.id IS NULL THEN
+    RAISE EXCEPTION 'Member not found in your organization';
+  END IF;
+
+  IF target_profile.status <> 'active' THEN
+    RAISE EXCEPTION 'Only active members can be promoted or demoted';
+  END IF;
+
+  IF target_profile.role = 'admin' AND p_role <> 'admin' THEN
+    SELECT COUNT(*) INTO active_admin_count
+    FROM public.profiles
+    WHERE organization_id = current_profile.organization_id
+      AND role = 'admin'
+      AND status = 'active';
+
+    IF active_admin_count <= 1 THEN
+      RAISE EXCEPTION 'At least one active admin must remain in the organization';
+    END IF;
+  END IF;
+
+  UPDATE public.profiles
+  SET role = p_role
+  WHERE id = p_member_id
+  RETURNING * INTO updated_profile;
+
+  RETURN updated_profile;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION update_org_member_role(UUID, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION update_org_member_role(UUID, TEXT) TO authenticated;
+
 -- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -142,7 +354,7 @@ DROP POLICY IF EXISTS "Authenticated users can create organizations" ON organiza
 
 CREATE POLICY "Organizations are viewable by everyone"
   ON organizations FOR SELECT
-  USING (true);
+  USING (status = 'active');
 
 -- Allow authenticated users to create organizations.
 -- The app uses create_organization_with_admin() so the first admin profile is created atomically.
