@@ -12,11 +12,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { ThemePreferenceProvider } from "@/hooks/use-theme-preference";
 import { authService, profileService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
-import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-
-// Keep the splash screen visible while fonts load
-SplashScreen.preventAutoHideAsync();
 
 function AuthGate() {
   const router = useRouter();
@@ -86,7 +82,7 @@ function AuthGate() {
             ? "(supervisor)"
             : "(employee)";
 
-        if (isAuthRoute || group === "splash" || group !== expectedGroup) {
+        if (isAuthRoute || group !== expectedGroup) {
           router.replace(targetRoute);
         }
       } catch (error) {
@@ -106,11 +102,6 @@ function AuthGate() {
 
 export default function RootLayout() {
   const fontsLoaded = useCustomFonts();
-
-  // Hide splash screen once fonts are loaded
-  if (fontsLoaded) {
-    SplashScreen.hideAsync();
-  }
 
   if (!fontsLoaded) {
     return null;
@@ -137,10 +128,7 @@ function RootStack() {
           },
         }}
       >
-        <Stack.Screen
-          name="splash"
-          options={{ headerShown: false, gestureEnabled: false }}
-        />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(employee)" options={{ headerShown: false }} />
         <Stack.Screen name="(supervisor)" options={{ headerShown: false }} />
