@@ -55,7 +55,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow TrustEnd to use your location."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

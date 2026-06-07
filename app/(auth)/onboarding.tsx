@@ -3,7 +3,7 @@
  * User chooses to create or join an organization after registration
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
+import { SignOutConfirmationModal } from '@/components/SignOutConfirmationModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import DecorativeShapes from '@/components/DecorativeShapes';
 import { useAuthStore } from '@/store/authStore';
@@ -26,6 +27,8 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleCreateOrganization = () => {
     router.push('/(auth)/create-organization');
@@ -37,12 +40,16 @@ export default function OnboardingScreen() {
 
   const handleLogout = async () => {
     const { authService } = await import('@/services/supabase');
+    setIsSigningOut(true);
     try {
       await authService.signOut();
       logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
     }
   };
 
@@ -107,7 +114,7 @@ export default function OnboardingScreen() {
       </TouchableOpacity>
 
       {/* Logout */}
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+      <TouchableOpacity onPress={() => setShowSignOutModal(true)} style={styles.logoutButton}>
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -116,6 +123,12 @@ export default function OnboardingScreen() {
         <Text style={styles.privacyText}>Privacy Policy</Text>
       </TouchableOpacity>
     </ScrollView>
+      <SignOutConfirmationModal
+        visible={showSignOutModal}
+        loading={isSigningOut}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleLogout}
+      />
     </View>
   );
 }

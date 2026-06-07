@@ -6,6 +6,7 @@
 import { Image } from "expo-image";
 import { Card } from "@/components/Card";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
+import { TrustScoreHistoryModal } from "@/components/TrustScoreHistoryModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -62,6 +63,7 @@ export default function SupervisorTeamScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [roleUpdatingId, setRoleUpdatingId] = useState<string | null>(null);
+  const [selectedTrustMember, setSelectedTrustMember] = useState<TeamMember | null>(null);
 
   const loadMembers = useCallback(async () => {
     if (!user?.organization_id) return;
@@ -288,11 +290,20 @@ export default function SupervisorTeamScreen() {
               canManageRoles={currentUserRole === "admin" && member.id !== user?.id}
               updatingRole={roleUpdatingId === member.id}
               onRoleChange={(role) => handleRoleUpdate(member, role)}
+              onPress={() => setSelectedTrustMember(member)}
             />
           ))
         )}
       </View>
     </ScrollView>
+      <TrustScoreHistoryModal
+        visible={!!selectedTrustMember}
+        userId={selectedTrustMember?.id}
+        organizationId={user?.organization_id}
+        title={selectedTrustMember?.name || "Team Member"}
+        score={selectedTrustMember?.trust_score || 50}
+        onClose={() => setSelectedTrustMember(null)}
+      />
     </View>
   );
 }
@@ -433,11 +444,13 @@ function TrustScoreRow({
   canManageRoles,
   updatingRole,
   onRoleChange,
+  onPress,
 }: {
   member: TeamMember;
   canManageRoles: boolean;
   updatingRole: boolean;
   onRoleChange: (role: "employee" | "supervisor" | "admin") => void;
+  onPress: () => void;
 }) {
   const colors = useAppTheme();
   const styles = createStyles(colors);
@@ -450,7 +463,11 @@ function TrustScoreRow({
   return (
     <Card style={styles.trustRow}>
       <View style={styles.trustRowContent}>
-        <View style={styles.trustTop}>
+        <TouchableOpacity
+          style={styles.trustTop}
+          onPress={onPress}
+          activeOpacity={0.75}
+        >
           <View style={styles.trustLeft}>
             <Avatar name={member.name} avatarUrl={member.avatar_url} small />
             <View style={styles.memberInfo}>
@@ -463,7 +480,7 @@ function TrustScoreRow({
             size="medium"
             showLabel
           />
-        </View>
+        </TouchableOpacity>
 
         {canManageRoles ? (
           <View style={styles.roleActions}>

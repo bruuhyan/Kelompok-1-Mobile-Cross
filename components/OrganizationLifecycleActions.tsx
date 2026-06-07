@@ -9,7 +9,9 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -137,94 +139,99 @@ export function OrganizationLifecycleActions({ organization }: Props) {
         visible={modalMode !== null}
         onRequestClose={closeModal}
       >
-        <Pressable style={styles.overlay} onPress={closeModal}>
-          <Pressable style={styles.modalCard}>
-            {modalMode === "leave" ? (
-              <>
-                <Text style={styles.modalTitle}>Leave Organization</Text>
-                <Text style={styles.modalBody}>
-                  Your organization profile will be deleted. Related
-                  attendance, requests, reports, and assigned data may also be
-                  removed according to organization data rules. Your login will
-                  stay active so you can create or join another organization.
-                </Text>
-                <Text style={styles.inputLabel}>Reason (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={reason}
-                  onChangeText={setReason}
-                  placeholder="Why are you leaving?"
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  textAlignVertical="top"
-                />
-                <View style={styles.modalActions}>
-                  <Button
-                    title="Cancel"
-                    variant="secondary"
-                    onPress={closeModal}
-                    disabled={isSubmitting}
-                    style={styles.modalButton}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <Pressable style={styles.overlay} onPress={closeModal}>
+            <Pressable style={styles.modalCard}>
+              {modalMode === "leave" ? (
+                <>
+                  <Text style={styles.modalTitle}>Leave Organization</Text>
+                  <Text style={styles.modalBody}>
+                    Your organization profile will be deleted. Related
+                    attendance, requests, reports, and assigned data may also be
+                    removed according to organization data rules. Your login will
+                    stay active so you can create or join another organization.
+                  </Text>
+                  <Text style={styles.inputLabel}>Reason (optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={reason}
+                    onChangeText={setReason}
+                    placeholder="Why are you leaving?"
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                    textAlignVertical="top"
                   />
-                  <Button
-                    title="Leave"
-                    onPress={handleLeave}
-                    loading={isSubmitting}
-                    style={styles.modalButton}
-                  />
-                </View>
-              </>
-            ) : null}
+                  <View style={styles.modalActions}>
+                    <Button
+                      title="Cancel"
+                      variant="secondary"
+                      onPress={closeModal}
+                      disabled={isSubmitting}
+                      style={styles.modalButton}
+                    />
+                    <Button
+                      title="Leave"
+                      onPress={handleLeave}
+                      loading={isSubmitting}
+                      style={styles.modalButton}
+                    />
+                  </View>
+                </>
+              ) : null}
 
-            {modalMode === "disband" ? (
-              <>
-                <Text style={styles.modalTitle}>Disband Organization</Text>
-                <Text style={styles.modalBody}>
-                  This will mark the organization as disbanded and remove every
-                  member profile from it. Members will need to create or join an
-                  organization again. This action is only available to admins.
-                </Text>
-                <Text style={styles.inputLabel}>Reason (required)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={reason}
-                  onChangeText={setReason}
-                  placeholder="Why is this organization being disbanded?"
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  textAlignVertical="top"
-                />
-                <Text style={styles.inputLabel}>
-                  Type organization name or code to confirm
-                </Text>
-                <TextInput
-                  style={styles.confirmInput}
-                  value={confirmation}
-                  onChangeText={setConfirmation}
-                  placeholder={requiredConfirmation || "Organization name/code"}
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                />
-                <View style={styles.modalActions}>
-                  <Button
-                    title="Cancel"
-                    variant="secondary"
-                    onPress={closeModal}
-                    disabled={isSubmitting}
-                    style={styles.modalButton}
+              {modalMode === "disband" ? (
+                <>
+                  <Text style={styles.modalTitle}>Disband Organization</Text>
+                  <Text style={styles.modalBody}>
+                    This will mark the organization as disbanded and remove every
+                    member profile from it. Members will need to create or join an
+                    organization again. This action is only available to admins.
+                  </Text>
+                  <Text style={styles.inputLabel}>Reason (required)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={reason}
+                    onChangeText={setReason}
+                    placeholder="Why is this organization being disbanded?"
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                    textAlignVertical="top"
                   />
-                  <Button
-                    title="Disband"
-                    onPress={handleDisband}
-                    loading={isSubmitting}
-                    disabled={!canDisband}
-                    style={styles.modalButton}
+                  <Text style={styles.inputLabel}>
+                    Type organization name or code to confirm
+                  </Text>
+                  <TextInput
+                    style={styles.confirmInput}
+                    value={confirmation}
+                    onChangeText={setConfirmation}
+                    placeholder={requiredConfirmation || "Organization name/code"}
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
                   />
-                </View>
-              </>
-            ) : null}
+                  <View style={styles.modalActions}>
+                    <Button
+                      title="Cancel"
+                      variant="secondary"
+                      onPress={closeModal}
+                      disabled={isSubmitting}
+                      style={styles.modalButton}
+                    />
+                    <Button
+                      title="Disband"
+                      onPress={handleDisband}
+                      loading={isSubmitting}
+                      disabled={!canDisband}
+                      style={styles.modalButton}
+                    />
+                  </View>
+                </>
+              ) : null}
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -259,6 +266,9 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: "center",
       backgroundColor: "rgba(0, 0, 0, 0.55)",
       padding: Spacing.lg,
+    },
+    keyboardAvoider: {
+      flex: 1,
     },
     modalCard: {
       width: "100%",

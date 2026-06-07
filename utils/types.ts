@@ -209,6 +209,15 @@ export interface TrustScoreCalculation {
   urgentReviewRequired: boolean;
 }
 
+export interface TrustScoreHistoryEntry {
+  id: string;
+  category: 'offense' | 'addition';
+  label: string;
+  pointsChange: number;
+  reason: string;
+  occurredAt: string;
+}
+
 // Request Types
 export interface Request {
   id: string;

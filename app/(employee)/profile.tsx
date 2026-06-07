@@ -8,6 +8,7 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InfoRow } from '@/components/InfoRow';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { OrganizationLifecycleActions } from '@/components/OrganizationLifecycleActions';
+import { SignOutConfirmationModal } from '@/components/SignOutConfirmationModal';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -50,6 +52,8 @@ export default function EmployeeProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -218,12 +222,16 @@ export default function EmployeeProfileScreen() {
   };
 
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
       await authService.signOut();
       logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
     }
   };
 
@@ -256,8 +264,17 @@ export default function EmployeeProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <DecorativeShapes variant="employee" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -400,12 +417,19 @@ export default function EmployeeProfileScreen() {
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
         <OrganizationLifecycleActions organization={organization} />
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => setShowSignOutModal(true)}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+      <SignOutConfirmationModal
+        visible={showSignOutModal}
+        loading={isSigningOut}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleLogout}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
