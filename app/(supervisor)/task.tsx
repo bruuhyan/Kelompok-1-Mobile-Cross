@@ -7,6 +7,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -169,10 +171,15 @@ export default function SupervisorTaskScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="supervisor" />
       <ScrollView
         style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
         }>
@@ -270,7 +277,7 @@ export default function SupervisorTaskScreen() {
         )}
       </View>
     </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -393,6 +400,9 @@ const createStyles = (colors: ThemeColors) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    content: {
+      paddingBottom: Spacing['3xl'],
     },
     loadingContainer: {
       flex: 1,

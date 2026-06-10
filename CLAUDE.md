@@ -1,392 +1,180 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with TrustEnd.
 
 ## Development Commands
 
 ```bash
-# Start development server
 npm start
-
-# Platform-specific starts
-npm run android    # Android emulator/device
-npm run ios        # iOS simulator
-npm run web        # Web browser
-
-# Linting
+npm run android
+npm run ios
+npm run web
 npm run lint
-
-# Reset project (clears app directory)
 npm run reset-project
 ```
 
+Use `npm run lint` for validation. There is no separate typecheck script.
+
 ## Architecture Overview
 
-TrustEnd is a React Native app using Expo Router for file-based navigation with a role-based routing system. The app has three main navigation flows based on user authentication and role state.
+TrustEnd is an Expo React Native app with Expo Router route groups and Supabase as the backend.
 
-### Navigation Structure
+Route groups:
 
-The app uses Expo Router's file-based routing with three route groups:
+- `app/(auth)`: login, register, onboarding, create/join organization, waiting approval, privacy policy.
+- `app/(employee)`: employee home, attendance, requests, reports, tasks, profile, settings, legal screens.
+- `app/(supervisor)`: supervisor/admin home, team, attendance logs, request/report review, tasks, profile, organization settings, legal screens.
 
-1. **`/(auth)`** - Authentication flow (login, register, onboarding, create/join organization, waiting approval)
-2. **`/(employee)`** - Employee dashboard with 5 bottom tabs (Home, Attendance, Requests, Reports, Profile)
-3. **`/(supervisor)`** - Supervisor dashboard with 5 bottom tabs (Home, Team, Request, Task, Profile)
-
-The root layout (`app/_layout.tsx`) is the central auth gate. It checks the Supabase session, fetches the linked profile, mirrors that profile into `store/authStore.ts`, and routes by profile `status` and `role`.
+The root layout, `app/_layout.tsx`, is the central auth gate. It checks the Supabase session, fetches the profile, mirrors it into `store/authStore.ts`, then routes by profile status and role.
 
 Routing rules:
 
-- No Supabase session: route to `/(auth)/login`
-- Session without a profile: route to `/(auth)/onboarding`
-- Pending profile: route to `/(auth)/waiting-approval`
-- Suspended profile: sign out, clear persisted auth store, route to login
-- Active employee: route to `/(employee)/home`
-- Active supervisor/admin: route to `/(supervisor)/home`
+- No session: `/(auth)/login`
+- Session without profile: `/(auth)/onboarding`
+- Pending profile: `/(auth)/waiting-approval`
+- Suspended profile: sign out, clear profile store, route to login
+- Active employee: `/(employee)/home`
+- Active supervisor/admin: `/(supervisor)/home`
 
-### Auth Flow (Register-First Pattern)
+## Supabase Rules
 
-The app uses a register-first pattern for cleaner separation of concerns:
+- `services/supabase.ts` is the only place that creates the Supabase client.
+- All multi-tenant queries must be scoped by `organization_id`.
+- RLS policies and security-definer RPCs live in `supabase/rls_policies.sql`.
+- First organization admin creation must use `organizationService.createOrganizationWithAdmin()`.
+- Normal joining users must be `role = 'employee'` and `status = 'pending'`.
+- Join-by-code must only find `organizations.status = 'active'`.
 
-1. **Register** → Email/password only
-2. **Onboarding** → Choose to create or join organization
-3. **Create/Join** → Complete organization setup
-4. **Waiting Approval** → For employees joining existing organizations
+Important RPCs:
 
-This pattern ensures users are authenticated before any organization operations, simplifying RLS policies.
+- `create_organization_with_admin(...)`
+- `leave_organization(p_reason text)`
+- `disband_organization(p_reason text)`
+- `update_org_member_role(p_member_id uuid, p_role text)`
 
-Important implementation details:
+## Current Feature Set
 
-- Supabase session persistence is configured in `services/supabase.ts` with React Native AsyncStorage. Do not create another Supabase client outside this service.
-- Creating a new organization and first admin profile must use `organizationService.createOrganizationWithAdmin()`, backed by the `create_organization_with_admin` SQL RPC in `supabase/rls_policies.sql`.
-- Normal self-created profiles are restricted by RLS to `role = 'employee'` and `status = 'pending'`.
-- Logout flows must call both `authService.signOut()` and `useAuthStore().logout()` so persisted profile state cannot survive sign-out.
+### Auth and Onboarding
 
-### Multi-Tenant Architecture
+- Email/password register and login.
+- Registered users without a profile continue to onboarding.
+- Users can create a new organization as first admin.
+- Users can join an active organization by code and wait for approval.
 
-All data is scoped by `organization_id`. The database schema enforces this through foreign keys. When implementing features:
+### Employee
 
-- Always include `organization_id` in queries
-- Use Row Level Security (RLS) policies in Supabase to ensure users can only access their org's data
-- Organization settings (GPS radius, WiFi SSID/BSSID, IP range, work hours) are stored in `organization_settings` table
-- `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` handle CRUD operations
-  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
+- Home dashboard with trust score, check-in/out, and task preview.
+- Attendance history.
+- Holiday/overtime requests.
+- Report submission with optional photo upload.
+- Assigned task submission.
+- Profile edit, avatar upload, settings, privacy policy, account deletion request, leave organization.
 
-### Trust Score System
+### Supervisor and Admin
 
-Trust scores (0-100) are calculated from three factors:
+- Dashboard with organization stats, trust score, own attendance, pending work.
+- Team management with approvals, attendance logs, trust score overview.
+- Admin-only member role updates to employee/supervisor/admin.
+- Request and report review with detail screens.
+- Task assignment and submission review.
+- Organization settings with map-based workplace picker and attendance validation rules.
+- Leave organization and admin-only disband organization.
 
-- **Punctuality** - on-time check-ins vs late check-ins
-- **Location Consistency** - GPS matches registered workplace location
-- **Suspicious Activity** - anomalies like duplicate check-ins, VPN usage, spoofed location
+### Play Store Legal
 
-Trust score tiers:
+- `docs/privacy/index.html`: public privacy policy.
+- `docs/account-deletion/index.html`: public account deletion instructions.
+- `constants/legal.ts`: support email and public URLs.
+- Current support email: `support.trustend@gmail.com`.
 
-- 80-100: Trusted (green)
-- 50-79: Moderate (yellow)
-- 0-49: At Risk (red)
+## Trust Score
 
-Trust score recalculation happens client-side via `attendanceService.recalculateTrustScore()` after every check-in and check-out. The new score is synced to the local UI by calling `useAuthStore.getState().updateUser({ trust_score: newScore })` after each attendance action.
+- Max score: `50`, defined by `TRUST_SCORE_MAX`.
+- Tiers: `36-50` Trusted, `20-35` Moderate, `0-19` At Risk.
+- Recalculation happens after check-in and check-out in `attendanceService.recalculateTrustScore()`.
+- Attendance store updates local profile state with the new score.
+- Penalties include late check-in, outside GPS radius, WiFi mismatch, IP anomaly, spoofing signal, duplicate same-day check-in, and missing checkout.
 
-Penalty weights: late check-in (1), GPS outside workplace (4), WiFi mismatch (3), IP anomaly (1), spoofing detected (6), duplicate same-day check-in (2), missing checkout (2). Penalties use stacking multipliers based on offense count (0.5x for first 2, 1x for 3-5, 1.5x for 6-8, 2x for 9+).
+## Attendance Validation
 
-### Check-in Validation Flow
+Check-in and check-out use the same validation pipeline for employees and supervisors/admins:
 
-Check-in requires sequential validation before allowing submission:
+- GPS radius.
+- WiFi SSID/BSSID.
+- Local LAN IP range from NetInfo.
+- Spoofing signals.
+- Duplicate same-day and missing checkout checks.
 
-1. GPS Location - Must be within configured radius of registered workplace
-2. WiFi Network - SSID/BSSID must match registered network
-3. IP Address - Flag if different from usual IP range
+Violations still submit attendance when appropriate, but flag the log for supervisor review, affect trust score, and show `AttendanceWarningModal` with specific reasons.
 
-If any check fails, show warning modal with reason. The validation should be a multi-step modal, not a new screen.
+## Organization Settings
 
-### Offline Sync Architecture
+`app/(supervisor)/settings.tsx` controls:
 
-When offline:
+- Workplace location through `LocationPicker`.
+- Search suggestions and clear search in the picker.
+- Current location from `expo-location`.
+- Address persistence on `organizations.address`.
+- GPS radius, WiFi SSID/BSSID, IP range, work hours, and ignore check-in time in `org_settings`.
 
-- Save check-in/check-out events locally with timestamp
-- Show "Offline – will sync when connected" banner
-- Store in sync queue (`STORAGE_KEYS.SYNC_QUEUE`)
+Service ownership:
 
-When back online:
+- `supervisorService.getOrganizationSettings()`
+- `supervisorService.upsertOrganizationSettings()`
+- `organizationService.updateOrganization()` for organization address/name/code.
 
-- Automatically sync pending records to Supabase
-- Show sync status indicator
-- Use retry mechanism with exponential backoff
+## Organization Lifecycle
 
-## Key Files
+- `OrganizationLifecycleActions` is used on profile screens.
+- Leave organization deletes the current profile and routes the still-authenticated user to onboarding.
+- Last active admin cannot leave.
+- Disband organization is admin-only, soft-deletes the organization, deletes all org profiles, and routes affected users to onboarding.
+- Soft-deleted organization codes cannot be joined.
 
-### Configuration
+## UI and Theming Rules
 
-- `constants/theme.ts` - Brand colors, typography, spacing, shadows, trust score tiers
-- `constants/fonts.ts` - Font loading with system font fallback
-- `utils/constants.ts` - API config, storage keys, validation rules, error/success messages
-- `utils/types.ts` - TypeScript interfaces for all data models
-- `utils/helpers.ts` - Date formatting, GPS distance calculation, validation functions
+- Never use `BrandColors` in component styles.
+- Use `useAppTheme()` and `createStyles(colors)`.
+- Sub-components that own styles must call `useAppTheme()` too.
+- Prefer existing components: `Button`, `Card`, `Input`, `InfoRow`, `TrustScoreBadge`, `SettingsAppearance`, `DecorativeShapes`.
+- Icons go through `components/ui/icon-symbol.tsx` when possible.
 
-### Navigation
+## Storage Uploads
 
-- `app/_layout.tsx` - Root layout with theme provider, font loading, and central auth/profile routing gate
-- `app/splash.tsx` - Animated splash screen; root auth gate performs actual session/profile routing
-- `app/(auth)/_layout.tsx` - Auth stack navigation
-- `app/(employee)/_layout.tsx` - Employee bottom tab navigation
-- `app/(supervisor)/_layout.tsx` - Supervisor bottom tab navigation
+Profile pictures:
 
-### Components
+- Bucket: `profile-pictures`
+- Path: `{userId}/avatar.jpg`
+- Service: `storageService`
 
-- `components/Card.tsx` - Card component with variants
-- `components/Input.tsx` - Input component with label, error, and icon support
-- `components/Button.tsx` - Button component with variants and sizes
-- `components/TrustScoreBadge.tsx` - Color-coded trust score display
-- `components/InfoRow.tsx` - Reusable labeled information row with icon (used in profile screens)
-
-### Services
-
-- `services/supabase.ts` - Singleton Supabase client with AsyncStorage session persistence and service functions (auth, profile, organization, supervisor, task, request, report)
-- `services/storageService.ts` - Supabase Storage operations for profile picture and report photo upload (uses expo-image-picker with base64, NOT fetch().blob())
-- `services/attendanceService.ts` - GPS/WiFi/IP validation, offline queue, trust score recalculation
-
-### State Management
-
-- `store/authStore.ts` - User authentication state, role, organization, avatar_url (via `updateUser` partial updates) ✅
-- `store/attendanceStore.ts` - Check-in/check-out state, today's status, validation progress, offline sync queue, location monitoring ✅
-
-## UI Patterns
-
-- **NEVER use `BrandColors`** in component styles — it is hardcoded to dark theme values and breaks in light mode
-- **ALWAYS use `useAppTheme()`** hook + `createStyles(colors)` pattern for dynamic light/dark switching
-- `BrandColors` is only used as the source of truth in `constants/theme.ts` for defining `Colors.dark` and `Colors.light`
-- All screens support both light and dark themes via `ThemeColors`
-- Bottom tabs use `HapticTab` component for haptic feedback
-- Icons use `IconSymbol` from `@expo/vector-icons`
-- Profile screens share `InfoRow` component for labeled information rows
-- Profile cards show: avatar (image or initials), name, email, role/status badges, large TrustScoreBadge
-- `components/SettingsAppearance.tsx` - Shared dark mode toggle component used across employee and supervisor settings
-- Sub-components that render styles must also call `useAppTheme()` and `createStyles(colors)` — they do not inherit styles from parent
-- Settings screens are accessed from Profile screens (not as bottom tabs) — both employee and supervisor Profile have a Settings button with gear icon navigating to their respective settings screens
-- Supervisor Profile Settings button: `router.push('/(supervisor)/settings')`
-- Employee Profile Settings button: `router.push('/(employee)/settings')`
-
-## Validation Rules
-
-- Password: min 8 chars, 1 uppercase, 1 lowercase, 1 number
-- Organization code: exactly 6 alphanumeric characters
-- GPS radius: 10-1000 meters (default 100)
-- Trust score: 0-100
-
-## Attendance Check-Out
-
-- Requires an UPDATE RLS policy on `attendance_logs` table. If check-out fails with a permission error, verify this policy exists in Supabase:
-  ```sql
-  CREATE POLICY "Users can update own attendance"
-    ON attendance_logs FOR UPDATE
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-  ```
-- Check-out runs the full validation flow (GPS, WiFi, IP, spoofing) before submitting
-- If `currentLog` is null, check-out fails with "No active check-in found"
-
-## Dashboard Auto-Refresh
-
-- Use `useFocusEffect` from `expo-router` instead of `useEffect` for screens that need to refresh data when the user navigates back to them
-- Applied to: `app/(supervisor)/home.tsx`, `app/(supervisor)/request-review.tsx`, and `app/(employee)/attendance.tsx`
-- Pattern:
-  ```tsx
-  import { useFocusEffect } from 'expo-router';
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData]),
-  );
-  ```
-
-## Profile Picture Upload
-
-### Storage Configuration
-- Bucket: `profile-pictures` (public)
-- File path: `{userId}/avatar.jpg`
-- Field in profiles table: `avatar_url` (TEXT)
-- RLS policies ensure users can only access their own folder
-
-### Upload Implementation
-- `services/storageService.ts` handles all avatar operations
-- Uses `expo-image-picker` with `base64: true` option
-- Converts base64 → `Uint8Array` → Supabase Storage upload
-- Image settings: 1:1 aspect ratio, quality 0.7
-- Old avatars are deleted before uploading new ones
-
-### Critical Gotchas
-- **NEVER use `fetch(uri).blob()`** for uploads — it fails with "Network request failed" on React Native
-- **NEVER use `expo-file-system`** for reading files — the `base64: true` option from expo-image-picker is simpler and more reliable
-- Both employee and supervisor profiles use the same `avatar_url` field and `storageService`
-
-## Hybrid Build Workflow (Claude Code + Qwen Local)
-
-### Principle
-
-Claude Code acts as architect, planner, and reviewer.
-Qwen (running locally via Ollama) handles implementation as the builder.
-
-### Additional Folder Structure
-
-workflow/
-├── TASK_QUEUE/ ← task files created by Claude for Qwen
-├── BUILD_OUTPUT/ ← raw code output from Qwen (pending review)
-├── REVIEWS/ ← Claude's review notes per task
-└── scripts/
-├── qwen_build.sh
-├── qwen_build_all.sh
-└── check_ollama.sh
-
-### What to Delegate to Qwen
-
-Delegate tasks with a clearly defined interface contract:
-
-- Zustand store implementations
-- Supabase service/query functions
-- Utility and helper functions
-- Screen boilerplate
-
-Do NOT delegate to Qwen:
-
-- New architecture decisions or system design
-- RLS policies (requires security judgment)
-- Complex cross-system integrations
-- Anything touching auth flow or trust score logic
-
-### Task File Format
-
-Every file in TASK_QUEUE/ must include:
-
-- **Context**: where this file fits in the TrustEnd architecture
-- **Stack**: TypeScript strict mode, Supabase client from `services/supabase.ts`, Zustand pattern from `store/authStore.ts`
-- **Interface contract**: types and functions that must be exported
-- **Schema reference**: relevant Supabase tables (refer to Database Schema section above)
-- **Constraints**: do not create new stores, hooks, or dependencies outside what is defined
-
-### Running Qwen
-
-```bash
-# Check Ollama is ready
-bash workflow/scripts/check_ollama.sh
-
-# Build a single task
-bash workflow/scripts/qwen_build.sh workflow/TASK_QUEUE/TASK_001_name.md
-
-# Build all pending tasks
-bash workflow/scripts/qwen_build_all.sh
-```
-
-### Review Checklist
-
-After Qwen produces output, Claude reviews for:
-
-- [ ] Supabase client imported from `services/supabase.ts` (never instantiated inline)
-- [ ] Types consistent with `utils/types.ts`
-- [ ] Colors and theme values from `constants/theme.ts` (no hardcoded hex)
-- [ ] `organization_id` always included in database queries
-- [ ] Error handling follows existing patterns in the codebase
-- [ ] No `any` types without explicit justification
-
-## Additional Implementation Notes
-
-### Completed Features Since Initial Setup
-
-#### Dark Mode & Theming System
-- All supervisor screens converted from `BrandColors` to `useAppTheme()` + `createStyles(colors)`
-- `components/SettingsAppearance.tsx` - Shared dark mode toggle component
-- `app/(employee)/settings.tsx` - Employee settings screen with dark mode toggle
-- Light theme fully supported via `Colors.light` in `constants/theme.ts`
-- Every screen follows the pattern: `const colors = useAppTheme(); const styles = createStyles(colors);`
-
-#### Attendance System (Phase 5)
-- `store/attendanceStore.ts` - Full attendance state management with check-in/out, validation, offline sync
-- `services/attendanceService.ts` - GPS/WiFi/IP validation, offline queue, trust score recalculation
-- `app/(employee)/attendance.tsx` - Attendance history screen with auto-refresh via `useFocusEffect`
-- `app/(employee)/home.tsx` - Dashboard with check-in/out buttons, validation status display, offline banner
-- `app/(supervisor)/home.tsx` - "My Attendance" card with identical check-in/out flow (role-agnostic store)
-- Offline sync with integrity hash validation and 24-hour age limit
-- Location monitoring every 30 minutes while checked in
-- Trust score sync to local UI after check-in/out via `useAuthStore.getState().updateUser()`
-
-#### Requests System (Phase 6)
-- `app/(employee)/requests.tsx` - Holiday/overtime request submission and history
-- `app/(supervisor)/request-review.tsx` - Supervisor request review with `useFocusEffect` auto-refresh
-- `app/(supervisor)/request-detail/[id].tsx` - Request detail view
-
-#### Reports System (Phase 7)
-- `app/(employee)/reports.tsx` - Report submission with photo attachment
-- `app/(supervisor)/report-review.tsx` - Supervisor report review
-- `app/(supervisor)/report-detail/[id].tsx` - Report detail view
-- Photo upload via `storageService` to `report-photos` bucket (4:3 aspect ratio, quality 0.7)
-- `reports` table requires `photo_url` TEXT column
-
-#### Task Management (Phase 8)
-- `app/(supervisor)/team.tsx` - Team management with attendance logs, registration approvals, TrustScore overview
-- `app/(supervisor)/task.tsx` - Task assignment and review
-- `supabase/tasks.sql` - Tasks table schema and RLS policies
-
-#### Trust Score System Updates
-- `TRUST_SCORE_MAX` changed from 50 to 100 to align with badge tiers (80-100 Trusted, 50-79 Moderate, 0-49 At Risk)
-- Removed hardcoded trust score cap in employee home screen
-- Trust score now syncs to local UI after check-in/out via `attendanceStore`
-
-#### Merge: joshua_tes → staging
-- Resolved 8 merge conflicts across attendance, auth, theme, and store files
-- Kept staging's `useAppTheme()` theming pattern throughout
-- Integrated joshua_tes's full attendance implementation with staging's trust score modal
-- All files pass lint (0 errors) and TypeScript (0 errors)
-
-#### Cherry-pick: Sebastest → staging
-- Added employee request submission screen (`app/(employee)/requests.tsx`)
-- Added employee report submission screen (`app/(employee)/reports.tsx`)
-- Added `requestService` and `reportService` to `services/supabase.ts`
-- Enhanced `Input` component with multiline support for report content
-- Added `supabase/add_request_hours.sql` migration for `hours` column on `requests` table
-
-#### Employee Task Management
-- `app/(employee)/tasks.tsx` — View assigned tasks grouped by status (To Do, In Review, Needs Revision, Completed)
-- Expandable cards with submission form for assigned/rejected tasks
-- `useFocusEffect` for auto-refresh
-- `taskService.getMyTasks(userId)` and `taskService.submitTask(taskId, submissionNote)` in `services/supabase.ts`
-- Tasks accessible from Home dashboard "My Tasks" card (not a bottom tab)
-
-#### Organization Settings
-- `app/(supervisor)/settings.tsx` — Configure attendance validation rules (GPS, WiFi, IP, work hours)
-- Uses `expo-location` for "Use Current Location" button
-- `supervisorService.getOrganizationSettings()` and `supervisorService.upsertOrganizationSettings()` in `services/supabase.ts`
-  - **NOTE**: These methods live on `supervisorService`, NOT `organizationService` — a common mistake
-- Upserts into `organization_settings` table with `onConflict: 'organization_id'`
-- Settings accessible from Supervisor Profile screen via Settings button
-- `expo-location` plugin configured in `app.json` — requires native rebuild: `npx expo run:android`
-- Android emulator: enable Location in Quick Settings + set mock location via Extended Controls (three dots → Location)
-
-#### Report Photo Upload
-- `services/storageService.ts` — Added `pickReportPhoto()`, `uploadReportPhoto()`, `deleteReportPhoto()`
-- Uses `report-photos` bucket, path `{userId}/{reportId}.jpg`
-- `app/(employee)/reports.tsx` — Photo picker with preview and remove button
-- Image settings: 4:3 aspect ratio, quality 0.7
-
-#### Supervisor Check-In/Check-Out
-- `app/(supervisor)/home.tsx` — "My Attendance" card with same check-in/out flow as employees
-- Uses the shared `attendanceStore` and `attendanceService` — role-agnostic, no separate logic needed
-- Validation flow: GPS, WiFi, IP, spoofing detection (same as employee)
-- Trust score recalculated after supervisor check-in/out
-- UI states: Not checked in (green button) → Checked in (blue button) → Completed (checkmark)
-- Offline sync and location monitoring work identically for supervisors
-
-#### Bottom Navigation Cleanup
-- Employee: reduced from 7 tabs to 5 tabs (Home, Attendance, Requests, Reports, Profile)
-- Settings moved to Profile screen as a row/button
-- Tasks moved to Home dashboard as a "My Tasks" card with "View All" link
-- Supervisor: already at 5 tabs (Home, Team, Request, Task, Profile) — no changes needed
-- Supervisor Profile now has Settings button navigating to `/(supervisor)/settings`
-- Supervisor Home now has "My Attendance" card with check-in/out functionality
-
-#### Decorative Shapes (Global Background)
-- `components/DecorativeShapes.tsx` — Reusable background component with circles/ovals of low opacity
-- 4 variants: `"auth"`, `"employee"`, `"supervisor"`, `"splash"` — each has different shape positions/sizes
-- Applied to all 24 screens across the app as first child inside root container View
-- Uses `colors.primary` and `colors.secondary` with opacity 0.04–0.08
-- `pointerEvents="none"` so shapes don't interfere with touch
-- Import: `import DecorativeShapes from "@/components/DecorativeShapes";`
-- Usage: `<DecorativeShapes variant="auth" />`
+Report photos:
+
+- Bucket: `report-photos`
+- Path: `{userId}/{reportId}.jpg`
+- Service: `storageService`
+
+Critical implementation note: uploads use `expo-image-picker` with `base64: true` and convert to `Uint8Array`. Do not use `fetch(uri).blob()` for React Native uploads.
+
+## Important Files
+
+- `app/_layout.tsx`: auth and role gate.
+- `services/supabase.ts`: Supabase services.
+- `services/attendanceService.ts`: attendance validation and trust score.
+- `services/storageService.ts`: Supabase Storage uploads.
+- `store/authStore.ts`: persisted profile state.
+- `store/attendanceStore.ts`: attendance state and offline sync.
+- `supabase/rls_policies.sql`: RLS, RPCs, account deletion table.
+- `constants/theme.ts`: theme and trust score constants.
+- `constants/legal.ts`: support email and legal URLs.
+
+## Review Checklist
+
+Before finishing changes:
+
+- Supabase client is imported from `services/supabase.ts`.
+- Queries are scoped by `organization_id` where needed.
+- RLS/RPC changes are reflected in `supabase/rls_policies.sql`.
+- Theme uses `useAppTheme()` rather than direct `BrandColors`.
+- Upload code does not use `fetch(uri).blob()`.
+- Leave/disband flows preserve the intended Auth-session-without-profile behavior.
+- `npm run lint` passes, or any inability to run it is clearly reported.

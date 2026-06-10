@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -331,9 +333,15 @@ export default function SupervisorSettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="supervisor" />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -498,7 +506,7 @@ export default function SupervisorSettingsScreen() {
         </Card>
       </View>
     </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -511,7 +519,7 @@ const createStyles = (colors: ThemeColors) =>
     content: {
       padding: Spacing.lg,
       paddingTop: Spacing.xl,
-      paddingBottom: Spacing['3xl'],
+      paddingBottom: Spacing['3xl'] + Spacing['2xl'],
     },
     header: {
       flexDirection: 'row',

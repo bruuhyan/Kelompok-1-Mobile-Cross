@@ -6,6 +6,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -140,10 +142,16 @@ export default function RequestDetailScreen() {
   const status = statusConfig[request.status];
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="supervisor" />
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Button title="Back" variant="ghost" size="small" onPress={() => router.back()} />
           <View style={[styles.badge, { borderColor: status.color }]}>
@@ -198,7 +206,7 @@ export default function RequestDetailScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -250,6 +258,7 @@ const createStyles = (colors: ThemeColors) =>
   content: {
     padding: Spacing.lg,
     paddingTop: Spacing.xl,
+    paddingBottom: Spacing['3xl'],
   },
   centerContainer: {
     alignItems: 'center',

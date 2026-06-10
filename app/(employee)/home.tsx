@@ -5,7 +5,10 @@
 
 import { Card } from "@/components/Card";
 import { AttendanceWarningModal } from "@/components/AttendanceWarningModal";
+import { SignOutConfirmationModal } from "@/components/SignOutConfirmationModal";
 import { TrustScoreBadge } from "@/components/TrustScoreBadge";
+import { TrustScoreHistoryModal } from "@/components/TrustScoreHistoryModal";
+import { TrustScoreInfoModal } from "@/components/TrustScoreInfoModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import {
   BorderRadius,
@@ -24,7 +27,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -40,7 +42,10 @@ export default function EmployeeHomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const [showTrustScoreModal, setShowTrustScoreModal] = useState(false);
+  const [showTrustScoreHistoryModal, setShowTrustScoreHistoryModal] = useState(false);
+  const [showTrustScoreInfoModal, setShowTrustScoreInfoModal] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [warningModal, setWarningModal] = useState<{
     visible: boolean;
     actionLabel: "check-in" | "check-out";
@@ -116,12 +121,16 @@ export default function EmployeeHomeScreen() {
   }, [error]);
 
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
       await authService.signOut();
       logout();
       router.replace("/(auth)/login");
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
     }
   };
 
@@ -213,7 +222,10 @@ export default function EmployeeHomeScreen() {
             <Text style={styles.greeting}>Good morning,</Text>
             <Text style={styles.userName}>{user?.name || "Loading..."}</Text>
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={() => setShowSignOutModal(true)}
+          >
             <IconSymbol
               name="rectangle.portrait.and.arrow.right"
               size={20}
@@ -227,16 +239,23 @@ export default function EmployeeHomeScreen() {
       <Card style={styles.trustScoreCard} variant="elevated">
         <View style={styles.trustScoreHeader}>
           <Text style={styles.trustScoreTitle}>Your Trust Score</Text>
-          <TouchableOpacity onPress={() => setShowTrustScoreModal(true)}>
+          <TouchableOpacity onPress={() => setShowTrustScoreInfoModal(true)}>
             <IconSymbol name="info.circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
         <View style={styles.trustScoreContent}>
-          <TrustScoreBadge
-            score={user?.trust_score || 50}
-            size="large"
-            showLabel
-          />
+          <TouchableOpacity
+            onPress={() => setShowTrustScoreHistoryModal(true)}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Open trust score history"
+          >
+            <TrustScoreBadge
+              score={user?.trust_score || 50}
+              size="large"
+              showLabel
+            />
+          </TouchableOpacity>
         </View>
         <Text style={styles.trustScoreDescription}>
           Keep your attendance consistent to improve your score
@@ -472,109 +491,26 @@ export default function EmployeeHomeScreen() {
         </Card>
       </View>
 
-      {/* Trust Score Modal */}
-      {showTrustScoreModal && (
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowTrustScoreModal(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                Understanding Your Trust Score
-              </Text>
-              <TouchableOpacity onPress={() => setShowTrustScoreModal(false)}>
-                <IconSymbol name="xmark" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalSubtitle}>
-                How we calculate your trustworthiness
-              </Text>
-              <View style={styles.explanationBox}>
-                <Text style={styles.explanationTitle}>Three Key Factors:</Text>
-                <View style={styles.factorRow}>
-                  <View style={styles.factorIcon}>
-                    <IconSymbol
-                      name="clock.fill"
-                      size={18}
-                      color={colors.primary}
-                    />
-                  </View>
-                  <View style={styles.factorText}>
-                    <Text style={styles.factorTitle}>Punctuality</Text>
-                    <Text style={styles.factorDescription}>
-                      On-time check-ins vs late check-ins
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.factorRow}>
-                  <View style={styles.factorIcon}>
-                    <IconSymbol
-                      name="location.fill"
-                      size={18}
-                      color={colors.info}
-                    />
-                  </View>
-                  <View style={styles.factorText}>
-                    <Text style={styles.factorTitle}>Location Consistency</Text>
-                    <Text style={styles.factorDescription}>
-                      GPS matches your registered workplace location
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.factorRow}>
-                  <View style={styles.factorIcon}>
-                    <IconSymbol
-                      name="exclamationmark.triangle.fill"
-                      size={18}
-                      color={colors.warning}
-                    />
-                  </View>
-                  <View style={styles.factorText}>
-                    <Text style={styles.factorTitle}>Activity Patterns</Text>
-                    <Text style={styles.factorDescription}>
-                      Monitoring for suspicious activity like duplicate
-                      check-ins
-                    </Text>
-                  </View>
-                </View>
-              </View>
-              <View style={styles.scoreTiers}>
-                <Text style={styles.scoreTiersTitle}>Trust Score Tiers:</Text>
-                <View style={styles.tierRow}>
-                  <View
-                    style={[styles.tierDot, { backgroundColor: "#00F5A0" }]}
-                  />
-                  <Text style={styles.tierLabel}>36-50: Trusted (Green)</Text>
-                </View>
-                <View style={styles.tierRow}>
-                  <View
-                    style={[styles.tierDot, { backgroundColor: "#F59E0B" }]}
-                  />
-                  <Text style={styles.tierLabel}>20-35: Moderate (Yellow)</Text>
-                </View>
-                <View style={styles.tierRow}>
-                  <View
-                    style={[styles.tierDot, { backgroundColor: "#EF4444" }]}
-                  />
-                  <Text style={styles.tierLabel}>0-19: At Risk (Red)</Text>
-                </View>
-              </View>
-              <Text style={styles.modalFooterText}>
-                Your score is recalculated after each check-in/check-out to
-                reflect your recent behavior patterns.
-              </Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowTrustScoreModal(false)}
-              >
-                <Text style={styles.modalCloseButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
-      )}
+      <TrustScoreInfoModal
+        visible={showTrustScoreInfoModal}
+        onClose={() => setShowTrustScoreInfoModal(false)}
+      />
+
+      <TrustScoreHistoryModal
+        visible={showTrustScoreHistoryModal}
+        userId={user?.id}
+        organizationId={user?.organization_id}
+        title="Your Trust Score"
+        score={user?.trust_score || 50}
+        onClose={() => setShowTrustScoreHistoryModal(false)}
+      />
+
+      <SignOutConfirmationModal
+        visible={showSignOutModal}
+        loading={isSigningOut}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleLogout}
+      />
 
       <AttendanceWarningModal
         visible={warningModal.visible}

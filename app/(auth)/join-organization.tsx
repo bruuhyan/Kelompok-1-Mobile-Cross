@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Input } from '@/components/Input';
@@ -29,7 +30,8 @@ import { ERROR_MESSAGES, VALIDATION } from '@/utils/constants';
 
 export default function JoinOrganizationScreen() {
   const colors = useAppTheme();
-  const styles = createStyles(colors);
+  const insets = useSafeAreaInsets();
+  const styles = createStyles(colors, insets.bottom);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -123,10 +125,12 @@ export default function JoinOrganizationScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="auth" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
@@ -209,7 +213,7 @@ export default function JoinOrganizationScreen() {
   );
 }
 
-const createStyles = (colors: ThemeColors) =>
+const createStyles = (colors: ThemeColors, bottomInset: number) =>
   StyleSheet.create({
   container: {
     flex: 1,
@@ -218,6 +222,8 @@ const createStyles = (colors: ThemeColors) =>
   scrollContent: {
     padding: Spacing.lg,
     paddingTop: Spacing['3xl'],
+    paddingBottom: Math.max(Spacing['2xl'], bottomInset + Spacing['2xl']),
+    flexGrow: 1,
   },
   header: {
     marginBottom: Spacing.lg,
