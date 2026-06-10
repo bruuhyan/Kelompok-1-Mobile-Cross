@@ -242,7 +242,8 @@ export default function EmployeeTasksScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="employee" />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -283,7 +284,7 @@ const createStyles = (colors: ThemeColors) =>
     content: {
       padding: Spacing.lg,
       paddingTop: Spacing['2xl'],
-      paddingBottom: Spacing['3xl'],
+      paddingBottom: Spacing['3xl'] + Spacing['2xl'],
     },
     header: {
       marginBottom: Spacing.lg,

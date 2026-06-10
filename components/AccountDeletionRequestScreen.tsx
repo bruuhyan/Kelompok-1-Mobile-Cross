@@ -9,7 +9,17 @@ import { accountComplianceService } from "@/services/supabase";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type Props = {
   variant: ShapesVariant;
@@ -66,9 +76,16 @@ export function AccountDeletionRequestScreen({ variant }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
+    >
       <DecorativeShapes variant={variant} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <IconSymbol name="chevron.left" size={24} color={colors.text} />
@@ -109,7 +126,7 @@ export function AccountDeletionRequestScreen({ variant }: Props) {
           />
         </Card>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -122,7 +139,7 @@ const createStyles = (colors: ThemeColors) =>
     content: {
       padding: Spacing.lg,
       paddingTop: Spacing["2xl"],
-      paddingBottom: Spacing["3xl"],
+      paddingBottom: Spacing["3xl"] + Spacing["2xl"],
     },
     header: {
       flexDirection: "row",

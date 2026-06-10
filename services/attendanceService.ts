@@ -25,6 +25,7 @@ import {
   OfflineAttendanceLog,
   OrganizationSettings,
   TrustScoreCalculation,
+  TrustScoreHistoryEntry,
 } from '@/utils/types';
 
 const DEFAULT_WORK_START_TIME = '09:00';
@@ -189,6 +190,159 @@ function getNoteValidationFlags(notes: AttendanceNotes): AttendanceValidation[] 
 
 function getNotesReviewReasons(notes: AttendanceNotes) {
   return Array.from(new Set(getNoteValidationFlags(notes).flatMap(getValidationReviewReasons)));
+}
+
+type TrustScoreOffense = {
+  key: string;
+  weight: number;
+  reason: string;
+  occurredAt: string;
+};
+
+type ValidationDetailKey = 'gps' | 'wifi' | 'ip' | 'spoofing';
+
+function getValidationMessage(
+  flags: AttendanceValidation[],
+  key: ValidationDetailKey,
+  fallback: string,
+) {
+  return flags.find((validation) => validation.details?.[key]?.message)?.details?.[key]?.message || fallback;
+}
+
+function getStackingMultiplier(offenseCount: number) {
+  if (offenseCount <= 2) return 0.5;
+  if (offenseCount <= 5) return 1;
+  if (offenseCount <= 8) return 1.5;
+  return 2;
+}
+
+function getTrustScoreOffenses(
+  log: AttendanceLog,
+  sortedLogs: AttendanceLog[],
+  index: number,
+  ignoreCheckinTime: boolean,
+): TrustScoreOffense[] {
+  const notes = parseNotes(log.notes);
+  const flags = getNoteValidationFlags(notes);
+  const duplicateSameDay = sortedLogs
+    .slice(0, index)
+    .some((previous) => isSameLocalDay(previous.check_in_time, log.check_in_time));
+  const missingCheckout = !log.check_out_time && isBeforeToday(log.check_in_time);
+  const offenses: TrustScoreOffense[] = [];
+
+  if (!ignoreCheckinTime && log.is_late) {
+    offenses.push({
+      key: 'late-check-in',
+      weight: 1,
+      reason: 'Late check-in',
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (flags.some((validation) => validation.gps_valid === false)) {
+    offenses.push({
+      key: 'gps-outside',
+      weight: 4,
+      reason: getValidationMessage(flags, 'gps', 'GPS outside workplace radius'),
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (flags.some((validation) => validation.wifi_valid === false)) {
+    offenses.push({
+      key: 'wifi-mismatch',
+      weight: 3,
+      reason: getValidationMessage(flags, 'wifi', 'WiFi network mismatch'),
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (flags.some((validation) => validation.ip_valid === false)) {
+    offenses.push({
+      key: 'ip-anomaly',
+      weight: 1,
+      reason: getValidationMessage(flags, 'ip', 'Local IP address outside configured range'),
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (flags.some((validation) => !!validation.spoofing_detected)) {
+    offenses.push({
+      key: 'spoofing',
+      weight: 6,
+      reason: getValidationMessage(flags, 'spoofing', 'Location anomaly detected'),
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (duplicateSameDay) {
+    offenses.push({
+      key: 'duplicate-check-in',
+      weight: 2,
+      reason: 'Duplicate same-day check-in',
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  if (missingCheckout) {
+    offenses.push({
+      key: 'missing-checkout',
+      weight: 2,
+      reason: 'Missing checkout',
+      occurredAt: log.check_in_time,
+    });
+  }
+
+  return offenses;
+}
+
+function buildTrustScoreHistoryEntries(
+  logs: AttendanceLog[],
+  ignoreCheckinTime: boolean,
+): TrustScoreHistoryEntry[] {
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(a.check_in_time).getTime() - new Date(b.check_in_time).getTime(),
+  );
+  const entries: TrustScoreHistoryEntry[] = [];
+  let offenseCount = 0;
+  const now = Date.now();
+
+  sortedLogs.forEach((log, index) => {
+    const offenses = getTrustScoreOffenses(log, sortedLogs, index, ignoreCheckinTime);
+
+    offenses.forEach((offense) => {
+      offenseCount += 1;
+
+      const multiplier = getStackingMultiplier(offenseCount);
+      const impact = Number((offense.weight * multiplier).toFixed(1));
+      const offenseId = `${log.id}-${offense.key}-${offenseCount}`;
+      const expiresAt = new Date(new Date(offense.occurredAt).getTime() + THIRTY_DAYS_MS);
+
+      entries.push({
+        id: offenseId,
+        category: 'offense',
+        label: 'Offense',
+        pointsChange: -impact,
+        reason: offense.reason,
+        occurredAt: offense.occurredAt,
+      });
+
+      if (expiresAt.getTime() <= now) {
+        entries.push({
+          id: `${offenseId}-recovered`,
+          category: 'addition',
+          label: 'Addition',
+          pointsChange: impact,
+          reason: `Penalty recovered: ${offense.reason}`,
+          occurredAt: expiresAt.toISOString(),
+        });
+      }
+    });
+  });
+
+  return entries.sort(
+    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+  );
 }
 
 function buildNotes(
@@ -639,6 +793,32 @@ export const attendanceService = {
         reviewLogs: logs.filter((log) => parseNotes(log.notes).review_status !== 'none').length,
       },
     };
+  },
+
+  async getTrustScoreHistory(
+    userId: string,
+    filters?: { organizationId?: string; limit?: number },
+  ): Promise<TrustScoreHistoryEntry[]> {
+    let query = supabase
+      .from('attendance_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('check_in_time', { ascending: false })
+      .limit(filters?.limit ?? 120);
+
+    if (filters?.organizationId) {
+      query = query.eq('organization_id', filters.organizationId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const organizationId =
+      filters?.organizationId ||
+      (await profileService.getProfile(userId))?.organization_id;
+    const settings = organizationId ? await this.getOrgSettings(organizationId) : null;
+
+    return buildTrustScoreHistoryEntries(data ?? [], settings?.ignore_checkin_time === true);
   },
 
   calculateTrustScore(logs: AttendanceLog[], ignoreCheckinTime = false): TrustScoreCalculation {

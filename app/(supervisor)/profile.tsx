@@ -7,6 +7,7 @@ import {
   ActionSheetIOS,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { InfoRow } from '@/components/InfoRow';
 import { TrustScoreBadge } from '@/components/TrustScoreBadge';
 import { OrganizationLifecycleActions } from '@/components/OrganizationLifecycleActions';
+import { SignOutConfirmationModal } from '@/components/SignOutConfirmationModal';
 import { storageService } from '@/services/storageService';
 import { authService, organizationService, profileService } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -49,6 +51,8 @@ export default function SupervisorProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -218,6 +222,7 @@ export default function SupervisorProfileScreen() {
   };
 
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
       await authService.signOut();
       logout();
@@ -225,6 +230,9 @@ export default function SupervisorProfileScreen() {
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Error', 'Failed to log out');
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
     }
   };
 
@@ -248,9 +256,15 @@ export default function SupervisorProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}>
       <DecorativeShapes variant="supervisor" />
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -400,13 +414,19 @@ export default function SupervisorProfileScreen() {
           <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
         </TouchableOpacity>
         <OrganizationLifecycleActions organization={organization} />
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={() => setShowSignOutModal(true)}>
           <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
-    </View>
+      </ScrollView>
+      <SignOutConfirmationModal
+        visible={showSignOutModal}
+        loading={isSigningOut}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleLogout}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -415,6 +435,9 @@ const createStyles = (colors: ThemeColors) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    content: {
+      paddingBottom: Spacing['2xl'],
     },
     loadingContainer: {
       flex: 1,

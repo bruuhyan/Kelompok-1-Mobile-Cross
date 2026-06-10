@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacing, Typography, BorderRadius, ThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Card } from '@/components/Card';
+import { SignOutConfirmationModal } from '@/components/SignOutConfirmationModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import DecorativeShapes from '@/components/DecorativeShapes';
 import { authService, profileService } from '@/services/supabase';
@@ -33,6 +34,8 @@ export default function WaitingApprovalScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const [isChecking, setIsChecking] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Periodically check if account has been approved
   useEffect(() => {
@@ -79,12 +82,16 @@ export default function WaitingApprovalScreen() {
   }, [logout, router, setUser]);
 
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
       await authService.signOut();
       logout();
       router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      setIsSigningOut(false);
+      setShowSignOutModal(false);
     }
   };
 
@@ -157,11 +164,17 @@ export default function WaitingApprovalScreen() {
 
       {/* Logout Button */}
       <View style={styles.footer}>
-        <Text style={styles.logoutText} onPress={handleLogout}>
+        <Text style={styles.logoutText} onPress={() => setShowSignOutModal(true)}>
           Log out and try again later
         </Text>
       </View>
     </ScrollView>
+      <SignOutConfirmationModal
+        visible={showSignOutModal}
+        loading={isSigningOut}
+        onCancel={() => setShowSignOutModal(false)}
+        onConfirm={handleLogout}
+      />
     </View>
   );
 }
@@ -171,7 +184,10 @@ const createStyles = (colors: ThemeColors, bottomInset: number) =>
   scrollContent: {
     padding: Spacing.lg,
     paddingTop: Spacing['3xl'],
-    paddingBottom: Math.max(Spacing['3xl'], bottomInset + Spacing['3xl']),
+    paddingBottom: Math.max(
+      Spacing['3xl'] + Spacing.xl,
+      bottomInset + Spacing['3xl'] + Spacing.xl,
+    ),
     backgroundColor: colors.background,
     minHeight: '100%',
   },
@@ -273,6 +289,7 @@ const createStyles = (colors: ThemeColors, bottomInset: number) =>
   },
   footer: {
     alignItems: 'center',
+    paddingBottom: Math.max(Spacing.lg, bottomInset + Spacing.md),
   },
   logoutText: {
     fontSize: Typography.sm,
